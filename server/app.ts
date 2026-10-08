@@ -1,10 +1,11 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyReply } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { scenarios } from './scenarios';
 import type { Engine } from './engine';
+import type { SeriesSnapshot } from '../shared/types';
 export async function buildApp(engine: Engine) {
   const app = Fastify({ logger: false, bodyLimit: 16384 });
   app.addHook('onRequest', async (req, reply) => {
@@ -68,10 +69,7 @@ export async function buildApp(engine: Engine) {
       .header('Content-Disposition', `attachment; filename="reuniao-${id}.json"`)
       .send({ formatVersion: 1, run, events: engine.store.events(id) });
   });
-  app.get('/api/runs/:id/events', async (req, reply) => {
-    const { id } = idSchema.parse(req.params);
-    const run = engine.store.get(id);
-    if (!run) return reply.code(404).send({ error: 'Reunião não encontrada.' });
+  function stream(reply: FastifyReply, channel: string, initial: unknown) {
     reply.hijack();
     reply.raw.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -82,15 +80,67 @@ export async function buildApp(engine: Engine) {
     const send = (value: unknown) => {
       if (!reply.raw.destroyed) reply.raw.write(`data: ${JSON.stringify(value)}\n\n`);
     };
-    engine.events.on(id, send);
-    send(run);
+    engine.events.on(channel, send);
+    send(initial);
     const timer = setInterval(() => {
       if (!reply.raw.destroyed) reply.raw.write(': keepalive\n\n');
     }, 15000);
     reply.raw.on('close', () => {
       clearInterval(timer);
-      engine.events.off(id, send);
+      engine.events.off(channel, send);
     });
+  }
+  app.get('/api/runs/:id/events', async (req, reply) => {
+    const { id } = idSchema.parse(req.params);
+    const run = engine.store.get(id);
+    if (!run) return reply.code(404).send({ error: 'Reunião não encontrada.' });
+    stream(reply, id, run);
+  });
+  const snapshot = (id: string): SeriesSnapshot | undefined => {
+    const series = engine.store.getSeries(id);
+    if (!series) return undefined;
+    const current = series.runIds.at(-1);
+    return { series, run: current ? (engine.store.get(current) ?? null) : null };
+  };
+  app.get('/api/series', () => engine.store.listSeries());
+  app.post('/api/series', async (req) => {
+    const body = z
+      .object({ mode: z.enum(['demo', 'live']) })
+      .strict()
+      .parse(req.body);
+    return snapshot((await engine.startSeries(body.mode)).id);
+  });
+  app.get('/api/series/:id', async (req, reply) => {
+    const value = snapshot(idSchema.parse(req.params).id);
+    return value ?? reply.code(404).send({ error: 'Maratona não encontrada.' });
+  });
+  app.post('/api/series/:id/cancel', (req) => {
+    const { id } = idSchema.parse(req.params);
+    engine.cancelSeries(id);
+    return snapshot(id);
+  });
+  app.delete('/api/series/:id', (req, reply) => {
+    const removed = engine.store.removeSeries(idSchema.parse(req.params).id);
+    return removed ? { removed: 1 } : reply.code(404).send({ error: 'Maratona não encontrada.' });
+  });
+  app.get('/api/series/:id/export', async (req, reply) => {
+    const { id } = idSchema.parse(req.params);
+    const series = engine.store.getSeries(id);
+    if (!series) return reply.code(404).send({ error: 'Maratona não encontrada.' });
+    return reply.header('Content-Disposition', `attachment; filename="maratona-${id}.json"`).send({
+      formatVersion: 1,
+      series,
+      meetings: series.runIds.map((runId) => ({
+        run: engine.store.get(runId),
+        events: engine.store.events(runId),
+      })),
+    });
+  });
+  app.get('/api/series/:id/events', async (req, reply) => {
+    const { id } = idSchema.parse(req.params);
+    const value = snapshot(id);
+    if (!value) return reply.code(404).send({ error: 'Maratona não encontrada.' });
+    stream(reply, `series:${id}`, value);
   });
   const dist = resolve('dist');
   if (existsSync(dist)) {

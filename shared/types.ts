@@ -69,11 +69,32 @@ export type JudgeResult = {
   limitations: string[];
 };
 export type JudgePass = { mapping: Mapping; result: JudgeResult };
+// How the objective winner was decided: more reference points, or equal points broken by
+// calibration; 'tie' and 'unavailable' declare no winner.
+export type DecisionReason = 'points' | 'calibration' | 'tie' | 'unavailable';
+export type Standing = {
+  provider: Provider;
+  correct: number;
+  incorrect: number;
+  uncertain: number;
+  unavailable: number;
+  total: number;
+  // Mean Brier score over the rounds every participant answered; null without such rounds.
+  brier: number | null;
+  costUsd: number;
+  unknownCosts: number;
+  inputTokens: number;
+  medianMs: number | null;
+};
 export type Verdict = {
   winner: Provider | 'tie' | 'inconclusive';
   summary: string;
   passes: JudgePass[];
   error?: string;
+  // Present on meetings decided by the reference answers; older recordings were decided by Opus.
+  basis?: 'objective';
+  reason?: DecisionReason;
+  standings?: Standing[];
 };
 export type CliCall = {
   role: 'moderator' | 'commentator' | 'judge';
@@ -103,6 +124,9 @@ export type Run = {
   scenario: Scenario;
   scenarioHash: string;
   providers?: Provider[];
+  seriesId?: string;
+  autoplay?: boolean;
+  nextAdvanceAt?: string;
   narration?: Narration;
   rounds: RoundResult[];
   cliCalls: CliCall[];
@@ -130,3 +154,70 @@ export type Health = {
   models: { claude: string } & Record<Provider, string>;
   ready: boolean;
 };
+export type Battery = {
+  id: string;
+  label: string;
+  total: number;
+  correct: Record<Provider, number>;
+};
+export type Divergence = {
+  scenarioTitle: string;
+  roundId: string;
+  title: string;
+  question: string;
+  expected: string;
+  answers: Partial<Record<Provider, { label: string; status: Grade['status'] }>>;
+};
+export type Recommendation = {
+  kind: 'accuracy' | 'budget' | 'speed';
+  title: string;
+  providers: Provider[];
+  text: string;
+};
+export type SeriesReport = {
+  participants: Provider[];
+  decisions: number;
+  standings: Standing[];
+  batteries: Battery[];
+  winner: Provider | 'tie' | 'inconclusive';
+  reason: DecisionReason;
+  mostAccurate: Provider[];
+  bestCalibrated: Provider[];
+  cheapest: Provider[];
+  fastest: Provider[];
+  // Projected USD for one million decisions like these, from input-token prices only.
+  costPerMillion: Partial<Record<Provider, number>>;
+  divergences: Divergence[];
+  recommendations: Recommendation[];
+};
+export type SeriesAnalysis = {
+  mapping: Mapping;
+  headline: string;
+  summary: string;
+  evidence: { roundId: string; participant: Participant | 'both'; observation: string }[];
+  limitations: string[];
+};
+export type Series = {
+  id: string;
+  mode: Run['mode'];
+  createdAt: string;
+  updatedAt: string;
+  phase: 'running' | 'complete' | 'cancelled' | 'failed';
+  providers: Provider[];
+  scenarioIds: string[];
+  runIds: string[];
+  nextStartAt?: string;
+  report?: SeriesReport;
+  analysis?: SeriesAnalysis;
+  analysisError?: string;
+  cliCalls: CliCall[];
+  tariff: Run['tariff'];
+  error?: string;
+};
+export type SeriesSummary = Pick<Series, 'id' | 'mode' | 'createdAt' | 'phase'> & {
+  totalMeetings: number;
+  completedMeetings: number;
+  winner: SeriesReport['winner'] | null;
+  cheapest: Provider[];
+};
+export type SeriesSnapshot = { series: Series; run: Run | null };

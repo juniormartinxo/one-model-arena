@@ -20,6 +20,16 @@ export function gradeAnswer(q: Question, answer?: Answer): Grade {
         : Math.abs(Number(answer.value) - Number(q.expected)) <= 0.4;
   return { status: correct ? 'correct' : 'incorrect', effect: correct ? q.success : q.failure };
 }
+// Multi-class Brier score of the returned distribution against the reference answer:
+// 0 is a certain correct answer, 2 a certain wrong one. Lower is better.
+export function brier(q: Question, answer?: Answer): number | null {
+  if (!answer || answer.type === 'refusal' || !answer.probabilities.length) return null;
+  const expected = String(q.expected);
+  return answer.probabilities.reduce(
+    (sum, p) => sum + (p.probability - (p.value === expected ? 1 : 0)) ** 2,
+    0,
+  );
+}
 export function metrics(run: Run, provider: Provider) {
   const results = run.rounds.flatMap((r) => (r.results[provider] ? [r.results[provider]!] : []));
   const timings = results

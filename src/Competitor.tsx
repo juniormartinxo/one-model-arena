@@ -2,7 +2,7 @@ import { Check, Clock3, Minus, TriangleAlert, CircleHelp, LoaderCircle } from 'l
 import type { Provider, ProviderResult, Question, Run } from '../shared/types';
 import { metrics } from '../shared/scoring';
 export { providerNames as names } from '../shared/presentation';
-import { providerNames as names, providerVendors } from '../shared/presentation';
+import { answerLabel, providerNames as names, providerVendors } from '../shared/presentation';
 export const money = (value: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -25,20 +25,7 @@ export function Competitor({
 }) {
   const m = run ? metrics(run, provider) : null;
   const a = result?.answer;
-  const label =
-    a?.type === 'choice'
-      ? question.options?.find((o) => o.value === a.value)?.label
-      : a?.type === 'predicate'
-        ? Number(a.value) >= 0.8
-          ? 'Sim'
-          : Number(a.value) <= 0.2
-            ? 'Não'
-            : 'Revisão humana'
-        : a?.type === 'score'
-          ? `${Number(a.value).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} / ${question.levels!.length - 1}`
-          : a?.type === 'refusal'
-            ? 'Recusa do provedor'
-            : null;
+  const label = answerLabel(question, a);
   const grade = result?.grade.status;
   const gradeText =
     grade === 'correct'
@@ -75,7 +62,10 @@ export function Competitor({
           </span>
         </div>
       </header>
-      <div className="answer-area">
+      <div
+        className="answer-area"
+        key={`${question.id}-${a ? 'answer' : result?.error ? 'error' : 'empty'}`}
+      >
         {pending && !result ? (
           <div className="answer-empty">
             <LoaderCircle className="spin" size={26} />

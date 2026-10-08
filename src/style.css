@@ -13,7 +13,11 @@
   --ink: #e9eae9;
   --jev: #83ded3;
   --decisions: #efc38d;
-  --clef: #93c0f2;
+  --clef: #9db0ff;
+  /* Chart marks: one validated categorical trio for bars and fills (dataviz validator, dark). */
+  --jev-mark: #199e70;
+  --decisions-mark: #c98500;
+  --clef-mark: #3987e5;
   --opus: #c8b9e9;
   --success: #b1d9b0;
   --danger: #f1aaa3;
@@ -1789,4 +1793,709 @@ details[open] > summary {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+/* Identity: pastel ink for names and numbers, validated marks for bars. */
+.ink-jev {
+  --team: var(--jev);
+}
+.ink-decisions {
+  --team: var(--decisions);
+}
+.ink-clef {
+  --team: var(--clef);
+}
+.mark-jev {
+  --mark: var(--jev-mark);
+}
+.mark-decisions {
+  --mark: var(--decisions-mark);
+}
+.mark-clef {
+  --mark: var(--clef-mark);
+}
+
+/* Marathon start */
+.marathon-setup {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px 30px;
+  align-items: center;
+  margin-top: 22px;
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(131 222 211 / 9%), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(157 176 255 / 9%), transparent 55%), var(--surface);
+}
+.marathon-kicker {
+  display: inline-flex;
+  font: 650 11px var(--font-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--jev);
+}
+.marathon-setup h2 {
+  margin-top: 8px;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+.marathon-setup p {
+  margin-top: 8px;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* Marathon progress */
+.series-progress {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.series-progress-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+.series-label {
+  font: 650 12px var(--font-heading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.series-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.series-progress-head .quiet-button {
+  margin-left: auto;
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.series-steps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.series-steps li {
+  min-width: 0;
+  color: var(--muted);
+}
+.series-steps li.current {
+  color: var(--ink);
+}
+.series-step-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.series-step-track {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--probability-track, #343a3e);
+  overflow: hidden;
+}
+.series-step-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ink);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.series-steps li.done .series-step-track > span {
+  background: var(--success);
+}
+.autopilot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.autopilot-label .status-dot {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.verdict-next {
+  align-self: center;
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.final-brier {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Answers land with a beat so the reveal reads on video, even at 2× speed. */
+.answer-area .result-tag,
+.answer-area .answer-value,
+.answer-area .consequence {
+  animation: answer-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.answer-area .answer-value {
+  animation-delay: 80ms;
+}
+.answer-area .consequence {
+  animation-delay: 220ms;
+}
+.answer-area .probability-track > div {
+  transform-origin: left;
+  animation: grow-x 700ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+.round-verdict {
+  animation: stamp-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/* Marathon report */
+.series-dialog {
+  width: min(1180px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  margin: auto;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.series-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: verdict-arrive 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.series-dialog::backdrop {
+  background: rgb(0 0 0 / 86%);
+}
+.series-dialog-content {
+  overflow-y: auto;
+  padding: 44px 48px 28px;
+  scrollbar-gutter: stable;
+}
+.series-dialog .verdict-modal-footer {
+  padding: 18px 48px;
+}
+.report-inline {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.report-inline .series-report {
+  margin-top: 26px;
+}
+.report-hero {
+  text-align: center;
+}
+.report-emblem {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  color: var(--mark, var(--opus));
+  border: 1px solid color-mix(in srgb, var(--mark, var(--opus)) 50%, var(--line));
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--mark, var(--opus)) 22%, transparent),
+    transparent 70%
+  );
+  animation: verdict-stamp 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.report-kicker {
+  color: var(--muted);
+  font: 600 12px var(--font-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.report-hero h2 {
+  max-width: 24ch;
+  margin: 12px auto 0;
+  font-size: clamp(30px, 4.4vw, 54px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  animation: verdict-reveal 800ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+.report-reason {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 16px;
+}
+.report-podium {
+  display: grid;
+  grid-template-columns: repeat(var(--competitors, 3), minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 34px;
+}
+.podium-card {
+  position: relative;
+  padding: 22px 22px 18px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--team);
+  border-radius: var(--radius);
+  background: var(--surface);
+  animation: answer-in 640ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms) both;
+}
+.podium-card.is-winner {
+  border-color: color-mix(in srgb, var(--team) 55%, var(--line));
+  border-top-color: var(--team);
+  background:
+    radial-gradient(
+      130% 80% at 50% 0%,
+      color-mix(in srgb, var(--team) 13%, transparent),
+      transparent 70%
+    ),
+    var(--surface);
+}
+.podium-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: var(--team);
+}
+.podium-card h3 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.podium-card header span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.podium-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 16px;
+}
+.podium-score strong {
+  color: var(--team);
+  font: 650 64px/1 var(--font-heading);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.podium-score span {
+  color: var(--muted);
+  font-size: 20px;
+}
+.podium-caption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.podium-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 26px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.podium-badges li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--team) 45%, var(--line));
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 11px;
+}
+.podium-badges svg {
+  color: var(--team);
+}
+.podium-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.podium-metrics dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+.podium-metrics dd {
+  margin: 3px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.report-section {
+  margin-top: 34px;
+}
+.report-section > header h3 {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.report-section > header p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.report-section > header + * {
+  margin-top: 16px;
+}
+.recommendations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.recommendation {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.recommendation > svg {
+  flex-shrink: 0;
+  color: var(--team);
+}
+.recommendation h4 {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.recommendation strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--team);
+  font: 650 22px var(--font-heading);
+}
+.recommendation p {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.report-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 0 40px;
+}
+.battery-grid {
+  display: grid;
+  gap: 18px;
+}
+.battery h4 {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.battery h4 span {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.bar-rows {
+  display: grid;
+  gap: 7px;
+}
+.bar-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-radius: 4px;
+  outline-offset: 3px;
+}
+.bar-name {
+  color: var(--ink);
+  font-size: 13px;
+}
+.bar-track {
+  height: 14px;
+}
+.bar-fill {
+  display: block;
+  width: var(--size);
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  background: var(--mark);
+  transform-origin: left;
+  animation: grow-x 900ms cubic-bezier(0.16, 1, 0.3, 1) calc(300ms + var(--delay, 0ms)) both;
+}
+.bar-value {
+  min-width: 64px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* Per-mark tooltip on hover and keyboard focus. */
+.bar-row::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 3;
+  left: 92px;
+  bottom: calc(100% + 6px);
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-high);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.bar-row:hover::after,
+.bar-row:focus-visible::after {
+  opacity: 1;
+}
+.bar-row:hover .bar-fill,
+.bar-row:focus-visible .bar-fill {
+  filter: brightness(1.15);
+}
+.report-empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+.divergence-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.divergence-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr);
+  gap: 14px 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.divergence-question span {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.divergence-question p {
+  margin-top: 5px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.divergence-question small {
+  display: block;
+  margin-top: 6px;
+  color: var(--success);
+  font-size: 12px;
+}
+.divergence-list ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.divergence-list ul li {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: var(--bg);
+  font-size: 12px;
+}
+.divergence-list ul li > span {
+  color: var(--team);
+  font-weight: 600;
+}
+.divergence-list ul li strong {
+  font-size: 14px;
+}
+.divergence-list em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-style: normal;
+  color: var(--muted);
+}
+.divergence-list .status-correct em {
+  color: var(--success);
+}
+.divergence-list .status-incorrect em {
+  color: var(--danger);
+}
+.divergence-list .status-uncertain em {
+  color: var(--decisions);
+}
+.report-section .text-button {
+  margin-top: 12px;
+}
+.report-analysis {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--opus-border, #3d3749);
+  border-radius: 12px;
+  background: var(--opus-surface, #1d1b22);
+  color: var(--opus-copy, #d4ccdf);
+}
+.report-analysis > svg {
+  flex-shrink: 0;
+  color: var(--opus);
+}
+.report-analysis p {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.report-analysis ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.meeting-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-caveat {
+  display: flex;
+  gap: 10px;
+  margin-top: 34px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.report-caveat svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.series-report.is-demo .report-hero h2 {
+  color: var(--decisions);
+}
+.history-group {
+  margin: 28px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@media (max-width: 1020px) {
+  .report-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .divergence-list > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 860px) {
+  .report-podium {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .series-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 680px) {
+  .marathon-setup {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 18px;
+  }
+  .series-dialog-content {
+    padding: 34px 18px 22px;
+  }
+  .series-dialog .verdict-modal-footer {
+    padding: 14px 18px;
+  }
+  .divergence-list ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bar-row::after {
+    left: 0;
+    white-space: normal;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .answer-area .result-tag,
+  .answer-area .answer-value,
+  .answer-area .consequence,
+  .answer-area .probability-track > div,
+  .round-verdict,
+  .report-emblem,
+  .report-hero h2,
+  .podium-card,
+  .bar-fill,
+  .series-dialog[open],
+  .autopilot-label .status-dot {
+    animation: none;
+  }
+  .series-step-track > span {
+    transition: none;
+  }
+}
+
+.report-side .report-section + .report-section {
+  margin-top: 30px;
+}
+/* While recording, the marathon progress and countdown stay in view. */
+.recording .series-progress {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 45%);
+}
+.recording .question-section,
+.recording .competition-grid,
+.recording .opus-panel {
+  scroll-margin-top: 130px;
 }

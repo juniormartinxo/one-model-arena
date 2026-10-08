@@ -26,6 +26,9 @@ const env = z
     CLAUDE_TIMEOUT_MS: positive(180000),
     CLAUDE_MAX_BUDGET_USD: positive(0.5),
     PROVIDER_TIMEOUT_MS: positive(30000),
+    // Automatic meetings pause so the screen can be read: after each round and between meetings.
+    AUTOPLAY_DELAY_MS: z.coerce.number().nonnegative().default(8000),
+    SERIES_PAUSE_MS: z.coerce.number().nonnegative().default(14000),
     OPENAI_MODEL: z.string().default('gpt-6-luna'),
     JEV_MODEL: z.string().default('jev-1.13.0'),
     OPENAI_API_KEY: z.string().default(''),

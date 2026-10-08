@@ -10,7 +10,10 @@ colors:
   ink: '#e9eae9'
   jev: '#83ded3'
   decisions: '#efc38d'
-  clef: '#93c0f2'
+  clef: '#9db0ff'
+  jev-mark: '#199e70'
+  decisions-mark: '#c98500'
+  clef-mark: '#3987e5'
   opus: '#c8b9e9'
   success: '#b1d9b0'
   danger: '#f1aaa3'
@@ -209,7 +212,7 @@ A Manrope concentra títulos, nomes, respostas e escores. A DM Sans mantém perg
 
 O contêiner principal é centralizado, com largura máxima de 1320px e padding de 38px 42px 56px. A partir de 1600px, sua largura máxima é 1440px. O cabeçalho tem 86px de altura; bordas horizontais organizam navegação, sessão e listas.
 
-Na arena, a pergunta precede a grade de participantes. A grade usa uma coluna `minmax(0, 1fr)` por participante (três nas reuniões novas, duas nos replays antigos), com intervalo de 22px, para conservar a equivalência entre os lados. O selo “VS” só aparece com dois participantes. O Clef usa `#93c0f2`. O comentário do Opus usa a largura conjunta e aparece após as respostas. Rodadas e ações ficam abaixo do comentário.
+Na arena, a pergunta precede a grade de participantes. A grade usa uma coluna `minmax(0, 1fr)` por participante (três nas reuniões novas, duas nos replays antigos), com intervalo de 22px, para conservar a equivalência entre os lados. O selo “VS” só aparece com dois participantes. O Clef usa `#9db0ff`. Barras de gráfico usam a trinca validada para daltonismo `#199e70` (Jev), `#c98500` (Decisions) e `#3987e5` (Clef); nomes e números continuam nos tons pastel. O comentário do Opus usa a largura conjunta e aparece após as respostas. Rodadas e ações ficam abaixo do comentário.
 
 Até 1020px, as margens internas da página caem para 24px; os painéis usam 18px nas laterais, as ações iniciais passam a uma coluna e as métricas dos concorrentes a duas. Até 860px, a grade empilha os participantes numa coluna. Até 680px, a página usa laterais de 18px e o intervalo da grade cai para 12px; replays antigos continuam com duas colunas lado a lado. Até 600px, o placar final também empilha. Nome e placar se reorganizam dentro de cada painel; métricas passam a uma coluna. A sessão, navegação, veredito e controles quebram linha. A linha do tempo e os controles de replay ocupam linhas próprias, centralizadas.
 

@@ -1,15 +1,16 @@
 import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 import type {
-  JudgePass,
+  DecisionReason,
   Mapping,
   Participant,
   Provider,
   Question,
   Run,
-  Verdict,
+  SeriesReport,
+  Standing,
 } from '../shared/types';
-import { runProviders } from '../shared/types';
+import { CALIBRATION_MARGIN } from '../shared/report';
 const bounded = z.string().min(1).max(3000);
 const letters: Participant[] = ['A', 'B', 'C'];
 const listed = (items: string[]) =>
@@ -17,30 +18,30 @@ const listed = (items: string[]) =>
 const participantsOf = (mapping: Mapping) => letters.filter((l) => mapping[l]);
 const participantReferences = (mapping: Mapping) => {
   const ids = participantsOf(mapping);
-  return `Nos campos de texto, escreva os participantes exclusivamente como ${listed(ids.map((l) => `[[${l}]]`))}, inclusive em resumos, evidências e limitações. Preserve ${ids.join('/')} sem colchetes apenas nos campos enum winner e participant. O aplicativo revelará os nomes depois do julgamento.`;
+  return `Nos campos de texto, escreva os participantes exclusivamente como ${listed(ids.map((l) => `[[${l}]]`))}, inclusive em resumos, evidências e limitações. Preserve ${ids.join('/')} sem colchetes apenas no campo enum participant. O aplicativo revelará os nomes depois do julgamento.`;
 };
 export const narrationSchema = z.object({
   introduction: bounded,
   rounds: z.array(z.object({ id: z.string(), transition: z.string().min(1).max(500) })).length(6),
 });
-export const feedbackSchema = z.object({
-  winner: z.enum(['A', 'B', 'C', 'tie', 'inconclusive']),
-  text: z.string().min(1).max(1500),
-});
-export const judgeSchema = z.object({
-  winner: z.enum(['A', 'B', 'C', 'tie', 'inconclusive']),
+export const feedbackSchema = z.object({ text: z.string().min(1).max(1500) });
+const evidence = z
+  .array(
+    z.object({
+      roundId: z.string(),
+      participant: z.enum(['A', 'B', 'C', 'both']),
+      observation: bounded,
+    }),
+  )
+  .min(1)
+  .max(12);
+export const analysisSchema = z.object({
   summary: bounded,
-  evidence: z
-    .array(
-      z.object({
-        roundId: z.string(),
-        participant: z.enum(['A', 'B', 'C', 'both']),
-        observation: bounded,
-      }),
-    )
-    .min(1)
-    .max(12),
+  evidence,
   limitations: z.array(bounded).min(1).max(5),
+});
+export const seriesAnalysisSchema = analysisSchema.extend({
+  headline: z.string().min(1).max(140),
 });
 export type { Mapping };
 function assign(order: Provider[]): Mapping {
@@ -57,17 +58,48 @@ function shuffled(items: Provider[]) {
 export function blindMapping(participants: Provider[]): Mapping {
   return assign(shuffled(participants));
 }
-// Cyclic rotations of one random order: every participant takes every position exactly once.
-export function judgeRotations(participants: Provider[]): Mapping[] {
-  const order = shuffled(participants);
-  return order.map((_, shift) => assign([...order.slice(shift), ...order.slice(0, shift)]));
-}
-// Translates a blind winner letter back to its provider.
-export function revealWinner(mapping: Mapping, winner: Participant | 'tie' | 'inconclusive') {
+// Translates the objective winner into the blind letter shown to Opus.
+export function blindWinner(mapping: Mapping, winner: Provider | 'tie' | 'inconclusive') {
   return winner === 'tie' || winner === 'inconclusive'
     ? winner
-    : (mapping[winner] ?? 'inconclusive');
+    : participantsOf(mapping).find((l) => mapping[l] === winner)!;
 }
+function blindStandings(table: Standing[], mapping: Mapping) {
+  return Object.fromEntries(
+    participantsOf(mapping).map((l) => {
+      const s = table.find((x) => x.provider === mapping[l])!;
+      return [
+        l,
+        {
+          points: s.correct,
+          diverged: s.incorrect,
+          humanReview: s.uncertain,
+          unavailable: s.unavailable,
+          questions: s.total,
+          meanBrier: s.brier === null ? null : Number(s.brier.toFixed(4)),
+        },
+      ];
+    }),
+  );
+}
+const reasons: Record<DecisionReason, string> = {
+  points: 'o vencedor fez mais pontos pelo gabarito',
+  calibration: `houve empate em pontos; venceu quem teve Brier médio menor, com diferença mínima de ${CALIBRATION_MARGIN}`,
+  tie: 'empate: mesmos pontos e calibração equivalente',
+  unavailable: 'sem vencedor: respostas ausentes poderiam mudar a liderança',
+};
+const outcome = (
+  mapping: Mapping,
+  winner: Provider | 'tie' | 'inconclusive',
+  reason: DecisionReason,
+  table: Standing[],
+) => ({
+  winner: blindWinner(mapping, winner),
+  rule: reasons[reason],
+  brierNote:
+    'Brier mede a distância entre as probabilidades e o gabarito: 0 é certeza correta, 2 é certeza errada. Só compara rodadas respondidas por todos.',
+  standings: blindStandings(table, mapping),
+});
 function scoringRule(question: Question) {
   if (question.type === 'choice')
     return 'Choice: 1 ponto se o valor escolhido coincide com o gabarito; caso contrário, 0. Não existe limiar de probabilidade nem tolerância numérica para choice. Escolher esclarecer ou revisar pode valer 1 ponto quando essa é a ação prevista no gabarito.';
@@ -109,27 +141,37 @@ export function blindData(run: Run, mapping: Mapping, onlyRound?: string) {
 export function narrationPrompt(run: Run) {
   return `Prepare uma abertura curta e uma transição de até duas frases por rodada para uma reunião em português. Faça as transições como um apresentador, antes de cada pergunta. As perguntas e critérios abaixo estão congelados e serão exibidos literalmente: não altere nem proponha novos fatos, respostas ou gabaritos. Não mencione vencedores. Retorne os seis ids na mesma ordem. Dados:\n${JSON.stringify({ title: run.scenario.title, context: run.scenario.context, rounds: run.scenario.rounds.map((r) => ({ id: r.id, title: r.title, facts: r.facts, question: r.question.text })) })}`;
 }
-export function commentaryPrompt(run: Run, mapping: Mapping, roundId: string) {
+export function commentaryPrompt(
+  run: Run,
+  mapping: Mapping,
+  roundId: string,
+  winner: Provider | 'tie' | 'inconclusive',
+) {
   const ids = participantsOf(mapping);
-  return `Comente esta rodada de uma reunião em até 100 palavras, em português. Compare a contribuição das decisões dos participantes ${listed(ids)} com os fatos e a regra de referência. Explique os pontos já calculados usando apenas a scoringRule desta rodada; não invente outros limiares, probabilidades ou justificativas internas dos modelos. Escolha um participante apenas se ele contribuiu mais que todos os outros; se não houver um único melhor, dê empate. Se qualquer participante estiver indisponível, dê inconclusive: falta de resposta não prova inferioridade. Não use marcas, custo nem velocidade. ${participantReferences(mapping)} Dados:\n${JSON.stringify(blindData(run, mapping, roundId))}`;
+  return `Comente esta rodada de uma reunião em até 100 palavras, em português, para o público de um vídeo. Compare as decisões dos participantes ${listed(ids)} com os fatos e a regra de referência. O resultado da rodada já foi decidido pelo gabarito e não muda: ${JSON.stringify(blindWinner(mapping, winner))} (tie: nenhum participante se destacou sozinho; inconclusive: faltou resposta). Explique os pontos usando apenas a scoringRule desta rodada; não invente limiares, probabilidades ou justificativas internas dos modelos. Falta de resposta não prova inferioridade. Não use marcas, custo nem velocidade. ${participantReferences(mapping)} Dados:\n${JSON.stringify(blindData(run, mapping, roundId))}`;
 }
-export function judgePrompt(run: Run, mapping: Mapping) {
-  const ids = participantsOf(mapping);
-  return `Julgue a contribuição para esta reunião em português, usando apenas os fatos, decisões e rubrica fornecidos. Cite roundId reais nas evidências. Compare aderência aos fatos, prioridade correta, revisão humana apropriada e mudança adequada diante de nova evidência. Escolha ${ids.join('/')} apenas com vantagem concreta sobre todos os demais participantes; sem um único melhor, use tie. Qualquer rodada sem decisão utilizável de um participante torna o veredito global inconclusive; comente o que ainda foi observado. Não trate a pequena amostra como benchmark universal nem confiança como precisão. Não invente raciocínios dos participantes. Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(blindData(run, mapping))}`;
+export function analysisPrompt(
+  run: Run,
+  mapping: Mapping,
+  decision: { winner: Provider | 'tie' | 'inconclusive'; reason: DecisionReason },
+  table: Standing[],
+) {
+  return `Explique em português, para o público de um vídeo, o resultado desta reunião. O resultado já foi decidido pelo aplicativo com uma regra objetiva e não deve ser contestado nem alterado: ${JSON.stringify(outcome(mapping, decision.winner, decision.reason, table))}. Mostre em que rodadas as decisões se separaram e por quê, com roundId reais nas evidências. Só fale em calibração se ela decidiu o resultado. Não trate a pequena amostra como benchmark universal nem confiança como precisão. Não invente raciocínios dos participantes. Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(blindData(run, mapping))}`;
 }
-export function combineVerdicts(passes: JudgePass[], run: Run): Verdict {
-  const participants = runProviders(run);
-  const unavailable = run.rounds.some((r) =>
-    participants.some((p) => !r.results[p]?.answer || r.results[p]?.answer?.type === 'refusal'),
-  );
-  const winners = passes.map((p) => revealWinner(p.mapping, p.result.winner));
-  if (unavailable || passes.length !== participants.length || winners.some((w) => w !== winners[0]))
-    return {
-      winner: 'inconclusive',
-      summary: unavailable
-        ? 'Há decisões ausentes. A comparação de qualidade ficou incompleta.'
-        : 'O julgamento mudou ao trocar as posições dos participantes. Resultado inconclusivo.',
-      passes,
-    };
-  return { winner: winners[0], summary: passes[0].result.summary, passes };
+export function seriesAnalysisPrompt(runs: Run[], report: SeriesReport, mapping: Mapping) {
+  const data = {
+    outcome: outcome(mapping, report.winner, report.reason, report.standings),
+    batteries: report.batteries.map((b) => ({
+      label: b.label,
+      questions: b.total,
+      points: Object.fromEntries(participantsOf(mapping).map((l) => [l, b.correct[mapping[l]!]])),
+    })),
+    meetings: runs.map((r) => r.scenario.title),
+    divergences: runs.flatMap((r) =>
+      blindData(r, mapping).rounds.filter((round) =>
+        participantsOf(mapping).some((l) => round[l]?.points !== 1),
+      ),
+    ),
+  };
+  return `Escreva a leitura final de uma maratona de ${runs.length} reuniões fictícias em português, com ${report.decisions} decisões por participante, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 150 palavras e evidências com roundId reais, priorizando as rodadas em divergences. Diga onde cada participante se destacou ou tropeçou, por bateria, sem exagero. Se todos empataram, diga isso com clareza: empate também é resultado. Não use marcas, custo nem velocidade; esses números são mostrados separadamente pelo aplicativo. Não invente raciocínios dos participantes nem trate a amostra como benchmark universal. Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
 }

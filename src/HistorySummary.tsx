@@ -50,7 +50,7 @@ export function HistorySummary({ run }: { run: RunSummary }) {
           {demo
             ? 'Sem avaliação real'
             : complete
-              ? 'Veredito do Opus'
+              ? 'Resultado da reunião'
               : interrupted
                 ? 'Reunião interrompida'
                 : 'Reunião em andamento'}

@@ -1,4 +1,4 @@
-import type { Provider, Run, RunSummary } from './types';
+import type { Provider, Run, RunSummary, Series, SeriesSummary } from './types';
 import { runProviders } from './types';
 
 export function summarizeRun(run: Run): RunSummary {
@@ -41,5 +41,20 @@ export function summarizeRun(run: Run): RunSummary {
         : null,
     costs,
     cheapest: comparable ? (cheapest.length === 1 ? cheapest[0] : 'tie') : null,
+  };
+}
+
+export function summarizeSeries(series: Series): SeriesSummary {
+  return {
+    id: series.id,
+    mode: series.mode,
+    createdAt: series.createdAt,
+    phase: series.phase,
+    totalMeetings: series.scenarioIds.length,
+    completedMeetings: series.report
+      ? series.scenarioIds.length
+      : Math.max(0, series.runIds.length - (series.phase === 'running' ? 1 : 0)),
+    winner: series.mode === 'live' && series.report ? series.report.winner : null,
+    cheapest: series.mode === 'live' ? (series.report?.cheapest ?? []) : [],
   };
 }

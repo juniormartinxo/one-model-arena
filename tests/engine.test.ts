@@ -2,9 +2,9 @@ import { afterEach, describe, it, expect, vi } from 'vitest';
 import { Store } from '../server/store';
 import { Engine } from '../server/engine';
 import { buildApp } from '../server/app';
-import { blindData, combineVerdicts, judgeRotations } from '../server/judging';
+import { blindData } from '../server/judging';
 import { metrics } from '../shared/scoring';
-import type { JudgePass, Mapping, Run } from '../shared/types';
+import type { Run } from '../shared/types';
 import { providers } from '../shared/types';
 import * as cli from '../server/claude';
 import * as provider from '../server/providers';
@@ -46,7 +46,7 @@ describe('meeting lifecycle and evidence', () => {
       expect(run.rounds.every((r) => r.feedback && providers.every((p) => r.results[p]))).toBe(
         true,
       );
-      expect(run.verdict?.winner).toBe('inconclusive');
+      expect(run.verdict).toMatchObject({ winner: 'tie', reason: 'tie', basis: 'objective' });
       expect(calls).not.toHaveBeenCalled();
       expect(decisions).not.toHaveBeenCalled();
       for (const r of run.rounds) {
@@ -102,7 +102,7 @@ describe('meeting lifecycle and evidence', () => {
     expect(calls).not.toHaveBeenCalled();
     expect(decisions).not.toHaveBeenCalled();
   });
-  it('coordinates the complete live path using isolated stand-ins: 18 decisions, 6 comments and three rotated judgments', async () => {
+  it('coordinates the complete live path using isolated stand-ins: 18 decisions, 6 comments and one blind explanation', async () => {
     config.OPENAI_API_KEY = 'test-placeholder';
     config.TYPESAFE_API_KEY = 'test-placeholder';
     config.CLOUDFLARE_ACCOUNT_ID = 'test-placeholder';
@@ -123,10 +123,9 @@ describe('meeting lifecycle and evidence', () => {
               })),
             }
           : role === 'commentator'
-            ? { winner: 'tie', text: 'Comentário de teste' }
+            ? { text: 'Comentário de teste' }
             : {
-                winner: 'tie',
-                summary: 'Julgamento de teste',
+                summary: 'Explicação de teste',
                 evidence: [
                   { roundId: 'l2', participant: 'both', observation: 'Evidência de teste' },
                 ],
@@ -160,22 +159,29 @@ describe('meeting lifecycle and evidence', () => {
     await vi.waitFor(() => expect(engine.store.get(run.id)?.phase).toBe('complete'));
     const saved = engine.store.get(run.id)!;
     expect(decisions).toHaveBeenCalledTimes(18);
-    expect(calls).toHaveBeenCalledTimes(10);
+    expect(calls).toHaveBeenCalledTimes(8);
     expect(saved.rounds.filter((r) => r.feedback)).toHaveLength(6);
-    expect(saved.cliCalls).toHaveLength(10);
+    expect(saved.cliCalls).toHaveLength(8);
+    // Round 2 is the only one Jev misses in the fixtures: the others share that round.
+    expect(saved.rounds[1].feedback?.winner).toBe('tie');
+    expect(saved.rounds[0].feedback?.winner).toBe('tie');
     const passes = saved.verdict!.passes;
-    expect(passes).toHaveLength(3);
-    for (const position of ['A', 'B', 'C'] as const)
-      expect(new Set(passes.map((p) => p.mapping[position]))).toEqual(new Set(providers));
+    expect(passes).toHaveLength(1);
+    // Equal points; Jev's miss is a 0.93 probability, the others' a 0.94 wrong choice.
+    expect(saved.verdict).toMatchObject({ winner: 'jev', reason: 'calibration' });
+    expect(passes[0].mapping[passes[0].result.winner as 'A']).toBe('jev');
+    expect(saved.verdict!.summary).toBe('Explicação de teste');
     for (const [role, prompt] of calls.mock.calls)
-      if (role === 'commentator' || role === 'judge') expect(prompt).toContain('[[C]]');
+      if (role === 'commentator' || role === 'judge') {
+        expect(prompt).toContain('[[C]]');
+        expect(prompt).toContain('não muda');
+      }
     for (const [role, prompt] of calls.mock.calls)
       if (role !== 'moderator') {
         expect(prompt).not.toContain('fixture-sintetica');
         expect(prompt).not.toContain('durationMs');
         expect(prompt).not.toContain('request');
       }
-    expect(saved.verdict!.winner).toBe('tie');
   });
   it('completes six rounds offline, comments every round, stores snapshots and labels synthetic results', async () => {
     const call = vi.spyOn(cli, 'callClaude');
@@ -183,7 +189,8 @@ describe('meeting lifecycle and evidence', () => {
     const run = await finishDemo(engine);
     expect(call).not.toHaveBeenCalled();
     expect(run.rounds.every((r) => r.feedback)).toBe(true);
-    expect(run.verdict?.winner).toBe('inconclusive');
+    expect(run.verdict).toMatchObject({ winner: 'jev', reason: 'calibration' });
+    expect(run.verdict?.summary).toContain('Ensaio sintético');
     expect(metrics(run, 'jev').correct).toBe(5);
     expect(metrics(run, 'decisions').correct).toBe(5);
     expect(metrics(run, 'clef').correct).toBe(5);
@@ -229,18 +236,7 @@ describe('meeting lifecycle and evidence', () => {
     expect(store.get(run.id)?.rounds).toHaveLength(1);
     engine.close();
   });
-  it('rotates every participant through every judging position', () => {
-    for (let i = 0; i < 20; i++) {
-      const rotations = judgeRotations(providers);
-      expect(rotations).toHaveLength(3);
-      for (const position of ['A', 'B', 'C'] as const)
-        expect(new Set(rotations.map((m) => m[position]))).toEqual(new Set(providers));
-    }
-    const legacy = judgeRotations(['jev', 'decisions']);
-    expect(legacy).toHaveLength(2);
-    expect(legacy[0]).toEqual({ A: legacy[1].B, B: legacy[1].A });
-  });
-  it('blinds quality judging and requires agreement under all three rotations', async () => {
+  it('blinds the data Opus reads', async () => {
     const { engine } = create();
     const run = await finishDemo(engine);
     const data = JSON.stringify(blindData(run, { A: 'jev', B: 'decisions', C: 'clef' }));
@@ -253,44 +249,8 @@ describe('meeting lifecycle and evidence', () => {
       'provider',
     ])
       expect(data).not.toContain(forbidden);
-    const base = {
-      summary: 'Avaliação',
-      evidence: [{ roundId: 'l1', participant: 'both' as const, observation: 'Evidência' }],
-      limitations: ['Amostra pequena'],
-    };
-    const rotations: Mapping[] = [
-      { A: 'jev', B: 'decisions', C: 'clef' },
-      { A: 'decisions', B: 'clef', C: 'jev' },
-      { A: 'clef', B: 'jev', C: 'decisions' },
-    ];
-    const passes: JudgePass[] = rotations.map((mapping, i) => ({
-      mapping,
-      result: { ...base, winner: (['A', 'C', 'B'] as const)[i] },
-    }));
-    expect(combineVerdicts(passes, run).winner).toBe('jev');
-    expect(combineVerdicts(passes.slice(0, 2), run).winner).toBe('inconclusive');
-    passes[2].result.winner = 'A';
-    expect(combineVerdicts(passes, run).winner).toBe('inconclusive');
-    for (const pass of passes) pass.result.winner = 'tie';
-    expect(combineVerdicts(passes, run).winner).toBe('tie');
-    delete run.rounds[0].results.clef;
-    expect(combineVerdicts(passes, run).winner).toBe('inconclusive');
-  });
-  it('keeps judging recordings made before Clef joined with their two swapped passes', async () => {
-    const { engine } = create();
-    const run = await finishDemo(engine);
     delete run.providers;
     for (const round of run.rounds) delete round.results.clef;
-    const base = {
-      summary: 'Avaliação',
-      evidence: [{ roundId: 'l1', participant: 'both' as const, observation: 'Evidência' }],
-      limitations: ['Amostra pequena'],
-    };
-    const passes: JudgePass[] = [
-      { mapping: { A: 'jev', B: 'decisions' }, result: { ...base, winner: 'B' } },
-      { mapping: { A: 'decisions', B: 'jev' }, result: { ...base, winner: 'A' } },
-    ];
-    expect(combineVerdicts(passes, run).winner).toBe('decisions');
     expect(JSON.stringify(blindData(run, { A: 'jev', B: 'decisions' }))).not.toContain('"C"');
   });
   it('validates local origin and preserves evidence on export', async () => {

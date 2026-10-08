@@ -25,13 +25,24 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react';
-import type { Health, Provider, Run, RunSummary, Scenario } from '../shared/types';
+import type {
+  Health,
+  Provider,
+  Run,
+  RunSummary,
+  Scenario,
+  Series,
+  SeriesSnapshot,
+  SeriesSummary,
+} from '../shared/types';
 import { isProvider, providers, runProviders } from '../shared/types';
 import { metrics } from '../shared/scoring';
 import { api } from './api';
 import { Competitor, names, money } from './Competitor';
 import { FinalVerdict, VerdictDialog } from './FinalResult';
 import { HistorySummary } from './HistorySummary';
+import { SeriesProgress } from './Autopilot';
+import { SeriesReportDialog, SeriesReportView } from './SeriesReport';
 import { revealParticipants } from '../shared/presentation';
 const terminal = (run: Pick<Run, 'phase'>) =>
   ['complete', 'failed', 'cancelled'].includes(run.phase);
@@ -66,11 +77,21 @@ export function App() {
     [connected, setConnected] = useState(true),
     [recording, setRecording] = useState(false);
   const [verdictOpen, setVerdictOpen] = useState(false);
+  const [series, setSeries] = useState<Series | null>(null),
+    [seriesHistory, setSeriesHistory] = useState<SeriesSummary[]>([]),
+    [reportOpen, setReportOpen] = useState(false);
+  const seriesRunning = series?.phase === 'running';
   const historyRequest = useRef(0);
   const refreshHistory = useCallback(async () => {
     const request = ++historyRequest.current;
-    const items = await api<RunSummary[]>('/runs');
-    if (request === historyRequest.current) setHistory(items);
+    const [items, marathons] = await Promise.all([
+      api<RunSummary[]>('/runs'),
+      api<SeriesSummary[]>('/series'),
+    ]);
+    if (request === historyRequest.current) {
+      setHistory(items);
+      setSeriesHistory(marathons);
+    }
   }, []);
   const presentedResults = useRef(new Set<string>());
   const closeVerdict = useCallback(() => setVerdictOpen(false), []);
@@ -93,8 +114,27 @@ export function App() {
       refreshHistory(),
     ]);
   }, [refreshHistory]);
+  const showSeries = useCallback((snapshot: SeriesSnapshot) => {
+    setSeries(snapshot.series);
+    setRun(snapshot.run);
+    setCursor(Math.max(0, (snapshot.run?.rounds.length ?? 1) - 1));
+    setReplay(snapshot.series.phase !== 'running');
+    if (snapshot.run) setScenarioId(snapshot.run.scenario.id);
+  }, []);
   useEffect(() => {
     void refresh().catch((e) => setError(e.message));
+    const seriesId = sessionStorage.getItem('series');
+    if (seriesId) {
+      void api<SeriesSnapshot>(`/series/${seriesId}`)
+        .then((snapshot) => {
+          // A reload must not replay the presentations already shown.
+          presentedResults.current.add(snapshot.series.id);
+          if (snapshot.run) presentedResults.current.add(snapshot.run.id);
+          showSeries(snapshot);
+        })
+        .catch(() => sessionStorage.removeItem('series'));
+      return;
+    }
     const id = sessionStorage.getItem('meeting');
     if (id)
       void api<Run>(`/runs/${id}`)
@@ -105,9 +145,53 @@ export function App() {
           setReplay(terminal(r));
         })
         .catch(() => sessionStorage.removeItem('meeting'));
-  }, [refresh]);
+  }, [refresh, showSeries]);
   useEffect(() => {
-    if (!run || terminal(run) || replay) return;
+    if (!series || series.phase !== 'running') return;
+    const source = new EventSource(`/api/series/${series.id}/events`);
+    source.onopen = () => setConnected(true);
+    source.onmessage = (e) => {
+      const snapshot: SeriesSnapshot = JSON.parse(e.data);
+      setSeries(snapshot.series);
+      setRun(snapshot.run);
+      setCursor(Math.max(0, (snapshot.run?.rounds.length ?? 1) - 1));
+      setReplay(false);
+      setConnected(true);
+    };
+    source.onerror = () => setConnected(false);
+    return () => source.close();
+  }, [series?.id, series?.phase]);
+  // The next meeting replaces the previous result on screen.
+  useEffect(() => {
+    if (seriesRunning) setVerdictOpen(false);
+  }, [run?.id, seriesRunning]);
+  useEffect(() => {
+    if (series?.phase === 'complete' && !presentedResults.current.has(series.id)) {
+      presentedResults.current.add(series.id);
+      setVerdictOpen(false);
+      setReportOpen(true);
+    }
+    if (series && series.phase !== 'running') void refreshHistory().catch(() => {});
+  }, [series?.id, series?.phase, refreshHistory]);
+  // In automatic meetings the page follows the action: question, answers, then commentary.
+  useEffect(() => {
+    if (!run?.autoplay || replay || !seriesRunning) return;
+    const target =
+      run.phase === 'evaluating'
+        ? '.question-section'
+        : run.phase === 'commenting'
+          ? '.competition-grid'
+          : run.phase === 'ready' && run.rounds.length
+            ? '.opus-panel'
+            : null;
+    if (target)
+      document.querySelector(target)?.scrollIntoView({
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: target === '.question-section' ? 'start' : 'center',
+      });
+  }, [run?.id, run?.phase, run?.rounds.length, replay, seriesRunning]);
+  useEffect(() => {
+    if (!run || terminal(run) || replay || seriesRunning) return;
     const source = new EventSource(`/api/runs/${run.id}/events`);
     source.onopen = () => setConnected(true);
     source.onmessage = (e) => {
@@ -118,7 +202,7 @@ export function App() {
     };
     source.onerror = () => setConnected(false);
     return () => source.close();
-  }, [run?.id, run?.phase, replay]);
+  }, [run?.id, run?.phase, replay, seriesRunning]);
   useEffect(() => {
     if (run && terminal(run)) void refreshHistory().catch(() => {});
   }, [run?.phase, refreshHistory]);
@@ -170,6 +254,52 @@ export function App() {
       setView('arena');
     });
   }
+  function startSeries(mode: Run['mode']) {
+    setVerdictOpen(false);
+    setReportOpen(false);
+    void act(async () => {
+      const snapshot = await api<SeriesSnapshot>('/series', { mode });
+      sessionStorage.removeItem('meeting');
+      sessionStorage.setItem('series', snapshot.series.id);
+      showSeries(snapshot);
+      setPlaying(false);
+      setView('arena');
+      setRecording(true);
+    });
+  }
+  function cancelSeries() {
+    if (series)
+      void act(async () => {
+        showSeries(await api<SeriesSnapshot>(`/series/${series.id}/cancel`, {}));
+      });
+  }
+  function openSeries(id: string) {
+    setVerdictOpen(false);
+    void act(async () => {
+      const snapshot = await api<SeriesSnapshot>(`/series/${id}`);
+      sessionStorage.removeItem('meeting');
+      sessionStorage.setItem('series', id);
+      presentedResults.current.add(id);
+      if (snapshot.run) presentedResults.current.add(snapshot.run.id);
+      showSeries(snapshot);
+      setPlaying(false);
+      setView('arena');
+      setReportOpen(snapshot.series.phase === 'complete');
+    });
+  }
+  function deleteSeries(item: SeriesSummary) {
+    if (
+      !window.confirm(
+        'Excluir esta maratona, suas seis reuniões e todos os registros? Esta ação não pode ser desfeita.',
+      )
+    )
+      return;
+    void act(async () => {
+      await api(`/series/${item.id}`, undefined, 'DELETE');
+      if (series?.id === item.id) clearRun();
+      await refreshHistory();
+    });
+  }
   function advance() {
     if (run)
       void act(async () => {
@@ -177,6 +307,7 @@ export function App() {
       });
   }
   function cancel() {
+    if (run?.seriesId) return cancelSeries();
     if (run)
       void act(async () => {
         setRun(await api<Run>(`/runs/${run.id}/cancel`, {}));
@@ -184,10 +315,17 @@ export function App() {
   }
   function openRun(id: string) {
     setVerdictOpen(false);
+    setReportOpen(false);
     void act(async () => {
       const value = await api<Run>(`/runs/${id}`);
       setRun(value);
-      sessionStorage.setItem('meeting', id);
+      presentedResults.current.add(id);
+      // A meeting opened from its marathon keeps the marathon context on screen.
+      if (!value.seriesId || value.seriesId !== series?.id) {
+        setSeries(null);
+        sessionStorage.removeItem('series');
+        sessionStorage.setItem('meeting', id);
+      }
       setScenarioId(value.scenario.id);
       setReplay(terminal(value));
       setCursor(0);
@@ -197,6 +335,9 @@ export function App() {
   }
   function clearRun() {
     setVerdictOpen(false);
+    setReportOpen(false);
+    setSeries(null);
+    sessionStorage.removeItem('series');
     setRun(null);
     setReplay(false);
     setPlaying(false);
@@ -222,9 +363,16 @@ export function App() {
   const waiting = run && ['preparing', 'evaluating', 'commenting', 'judging'].includes(run.phase);
   const latest = run ? cursor >= run.rounds.length - 1 : true;
   const roundWinner = result?.feedback?.winner;
-  const hasActiveHistory = history.some(
-    (r) => !['complete', 'failed', 'cancelled'].includes(r.phase),
-  );
+  const hasActiveHistory =
+    history.some((r) => !['complete', 'failed', 'cancelled'].includes(r.phase)) ||
+    seriesHistory.some((s) => s.phase === 'running') ||
+    !!seriesRunning;
+  const meetings = series
+    ? series.runIds.map((id, i) => ({
+        id,
+        title: scenarios.find((s) => s.id === series.scenarioIds[i])?.title ?? id,
+      }))
+    : [];
   const finalVisible = run?.phase === 'complete' && (!replay || cursor === run.rounds.length - 1);
   const participants = run ? runProviders(run) : providers;
   return (
@@ -235,6 +383,15 @@ export function App() {
           open={verdictOpen && view === 'arena'}
           replay={replay}
           onDismiss={closeVerdict}
+          nextAt={seriesRunning ? series?.nextStartAt : undefined}
+        />
+      )}
+      {series?.report && (
+        <SeriesReportDialog
+          series={series}
+          meetings={meetings}
+          open={reportOpen && view === 'arena'}
+          onDismiss={() => setReportOpen(false)}
         />
       )}
       <header className="site-header">
@@ -315,6 +472,15 @@ export function App() {
                 <span>{recording ? 'Sair da gravação' : 'Modo gravação'}</span>
               </button>
             </div>
+            {series && (
+              <SeriesProgress
+                series={series}
+                run={run}
+                scenarios={scenarios}
+                busy={busy}
+                onCancel={cancelSeries}
+              />
+            )}
             <div className="session-bar">
               <div className={`session-mode ${run?.mode ?? 'standby'}`}>
                 <span className="status-dot" />
@@ -339,9 +505,39 @@ export function App() {
               </p>
             )}
             {!run && (
+              <section className="marathon-setup">
+                <div>
+                  <span className="marathon-kicker">Piloto automático</span>
+                  <h2>Maratona: 6 reuniões, 36 decisões por modelo</h2>
+                  <p>
+                    Os seis cenários rodam em sequência, sem cliques, com o Opus comentando cada
+                    rodada. No fim, um boletim com acertos, calibração, custo e velocidade.
+                  </p>
+                </div>
+                <div className="setup-actions">
+                  <button
+                    className="primary-button"
+                    disabled={busy || !health?.ready || hasActiveHistory}
+                    onClick={() => startSeries('live')}
+                  >
+                    <Radio size={17} />
+                    Iniciar maratona real
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={busy || !scenarios.length || hasActiveHistory}
+                    onClick={() => startSeries('demo')}
+                  >
+                    <Play size={16} />
+                    Ensaio da maratona
+                  </button>
+                </div>
+              </section>
+            )}
+            {!run && (
               <section className="setup">
                 <div>
-                  <label htmlFor="scenario">Escolha a reunião</label>
+                  <label htmlFor="scenario">Reunião avulsa, rodada a rodada</label>
                   <select
                     id="scenario"
                     value={scenarioId}
@@ -583,6 +779,11 @@ export function App() {
                         <ChevronRight size={18} />
                       </button>
                     </>
+                  ) : active && run.autoplay ? (
+                    <span className="autopilot-label">
+                      <span className="status-dot" />
+                      Piloto automático
+                    </span>
                   ) : active ? (
                     <>
                       <button className="quiet-button" disabled={busy} onClick={cancel}>
@@ -636,12 +837,30 @@ export function App() {
             {finalVisible && run.verdict && (
               <FinalVerdict run={run} onReveal={() => setVerdictOpen(true)} />
             )}
+            {series?.report && series.phase === 'complete' && (
+              <section className="report-inline" aria-label="Boletim da maratona">
+                <div className="final-heading-row">
+                  <h2>Boletim da maratona</h2>
+                  <button className="primary-button" onClick={() => setReportOpen(true)}>
+                    <Maximize2 size={16} />
+                    Ver boletim
+                  </button>
+                </div>
+                <SeriesReportView series={series} meetings={meetings} onOpenMeeting={openRun} />
+              </section>
+            )}
             {run && terminal(run) && (
               <div className="end-actions">
                 <a className="secondary-button" href={`/api/runs/${run.id}/export`} download>
                   <Download size={16} />
                   Exportar evidências
                 </a>
+                {series && series.phase !== 'running' && (
+                  <a className="secondary-button" href={`/api/series/${series.id}/export`} download>
+                    <Download size={16} />
+                    Exportar maratona
+                  </a>
+                )}
                 <button className="primary-button" onClick={clearRun}>
                   Nova reunião
                   <ArrowRight size={16} />
@@ -686,7 +905,10 @@ export function App() {
                 </button>
                 <button
                   className="secondary-button danger-button"
-                  disabled={busy || !history.some(terminal)}
+                  disabled={
+                    busy ||
+                    (!history.some(terminal) && !seriesHistory.some((s) => s.phase !== 'running'))
+                  }
                   onClick={() => deleteHistory()}
                 >
                   <Trash2 size={16} />
@@ -694,7 +916,58 @@ export function App() {
                 </button>
               </div>
             </div>
-            {history.length ? (
+            {seriesHistory.length > 0 && (
+              <>
+                <h2 className="history-group">Maratonas</h2>
+                <div className="history-list">
+                  {seriesHistory.map((h) => (
+                    <article key={h.id}>
+                      <div className="history-description">
+                        <span className={`history-mode ${h.mode}`}>
+                          {h.mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
+                        </span>
+                        <h2>Maratona · {h.totalMeetings} reuniões</h2>
+                        <p>
+                          {new Date(h.createdAt).toLocaleString('pt-BR')} ·{' '}
+                          {h.phase === 'complete'
+                            ? 'Concluída'
+                            : h.phase === 'running'
+                              ? 'Em andamento'
+                              : h.phase === 'cancelled'
+                                ? 'Encerrada'
+                                : 'Interrompida'}
+                          {h.phase === 'complete' && h.mode === 'live'
+                            ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
+                            : ''}
+                          {h.cheapest.length === 1 ? ` · Mais barato: ${names[h.cheapest[0]]}` : ''}
+                        </p>
+                      </div>
+                      <div className="history-actions">
+                        <button
+                          className="secondary-button"
+                          disabled={busy}
+                          onClick={() => openSeries(h.id)}
+                        >
+                          <Play size={15} />
+                          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir maratona'}
+                        </button>
+                        <button
+                          className="secondary-button danger-button"
+                          disabled={busy || h.phase === 'running'}
+                          onClick={() => deleteSeries(h)}
+                          aria-label="Excluir maratona"
+                        >
+                          <Trash2 size={15} />
+                          Excluir
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                {history.length > 0 && <h2 className="history-group">Reuniões avulsas</h2>}
+              </>
+            )}
+            {history.length || seriesHistory.length ? (
               <div className="history-list">
                 {history.map((h) => (
                   <article key={h.id}>
@@ -801,15 +1074,30 @@ export function App() {
               pior. Confiança declarada não é taxa de acerto; seus valores também não são
               diretamente comparáveis entre fornecedores.
             </p>
+            <h2>Quem vence</h2>
+            <p>
+              O vencedor sai de uma regra fixa, não de opinião: mais pontos pelo gabarito. Em
+              empate, vence quem teve o Brier médio menor, com diferença mínima de 0,005. O Brier
+              mede a distância entre as probabilidades declaradas e o gabarito: 0 é certeza correta;
+              2, certeza errada. Ele só compara rodadas que todos responderam. Se uma resposta
+              ausente pudesse mudar a liderança, não há vencedor. Uma rodada vai para quem acertou
+              sozinho; se mais de um acertou, é empate.
+            </p>
             <h2>O papel do Opus</h2>
             <p>
-              Após cada rodada, uma sessão nova do CLI recebe participantes A, B e C em ordem
-              aleatória, sem modelos, marcas, custos ou latência. O comentário é separado do placar.
-              No fim, três novas sessões avaliam a reunião com as posições rotacionadas: cada
-              participante ocupa A, B e C uma vez. Se as três discordarem sobre o vencedor, o
-              resultado é inconclusivo. Ausência de respostas também impede um veredito global de
-              qualidade. Reuniões antigas, com dois participantes, mantêm seus dois julgamentos
-              invertidos.
+              O Opus abre cada reunião, comenta cada rodada e explica o resultado, sempre em sessões
+              novas do CLI e às cegas: recebe os participantes como A, B e C em ordem aleatória, sem
+              modelos, marcas, custos ou latência. Ele não muda o vencedor. Reuniões antigas,
+              decididas pelo Opus, continuam exibindo seus julgamentos originais.
+            </p>
+            <h2>A maratona</h2>
+            <p>
+              Os seis cenários rodam em sequência, em piloto automático, com pausas para leitura. O
+              boletim final soma as 36 decisões de cada modelo: acertos por bateria, calibração,
+              custo e mediana de resposta. As recomendações são frases geradas por regras sobre
+              esses números: mais acertos; menor custo por decisão, comparado ao mais preciso; e
+              menor mediana, com diferença mínima de 50 ms. Sem consumo conhecido ou em ensaio,
+              nenhuma recomendação de custo ou velocidade é feita.
             </p>
             <h2>O que pode ser auditado</h2>
             <p>
@@ -951,9 +1239,11 @@ export function App() {
             </p>
             <h2>Controle de consumo</h2>
             <p>
-              Cada reunião real tem seis chamadas por provedor e até dez chamadas do CLI: uma
-              abertura, seis comentários e três julgamentos finais. Você avança manualmente e pode
-              encerrar a qualquer momento. Chamadas já enviadas podem consumir créditos mesmo após
+              Cada reunião real tem seis chamadas por provedor e até oito chamadas do CLI: uma
+              abertura, seis comentários e uma explicação final. A maratona soma seis reuniões e uma
+              leitura final: 36 chamadas por provedor e até 49 do CLI. Na reunião avulsa você avança
+              manualmente; na maratona, o piloto automático avança sozinho. Você pode encerrar a
+              qualquer momento. Chamadas já enviadas podem consumir créditos mesmo após
               cancelamento.
             </p>
             <p>

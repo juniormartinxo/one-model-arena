@@ -1,6 +1,16 @@
 # Mesa de decisão · Jev × Decisions × Clef
 
-Estúdio local para gravar uma comparação em português entre Jev, OpenAI Decisions e Cloudflare Clef. O Claude Opus 5.5 participa pelo CLI: apresenta o roteiro, comenta cada rodada e julga o resultado sem ver as marcas.
+Estúdio local para comparar, em português, três modelos de decisão estruturada: Jev (TypeSafe), OpenAI Decisions e Cloudflare Clef. Uma **maratona automática** roda seis reuniões fictícias em sequência, 36 decisões por modelo, e termina num boletim com acertos, calibração, custo e velocidade. O vencedor sai do gabarito; o Claude Opus 5.5, pelo CLI, apresenta, comenta cada rodada e explica o resultado sem ver as marcas.
+
+## Reproduzir o teste
+
+1. Instale Node.js 24.14+, clone o repositório e rode `npm install`.
+2. `cp .env.example .env` e preencha as credenciais dos três provedores (seções abaixo). Faça login no Claude Code (`claude auth login`).
+3. `npm run dev` e abra http://127.0.0.1:4317. Em **Conexões**, os quatro itens devem aparecer como detectados.
+4. Na Arena, clique em **Ensaio da maratona** para conferir o fluxo sem custo. Depois, **Iniciar maratona real**.
+5. A tela entra em modo gravação e avança sozinha. Ao final, exporte a maratona em JSON: ela inclui cenários congelados com hash, payloads, respostas originais, prompts e saídas do Opus.
+
+Os cenários e gabaritos estão em `server/scenarios.ts` e `server/advanced-scenarios.ts`. Para testar seus próprios casos, edite esses arquivos: o hash muda e identifica o roteiro usado.
 
 ## Rodar
 
@@ -13,7 +23,7 @@ npm run dev
 
 Abra **http://127.0.0.1:4317**. O backend usa a porta 4318.
 
-**Iniciar ensaio** percorre o fluxo completo com dados sintéticos locais. Não requer chaves e não chama nenhuma IA. Os resultados são identificados na tela, no histórico e na exportação. Eles não avaliam o desempenho de Jev, Decisions, Clef ou Opus.
+**Ensaio da maratona** e **Iniciar ensaio** percorrem o fluxo completo com dados sintéticos locais. Não requer chaves e não chama nenhuma IA. Os resultados são identificados na tela, no histórico e na exportação. Eles não avaliam o desempenho de Jev, Decisions, Clef ou Opus.
 
 Para uma execução real:
 
@@ -25,16 +35,16 @@ claude auth login
 npm run dev
 ```
 
-As duas chaves são necessárias para consultar as APIs de decisão reais. O Opus usa a autenticação já existente do seu CLI; nenhuma chave da Anthropic é solicitada pelo app. O servidor herda a modalidade de autenticação do CLI, inclusive configurações de ambiente existentes. Não coloque segredos em variáveis `VITE_*` nem no frontend. Reinicie o backend após editar `.env`.
+As credenciais dos três provedores são necessárias para a execução real. O Opus usa a autenticação já existente do seu CLI; nenhuma chave da Anthropic é solicitada pelo app. O servidor herda a modalidade de autenticação do CLI, inclusive configurações de ambiente existentes. Não coloque segredos em variáveis `VITE_*` nem no frontend. Reinicie o backend após editar `.env`.
 
-Para usar o perfil `seu-executavel seu-perfil`, configure no `.env`:
+Se você chama o Claude Code por um executável próprio ou com um perfil, configure no `.env`:
 
 ```dotenv
 CLAUDE_BIN=/caminho/para/seu-executavel
 CLAUDE_ARGS='["seu-perfil"]'
 ```
 
-`CLAUDE_ARGS` é uma lista JSON de argumentos, passada antes das opções do Claude sem executar um shell. A verificação de login e todas as chamadas usam o mesmo perfil. Para conferir sua assinatura nesse perfil, execute `seu-executavel seu-perfil auth status`.
+`CLAUDE_ARGS` é uma lista JSON de argumentos, passada antes das opções do Claude sem executar um shell. A verificação de login e todas as chamadas usam o mesmo executável e perfil.
 
 O painel **Conexões** verifica instalação, login do Claude no perfil configurado e presença das chaves, sem chamadas de inferência. Reuniões reais não começam quando o login do CLI está ausente ou não pode ser verificado. Saldo, limites e acesso ao modelo são validados durante a execução real.
 
@@ -49,17 +59,20 @@ Abra http://127.0.0.1:4318. Não há serviço externo de banco, autenticação w
 
 ## Como as coisas funcionam
 
-1. Escolha um dos três cenários fictícios: crise na loja, prioridades de produto ou seleção de fornecedor. Cada um tem seis rodadas.
+1. Na maratona, os seis cenários rodam em sequência. Na reunião avulsa, escolha um deles. Cada cenário tem seis rodadas.
 2. O servidor congela o cenário, calcula seu SHA-256 e salva o roteiro e o gabarito em SQLite. O Opus prepara a abertura e as transições, preservando perguntas e critérios.
-3. Você avança manualmente. Os provedores recebem os mesmos fatos e perguntas, por suas APIs nativas, em paralelo. Não recebem gabaritos, respostas do concorrente ou comentários anteriores.
+3. Na maratona, o piloto automático avança sozinho, com pausas de leitura (`AUTOPLAY_DELAY_MS`, padrão 8 s, entre rodadas; `SERIES_PAUSE_MS`, padrão 14 s, entre reuniões). Na reunião avulsa, você avança manualmente. Os provedores recebem os mesmos fatos e perguntas, por suas APIs nativas, em paralelo. Não recebem gabaritos, respostas do concorrente ou comentários anteriores.
 4. Cada resultado é persistido quando chega. O placar objetivo dá um ponto por aderência ao gabarito e registra separadamente divergência, incerteza e indisponibilidade.
-5. Uma sessão nova do Opus comenta a rodada com nomes A/B/C aleatórios, sem marca, modelo, tempo ou custo. Sua opinião não altera os pontos objetivos. O mapeamento é revelado no painel após o comentário.
-6. Após a sexta rodada, três sessões novas julgam a reunião com as posições rotacionadas: cada concorrente ocupa A, B e C uma vez. Qualquer discordância sobre o vencedor torna o resultado inconclusivo. Reuniões gravadas antes do Clef continuam com dois concorrentes e dois julgamentos invertidos. Falta de resposta utilizável também impede declarar vencedor global de qualidade.
-7. O histórico permite replay sem inferência e exportação JSON com o cenário, payloads, respostas originais, prompts/saídas do CLI, eventos, métricas e os dois julgamentos.
+5. A rodada vai para quem acertou sozinho; se mais de um acertou, é empate. Uma sessão nova do Opus comenta a rodada com nomes A/B/C aleatórios, sem marca, modelo, tempo ou custo, e não altera esse resultado. O mapeamento é revelado no painel após o comentário.
+6. Após a sexta rodada, o vencedor da reunião sai de uma regra fixa: mais pontos pelo gabarito; em empate, o menor Brier médio, com diferença mínima de 0,005. Se uma resposta ausente pudesse mudar a liderança, não há vencedor. Uma sessão cega do Opus explica o resultado. Reuniões gravadas antes desta regra mantêm os julgamentos do Opus que as decidiram.
+7. Ao fim da maratona, o boletim soma as 36 decisões: acertos por bateria (básicos, avançados, estresse), calibração, custo, projeção para um milhão de decisões, mediana de resposta e as perguntas sem acerto unânime. As recomendações ("quando errar custa caro", "quando o volume é alto", "quando a resposta precisa ser imediata") são frases geradas por regras sobre esses números. O Opus escreve uma leitura final cega.
+8. O histórico permite replay sem inferência e exportação JSON com cenários, payloads, respostas originais, prompts/saídas do CLI, eventos e métricas.
+
+O **Brier** mede a distância entre as probabilidades que o modelo declarou e o gabarito: 0 é certeza correta; 2, certeza errada. Ele premia quem acerta com convicção e pune quem erra com convicção, e só compara rodadas respondidas por todos.
 
 O Opus não recebe ferramentas, MCPs ou histórico anterior; cada chamada usa uma pasta temporária e `--no-session-persistence`. A execução usa argumentos estruturados e stdin, sem shell. `--safe-mode` preserva a autenticação normal e desativa customizações; **não usamos `--bare`**, porque esse modo não reutiliza login por assinatura/OAuth. O modelo solicitado é explícito, sem fallback automático.
 
-Os comentários são interpretações do Opus, não explicações produzidas pelos concorrentes. As consequências exibidas são regras fictícias da simulação, não resultados financeiros ou comerciais observados. A reunião usa avanço manual para permitir pausa e explicação durante a gravação. “Modo gravação” reduz o chrome da interface; Escape retorna ao modo normal. Ele não grava um arquivo de vídeo: use seu gravador de tela.
+Os comentários são interpretações do Opus, não explicações produzidas pelos concorrentes. As consequências exibidas são regras fictícias da simulação, não resultados financeiros ou comerciais observados. A maratona liga o “Modo gravação”, que reduz o chrome da interface e mantém o progresso fixo no topo; Escape retorna ao modo normal. Ele não grava um arquivo de vídeo: use seu gravador de tela.
 
 ## Clef
 
@@ -105,7 +118,7 @@ O Opus recebe os pontos já calculados e apenas a regra do tipo de pergunta da r
 
 ## Consumo, tempos e falhas
 
-- Até **6 chamadas Jev + 6 Decisions + 6 Clef + 10 CLI** por reunião real. CLI: 1 abertura + 6 comentários + 3 julgamentos. Sem retentativas automáticas do aplicativo.
+- Até **6 chamadas Jev + 6 Decisions + 6 Clef + 8 CLI** por reunião real. CLI: 1 abertura + 6 comentários + 1 explicação. Na maratona: 36 por provedor e até 49 do CLI (6 × 8 + 1 leitura final). Sem retentativas automáticas do aplicativo.
 - Referência de 08/10/2026: Jev US$ 0,042, Decisions US$ 0,10 e Clef US$ 0,24 (Clef-flash US$ 0,09) por milhão de tokens de entrada. No Clef, os 10.000 neurons diários gratuitos da Cloudflare não são descontados da estimativa. A estimativa considera texto padrão; adicionais regionais, outras faixas de preço e mudanças futuras não são detectados automaticamente. O arquivo exportado guarda as tarifas usadas.
 - Os tempos das APIs incluem rede, leitura e validação; não são tempo puro de inferência. O tempo do Opus fica separado em cada registro de chamada.
 - O custo mostrado usa tokens retornados pela API. Se o uso não estiver disponível, o custo fica desconhecido (`?`), inclusive em timeout ou falha de rede. Uma chamada falha pode ser cobrada.

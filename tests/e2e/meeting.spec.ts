@@ -8,7 +8,7 @@ test('offers the original and advanced scenarios and can run the dossier control
     if (!['complete', 'failed', 'cancelled'].includes(run.phase))
       await request.post(`/api/runs/${run.id}/cancel`);
   await page.goto('/');
-  const select = page.getByLabel('Escolha a reunião');
+  const select = page.getByLabel('Reunião avulsa, rodada a rodada');
   await expect(select.locator('option')).toHaveCount(6);
   for (const [id, title] of [
     ['loja', 'Crise na loja online'],
@@ -108,6 +108,8 @@ test('six-round meeting, commentary, recording view, evidence export and free re
       .locator('.competitor')
       .evaluateAll((items) => items.map((e) => Math.round(e.getBoundingClientRect().top)));
     expect(new Set(tops).size).toBe(width > 860 ? 1 : 3);
+    // Let the answer reveal finish so the review image shows the settled state.
+    await page.waitForTimeout(1200);
     await page.screenshot({ path: `.impeccable/review/three-way-${name}.png`, fullPage: true });
   }
 });

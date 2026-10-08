@@ -55,6 +55,7 @@ test('shows independent awards and every cost side by side, including honest non
     },
   };
   await page.route('**/api/runs', (route) => route.fulfill({ json: [base, tied, unknown, demo] }));
+  await page.route('**/api/series', (route) => route.fulfill({ json: [] }));
   await page.goto('/');
   await page.getByRole('button', { name: 'Histórico', exact: true }).click();
   const rows = page.locator('.history-list article');

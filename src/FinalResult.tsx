@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { Run } from '../shared/types';
 import { runProviders } from '../shared/types';
+import { useCountdown } from './Autopilot';
 import { metrics } from '../shared/scoring';
 import {
   providerNames,
@@ -34,6 +35,7 @@ function FinalScore({ run }: { run: Run }) {
         const m = metrics(run, provider);
         const selected = run.mode === 'live' && run.verdict?.winner === provider;
         const model = run.rounds.find((r) => r.results[provider])?.results[provider]?.model;
+        const standing = run.verdict?.standings?.find((s) => s.provider === provider);
         return (
           <div
             key={provider}
@@ -41,13 +43,27 @@ function FinalScore({ run }: { run: Run }) {
           >
             <div className="final-score-name">
               <span>{providerNames[provider]}</span>
-              {selected && <Trophy size={18} aria-label="Vencedor segundo o Opus" />}
+              {selected && (
+                <Trophy
+                  size={18}
+                  aria-label={
+                    run.verdict?.basis === 'objective'
+                      ? 'Vencedor pelo gabarito'
+                      : 'Vencedor segundo o Opus'
+                  }
+                />
+              )}
             </div>
             <div className="final-score-number">
               <strong>{m.correct}</strong>
               <span>/ {run.scenario.rounds.length}</span>
             </div>
             <p>pontos pelo gabarito</p>
+            {run.verdict?.reason === 'calibration' && standing?.brier != null && (
+              <p className="final-brier">
+                Brier {standing.brier.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}
+              </p>
+            )}
             <small>
               {run.mode === 'demo' ? 'Dados sintéticos' : (model ?? 'Sem resposta utilizável')}
             </small>
@@ -87,12 +103,14 @@ export function FinalVerdict({ run, onReveal }: { run: Run; onReveal: () => void
       {verdict.passes.map((pass, i) => (
         <details key={i}>
           <summary>
-            Julgamento {i + 1} ·{' '}
-            {i === 0
-              ? 'primeira avaliação cega'
-              : verdict.passes.length > 2
-                ? 'posições rotacionadas'
-                : 'identidades invertidas'}
+            {verdict.basis === 'objective' ? 'Explicação cega do Opus' : `Julgamento ${i + 1} · `}
+            {verdict.basis === 'objective'
+              ? ''
+              : i === 0
+                ? 'primeira avaliação cega'
+                : verdict.passes.length > 2
+                  ? 'posições rotacionadas'
+                  : 'identidades invertidas'}
           </summary>
           <p>{revealParticipants(pass.result.summary, pass.mapping)}</p>
           <ul>
@@ -126,12 +144,15 @@ export function VerdictDialog({
   open,
   replay,
   onDismiss,
+  nextAt,
 }: {
   run: Run;
   open: boolean;
   replay: boolean;
   onDismiss: () => void;
+  nextAt?: string;
 }) {
+  const next = useCountdown(nextAt);
   const ref = useRef<HTMLDialogElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
@@ -227,11 +248,18 @@ export function VerdictDialog({
             <span>
               {run.mode === 'demo'
                 ? 'Este ensaio demonstra o painel e não avalia os modelos.'
-                : 'O placar segue o gabarito. O veredito do Opus é uma avaliação desta amostra.'}
+                : run.verdict?.basis === 'objective'
+                  ? 'O vencedor sai do gabarito; o Opus só explica, sem ver as marcas.'
+                  : 'O placar segue o gabarito. O veredito do Opus é uma avaliação desta amostra.'}
             </span>
           </p>
         </div>
         <footer className="verdict-modal-footer">
+          {next !== null && (
+            <span className="verdict-next" aria-live="polite">
+              Próxima reunião em {next} s
+            </span>
+          )}
           <a className="secondary-button" href={`/api/runs/${run.id}/export`} download>
             <Download size={16} />
             Exportar evidências

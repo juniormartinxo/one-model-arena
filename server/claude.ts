@@ -18,6 +18,7 @@ function cliEnvironment(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_CODE_MAX_OUTPUT_TOKENS: '4096' };
   delete env.OPENAI_API_KEY;
   delete env.TYPESAFE_API_KEY;
+  delete env.CLOUDFLARE_API_TOKEN;
   return env;
 }
 function safeCliDiagnostic(stderr: string) {
