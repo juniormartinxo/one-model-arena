@@ -29,6 +29,8 @@ const env = z
     // Automatic meetings pause so the screen can be read: after each round and between meetings.
     AUTOPLAY_DELAY_MS: z.coerce.number().nonnegative().default(8000),
     SERIES_PAUSE_MS: z.coerce.number().nonnegative().default(14000),
+    // Simultaneous requests per provider in the rodada brava.
+    BRAVA_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(3),
     OPENAI_MODEL: z.string().default('gpt-6-luna'),
     JEV_MODEL: z.string().default('jev-1.13.0'),
     OPENAI_API_KEY: z.string().default(''),

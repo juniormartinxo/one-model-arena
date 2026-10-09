@@ -221,3 +221,133 @@ export type SeriesSummary = Pick<Series, 'id' | 'mode' | 'createdAt' | 'phase'> 
   cheapest: Provider[];
 };
 export type SeriesSnapshot = { series: Series; run: Run | null };
+
+// Rodada brava: batteries of harder items, scored per battery and averaged.
+export type BravaBatteryId = 'robustez' | 'portugues' | 'abstencao' | 'negacao' | 'injecao';
+export type Perturbation = 'original' | 'ordem' | 'ruido' | 'digitacao' | 'direcao';
+export type BravaItem = {
+  id: string;
+  battery: BravaBatteryId;
+  title: string;
+  context: string;
+  facts: string;
+  question: Question;
+  // Items scored together: a robustness base question or a negation group.
+  group?: string;
+  variant?: Perturbation | 'parafrase' | 'escopo' | 'desfeita';
+  // Irrelevant text added to the request only, so the catalog stays readable.
+  noise?: boolean;
+  source?: { dataset: string; id: string; license: string };
+  // Real social-media text that may contain hate speech: never shown on screen.
+  sensitive?: boolean;
+};
+export type BravaBattery = {
+  id: BravaBatteryId;
+  title: string;
+  description: string;
+  unit: 'grupo' | 'item';
+  itemIds: string[];
+};
+export type CompactResult = {
+  status: Grade['status'];
+  label: string | null;
+  // Probability given to the reference answer.
+  expectedProbability: number | null;
+  durationMs: number;
+};
+export type BatteryScore = {
+  battery: BravaBatteryId;
+  provider: Provider;
+  score: number;
+  passed: number;
+  units: number;
+  unavailable: number;
+};
+export type CalibrationBin = {
+  from: number;
+  to: number;
+  count: number;
+  accuracy: number;
+  confidence: number;
+};
+export type BravaStanding = Standing & {
+  score: number;
+  calibration: CalibrationBin[];
+  ece: number | null;
+  flipRate: Partial<Record<Perturbation, number>>;
+  invented: number;
+  abstentionItems: number;
+};
+export type BravaReport = {
+  participants: Provider[];
+  items: number;
+  standings: BravaStanding[];
+  batteries: (Pick<BravaBattery, 'id' | 'title' | 'unit'> & {
+    units: number;
+    scores: Record<Provider, number>;
+    leaders: Provider[];
+  })[];
+  winner: Provider | 'tie' | 'inconclusive';
+  reason: DecisionReason;
+  // 95% bootstrap interval of the score difference between the winner (or first leader) and each rival.
+  margins: { vs: Provider; low: number; high: number; within: boolean }[];
+  cheapest: Provider[];
+  fastest: Provider[];
+  costPerMillion: Partial<Record<Provider, number>>;
+  highlights: {
+    kind: BravaBatteryId | 'overall' | 'budget' | 'speed';
+    title: string;
+    providers: Provider[];
+    text: string;
+  }[];
+  divergences: {
+    itemId: string;
+    battery: BravaBatteryId;
+    title: string;
+    question: string;
+    facts: string | null;
+    expected: string;
+    answers: Partial<Record<Provider, { label: string; status: Grade['status'] }>>;
+  }[];
+  round1?: { seriesId: string; accuracy: Record<Provider, number>; decisions: number };
+};
+export type BravaComment = { text: string; mapping?: Mapping; error?: string };
+export type Brava = {
+  id: string;
+  mode: Run['mode'];
+  createdAt: string;
+  updatedAt: string;
+  phase:
+    | 'preparing'
+    | 'running'
+    | 'commenting'
+    | 'pause'
+    | 'reporting'
+    | 'complete'
+    | 'cancelled'
+    | 'failed';
+  providers: Provider[];
+  catalogHash: string;
+  batteries: BravaBattery[];
+  items: BravaItem[];
+  results: Record<string, Partial<Record<Provider, ProviderResult>>>;
+  currentBattery: number;
+  introduction?: string;
+  comments: Partial<Record<BravaBatteryId, BravaComment>>;
+  nextAt?: string;
+  report?: BravaReport;
+  analysis?: SeriesAnalysis;
+  analysisError?: string;
+  skipped?: { battery: BravaBatteryId; reason: string }[];
+  cliCalls: CliCall[];
+  tariff: Run['tariff'];
+  error?: string;
+};
+// What the screen receives: no request or raw payloads.
+export type BravaView = Omit<Brava, 'results'> & {
+  results: Record<string, Partial<Record<Provider, CompactResult>>>;
+};
+export type BravaSummary = Pick<Brava, 'id' | 'mode' | 'createdAt' | 'phase'> & {
+  items: number;
+  winner: BravaReport['winner'] | null;
+};

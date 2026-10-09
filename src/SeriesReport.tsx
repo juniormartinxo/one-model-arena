@@ -22,23 +22,29 @@ import type { Grade, Provider, Series, SeriesReport as Report } from '../shared/
 export type Meeting = { id: string; title: string };
 import { providerNames, providerVendors, revealParticipants } from '../shared/presentation';
 
-const usd = (value: number, digits = 2) =>
+export const usd = (value: number, digits = 2) =>
   new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(value);
-const seconds = (ms: number) =>
+export const seconds = (ms: number) =>
   `${(ms / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} s`;
-const percent = (part: number, total: number) =>
+export const percent = (part: number, total: number) =>
   total ? `${Math.round((part / total) * 100)}%` : '—';
 
 const reduceMotion = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Counts up to the final value once, so the scoreboard lands on screen with a beat.
-function CountUp({ value, format = String }: { value: number; format?: (v: number) => string }) {
+export function CountUp({
+  value,
+  format = String,
+}: {
+  value: number;
+  format?: (v: number) => string;
+}) {
   const [shown, setShown] = useState(() => (reduceMotion() ? value : 0));
   useEffect(() => {
     if (reduceMotion()) return setShown(value);
@@ -76,14 +82,14 @@ const statusText: Record<Grade['status'], string> = {
 };
 
 // One horizontal bar per participant, direct-labeled; the name doubles as the legend.
-function BarRows({
+export function BarRows({
   report,
   value,
   max,
   label,
   tip,
 }: {
-  report: Report;
+  report: Pick<Report, 'participants'>;
   value: (p: Provider) => number | undefined;
   max: number;
   label: (p: Provider) => string;
@@ -117,7 +123,15 @@ function BarRows({
   );
 }
 
-function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
+export function Section({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note?: string;
+  children: ReactNode;
+}) {
   return (
     <section className="report-section">
       <header>

@@ -9,6 +9,7 @@ Estúdio local para comparar, em português, três modelos de decisão estrutura
 3. `npm run dev` e abra http://127.0.0.1:4317. Em **Conexões**, os quatro itens devem aparecer como detectados.
 4. Na Arena, clique em **Ensaio da maratona** para conferir o fluxo sem custo. Depois, **Iniciar maratona real**.
 5. A tela entra em modo gravação e avança sozinha. Ao final, exporte a maratona em JSON: ela inclui cenários congelados com hash, payloads, respostas originais, prompts e saídas do Opus.
+6. Para a **rodada brava**, rode antes `npm run datasets` (baixa a amostra de português real das fontes oficiais) e use **Ensaio da rodada brava** e **Iniciar rodada brava**. Ela tem boletim próprio, separado da maratona.
 
 Os cenários e gabaritos estão em `server/scenarios.ts` e `server/advanced-scenarios.ts`. Para testar seus próprios casos, edite esses arquivos: o hash muda e identifica o roteiro usado.
 
@@ -74,6 +75,34 @@ O Opus não recebe ferramentas, MCPs ou histórico anterior; cada chamada usa um
 
 Os comentários são interpretações do Opus, não explicações produzidas pelos concorrentes. As consequências exibidas são regras fictícias da simulação, não resultados financeiros ou comerciais observados. A maratona liga o “Modo gravação”, que reduz o chrome da interface e mantém o progresso fixo no topo; Escape retorna ao modo normal. Ele não grava um arquivo de vídeo: use seu gravador de tela.
 
+## Rodada brava
+
+A rodada 1 mede se o modelo aplica regras escritas. A rodada brava mede o que acontece quando a regra não entrega a resposta. São 298 testes por modelo em cinco baterias, rodando em piloto automático, com o Opus abrindo, comentando cada bateria e escrevendo a leitura final, sempre às cegas (7 chamadas do CLI).
+
+| Bateria           | Itens                                                                                                                                                                                        | Como pontua                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Robustez          | 144: as 36 perguntas da rodada 1 em quatro versões (original, texto irrelevante, erros de digitação e, conforme o tipo, alternativas invertidas ou uma evidência a mais a favor do gabarito) | Grupo inteiro: todas as versões certas, e a evidência a mais não pode baixar a probabilidade da resposta certa em mais de 2 pontos |
+| Português real    | 60: 20 do ASSIN 2 (implicação), 20 do HateBR (ofensivo ou não) e 20 do B2W-Reviews01 (recomendaria ou não), balanceados                                                                      | Item                                                                                                                               |
+| Saber dizer “não” | 30: pedidos fora do escopo e perguntas sobre dados ausentes                                                                                                                                  | Item; o boletim conta também quantas vezes o modelo adivinhou                                                                      |
+| Negação           | 48: 12 grupos com original, paráfrase, escopo alterado e negação desfeita                                                                                                                    | Grupo inteiro                                                                                                                      |
+| Injeção e pressão | 16: instruções escondidas, aprovações falsas e exceções legítimas                                                                                                                            | Item                                                                                                                               |
+
+A nota geral é a média simples das notas das baterias. Diferenças abaixo de 1 ponto são empate, desempatado pelo Brier médio. Se uma resposta ausente puder mudar a liderança, não há vencedor. O boletim traz o intervalo de 95% da diferença entre o primeiro e cada rival, por bootstrap pareado: quando ele inclui zero, a diferença está dentro da margem de erro. Também mostra o diagrama de calibração, a taxa de mudança de resposta por tipo de alteração e a comparação com a última maratona concluída.
+
+Os itens de abstenção, negação e injeção estão em `server/brava/authored.ts`. Foram escritos antes de consultar os modelos e respondidos às cegas por outra sessão: as 94 respostas coincidiram com os gabaritos, e os 6 itens apontados como passíveis de outra leitura foram reescritos.
+
+### Datasets de português real
+
+`npm run datasets` baixa os dados das fontes oficiais para `data/datasets/`, que não vai para o Git, e seleciona os itens listados em `server/brava/portugues-ids.json` (sorteio com semente fixa; `npm run datasets -- --resample` sorteia de novo e muda o hash do catálogo). O repositório não redistribui nenhum texto desses conjuntos.
+
+| Conjunto      | Fonte                                                                             | Licença declarada                      | Citação                                 |
+| ------------- | --------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------- |
+| ASSIN 2       | [nilc-nlp/assin2](https://huggingface.co/datasets/nilc-nlp/assin2)                | Não declarada pela fonte               | Real, Fonseca e Oliveira (2020), PROPOR |
+| HateBR        | [franciellevargas/HateBR](https://github.com/franciellevargas/HateBR)             | CC BY-NC 4.0, uso de pesquisa          | Vargas et al. (2022), LREC              |
+| B2W-Reviews01 | [americanas-tech/b2w-reviews01](https://github.com/americanas-tech/b2w-reviews01) | CC BY-NC-SA 4.0, crédito à B2W Digital | Real et al. (2019), STIL                |
+
+HateBR e B2W não permitem uso comercial: confira se o seu uso se enquadra. Os comentários do HateBR podem conter ofensas e discurso de ódio; a interface nunca os exibe, mas eles vão para os modelos, para o Opus e para o JSON exportado. Por serem públicos e antigos, esses textos podem estar nos dados de treino dos modelos.
+
 ## Clef
 
 O Clef roda no Cloudflare Workers AI e usa o mesmo contrato de perguntas do Jev (`state`, `noul`, `choice`, `score`). A diferença é o envelope `{ result, success, errors }` da Cloudflare, que o adaptador remove antes de validar. Configure no `.env`:
@@ -118,6 +147,7 @@ O Opus recebe os pontos já calculados e apenas a regra do tipo de pergunta da r
 
 ## Consumo, tempos e falhas
 
+- Rodada brava: 298 chamadas por provedor (até `BRAVA_CONCURRENCY` simultâneas, padrão 3) e 7 do CLI. No Clef, cerca de 150 mil tokens de entrada (uns 3.300 neurons), dentro da cota gratuita diária.
 - Até **6 chamadas Jev + 6 Decisions + 6 Clef + 8 CLI** por reunião real. CLI: 1 abertura + 6 comentários + 1 explicação. Na maratona: 36 por provedor e até 49 do CLI (6 × 8 + 1 leitura final). Sem retentativas automáticas do aplicativo.
 - Referência de 08/10/2026: Jev US$ 0,042, Decisions US$ 0,10 e Clef US$ 0,24 (Clef-flash US$ 0,09) por milhão de tokens de entrada. No Clef, os 10.000 neurons diários gratuitos da Cloudflare não são descontados da estimativa. A estimativa considera texto padrão; adicionais regionais, outras faixas de preço e mudanças futuras não são detectados automaticamente. O arquivo exportado guarda as tarifas usadas.
 - Os tempos das APIs incluem rede, leitura e validação; não são tempo puro de inferência. O tempo do Opus fica separado em cada registro de chamada.

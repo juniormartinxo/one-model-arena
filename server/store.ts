@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Run, RunSummary, Series, SeriesSummary } from '../shared/types';
+import type { Brava, BravaSummary, Run, RunSummary, Series, SeriesSummary } from '../shared/types';
 import { summarizeRun, summarizeSeries } from '../shared/run-summary';
 const terminal = "('complete', 'cancelled', 'failed')";
 export class Store {
@@ -10,7 +10,7 @@ export class Store {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
     this.db.exec(
-      'PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, snapshot TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, at TEXT NOT NULL, phase TEXT NOT NULL, snapshot TEXT NOT NULL); CREATE TABLE IF NOT EXISTS series(id TEXT PRIMARY KEY, snapshot TEXT NOT NULL);',
+      'PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, snapshot TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, at TEXT NOT NULL, phase TEXT NOT NULL, snapshot TEXT NOT NULL); CREATE TABLE IF NOT EXISTS series(id TEXT PRIMARY KEY, snapshot TEXT NOT NULL); CREATE TABLE IF NOT EXISTS bravas(id TEXT PRIMARY KEY, snapshot TEXT NOT NULL);',
     );
   }
   save(run: Run) {
@@ -55,6 +55,9 @@ export class Store {
         .get() ||
       this.db
         .prepare(`SELECT 1 FROM series WHERE json_extract(snapshot, '$.phase') = 'running'`)
+        .get() ||
+      this.db
+        .prepare(`SELECT 1 FROM bravas WHERE json_extract(snapshot, '$.phase') NOT IN ${terminal}`)
         .get()
     );
   }
@@ -94,7 +97,53 @@ export class Store {
       throw error;
     }
   }
+  saveBrava(brava: Brava) {
+    brava.updatedAt = new Date().toISOString();
+    this.db
+      .prepare(
+        'INSERT INTO bravas(id,snapshot) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot',
+      )
+      .run(brava.id, JSON.stringify(brava));
+  }
+  getBrava(id: string): Brava | undefined {
+    const row = this.db.prepare('SELECT snapshot FROM bravas WHERE id=?').get(id);
+    return row ? JSON.parse(String(row.snapshot)) : undefined;
+  }
+  listBravas(): BravaSummary[] {
+    return this.db
+      .prepare(
+        "SELECT json_extract(snapshot, '$.id') id, json_extract(snapshot, '$.mode') mode, json_extract(snapshot, '$.createdAt') createdAt, json_extract(snapshot, '$.phase') phase, json_array_length(snapshot, '$.items') items, json_extract(snapshot, '$.report.winner') winner FROM bravas ORDER BY rowid DESC LIMIT 100",
+      )
+      .all()
+      .map((r) => ({ ...r, items: Number(r.items), winner: r.winner ?? null }) as BravaSummary);
+  }
+  latestSeries(mode: Series['mode']): Series | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT snapshot FROM series WHERE json_extract(snapshot, '$.phase') = 'complete' AND json_extract(snapshot, '$.mode') = ? ORDER BY rowid DESC LIMIT 1",
+      )
+      .get(mode);
+    return row ? JSON.parse(String(row.snapshot)) : undefined;
+  }
+  removeBrava(id: string) {
+    const brava = this.getBrava(id);
+    if (!brava) return false;
+    if (!['complete', 'cancelled', 'failed'].includes(brava.phase))
+      throw new Error('Encerre a rodada brava antes de excluí-la.');
+    this.db.prepare('DELETE FROM bravas WHERE id=?').run(id);
+    return true;
+  }
   recover() {
+    for (const row of this.db.prepare('SELECT snapshot FROM bravas').all()) {
+      const brava: Brava = JSON.parse(String(row.snapshot));
+      if (!['complete', 'cancelled', 'failed'].includes(brava.phase)) {
+        brava.phase = 'failed';
+        delete brava.nextAt;
+        brava.error =
+          'Servidor reiniciado durante a rodada brava. Respostas recebidas foram preservadas.';
+        this.saveBrava(brava);
+      }
+    }
     for (const row of this.db.prepare('SELECT snapshot FROM runs').all()) {
       const run: Run = JSON.parse(String(row.snapshot));
       if (!['complete', 'cancelled', 'failed'].includes(run.phase)) {
@@ -155,8 +204,11 @@ export class Store {
       const series = this.db
         .prepare(`DELETE FROM series WHERE json_extract(snapshot, '$.phase') != 'running'`)
         .run();
+      const bravas = this.db
+        .prepare(`DELETE FROM bravas WHERE json_extract(snapshot, '$.phase') IN ${terminal}`)
+        .run();
       this.db.exec('COMMIT');
-      return Number(result.changes) + Number(series.changes);
+      return Number(result.changes) + Number(series.changes) + Number(bravas.changes);
     } catch (error) {
       this.db.exec('ROLLBACK');
       throw error;

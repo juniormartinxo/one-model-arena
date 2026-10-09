@@ -2507,3 +2507,383 @@ details[open] > summary {
 .recommendation.is-tie {
   --team: var(--ink);
 }
+
+/* Rodada brava */
+.brava-setup {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(241 170 163 / 10%), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(239 195 141 / 8%), transparent 55%), var(--surface);
+}
+.brava-kicker {
+  color: var(--danger);
+}
+.brava-live {
+  display: grid;
+  gap: 16px;
+}
+.brava-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px 28px;
+  flex-wrap: wrap;
+}
+.brava-head h2 {
+  margin-top: 6px;
+  font-size: clamp(26px, 3vw, 38px);
+  letter-spacing: -0.03em;
+}
+.brava-head p {
+  max-width: 78ch;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.brava-head-side {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.brava-head-side .quiet-button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.brava-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.brava-steps li {
+  min-width: 0;
+  color: var(--muted);
+}
+.brava-steps li.current {
+  color: var(--ink);
+}
+.brava-steps li.done .series-step-track > span {
+  background: var(--success);
+}
+.brava-intro {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--opus-border, #3d3749);
+  border-radius: 10px;
+  background: var(--opus-surface, #1d1b22);
+  color: var(--opus-copy, #d4ccdf);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.brava-intro svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--opus);
+}
+.brava-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.brava-grid {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.brava-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.brava-row-name strong {
+  display: block;
+  color: var(--team);
+  font: 650 17px var(--font-heading);
+}
+.brava-row-name span {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.brava-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+}
+.brava-group {
+  display: inline-flex;
+  gap: 3px;
+}
+.brava-tile {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  background: #2b3035;
+  transition: background 0.25s ease;
+}
+.brava-tile.is-correct {
+  background: var(--success);
+  animation: tile-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.brava-tile.is-incorrect {
+  background: var(--danger);
+  animation: tile-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.brava-tile.is-uncertain {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #e9c46a;
+  animation: tile-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.brava-tile.is-unavailable {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.brava-tile.is-flip {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+@keyframes tile-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+.brava-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 2px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+.brava-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.brava-highlight {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  animation: answer-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.brava-highlight-kicker {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.brava-highlight h3 {
+  margin-top: 8px;
+  font-size: 18px;
+  line-height: 1.35;
+}
+.brava-facts {
+  display: -webkit-box;
+  margin-top: 8px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+}
+.brava-hidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+.brava-highlight ul {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.brava-highlight li {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: var(--bg);
+  font-size: 13px;
+}
+.brava-highlight li > span {
+  color: var(--team);
+  font-weight: 600;
+}
+.brava-highlight li em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-style: normal;
+  color: var(--muted);
+}
+.brava-highlight .status-correct em {
+  color: var(--success);
+}
+.brava-highlight .status-incorrect em {
+  color: var(--danger);
+}
+.brava-highlight .status-uncertain em {
+  color: #e9c46a;
+}
+.brava-comment {
+  margin-top: 0;
+}
+.divergence-facts {
+  color: var(--muted);
+  font-size: 13px !important;
+}
+.calibration {
+  margin: 0;
+}
+.calibration svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.calibration text {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.calibration .calibration-note {
+  font-size: 10px;
+}
+.calibration-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.calibration-ideal {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.calibration-series polyline {
+  fill: none;
+  stroke: var(--mark);
+  stroke-width: 2;
+}
+.calibration-series circle {
+  fill: var(--mark);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.calibration figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 12px;
+}
+.calibration figcaption i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--mark);
+}
+.round-compare {
+  display: grid;
+  gap: 14px;
+}
+.round-compare-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 14px;
+}
+.round-compare-row > span:first-child {
+  color: var(--team);
+  font-weight: 600;
+}
+.round-compare-row strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.round-compare-track {
+  position: relative;
+  height: 18px;
+  border-radius: 9px;
+  background: #2b3035;
+}
+.round-compare-track b {
+  position: absolute;
+  top: 8px;
+  height: 2px;
+  background: var(--mark);
+}
+.round-compare-track i {
+  position: absolute;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+}
+.round-compare-track .is-round1 {
+  background: var(--bg);
+  box-shadow: inset 0 0 0 2px var(--muted);
+}
+.round-compare-track .is-brava {
+  background: var(--mark);
+}
+@media (max-width: 1020px) {
+  .brava-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 680px) {
+  .brava-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .brava-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .brava-highlight li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .round-compare-row {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+  .round-compare-row strong {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brava-tile,
+  .brava-highlight {
+    animation: none;
+  }
+}
+
+.calibration figcaption .calibration-ideal-key i {
+  width: 16px;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px dashed var(--muted);
+  background: none;
+  vertical-align: middle;
+}

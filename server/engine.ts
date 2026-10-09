@@ -22,6 +22,7 @@ import {
 import { demoResult } from './demo';
 import { decisionText, providerNames } from '../shared/presentation';
 import { buildSeriesReport, decide, standings } from '../shared/report';
+import { BravaRunner } from './brava/runner';
 const finished = (phase: Run['phase']) => ['complete', 'cancelled', 'failed'].includes(phase);
 export class Engine {
   events = new EventEmitter();
@@ -29,8 +30,10 @@ export class Engine {
   // Pending automatic steps, keyed by run id (next round) or series id (next meeting).
   private timers = new Map<string, NodeJS.Timeout>();
   private seriesControllers = new Map<string, AbortController>();
+  brava: BravaRunner;
   constructor(public store: Store) {
     this.events.setMaxListeners(100);
+    this.brava = new BravaRunner(this);
   }
   async health(): Promise<Health> {
     const claude = await cliStatus();
@@ -80,7 +83,7 @@ export class Engine {
     clearTimeout(this.timers.get(key));
     this.timers.delete(key);
   }
-  private async preflight(mode: Run['mode']) {
+  async preflight(mode: Run['mode']) {
     if (mode !== 'live') return;
     const health = await this.health();
     if (!health.claude.available || health.claude.authenticated !== true)
@@ -415,6 +418,7 @@ export class Engine {
     return this.store.getSeries(id)!;
   }
   close() {
+    this.brava.close();
     for (const id of this.seriesControllers.keys()) this.stopSeries(id, 'cancelled');
     for (const id of this.controllers.keys()) this.cancel(id);
     for (const timer of this.timers.values()) clearTimeout(timer);

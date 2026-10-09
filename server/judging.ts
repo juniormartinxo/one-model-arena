@@ -1,6 +1,10 @@
 import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 import type {
+  Brava,
+  BravaBattery,
+  BravaItem,
+  BravaReport,
   DecisionReason,
   Mapping,
   Participant,
@@ -174,4 +178,92 @@ export function seriesAnalysisPrompt(runs: Run[], report: SeriesReport, mapping:
     ),
   };
   return `Escreva a leitura final de uma maratona de ${runs.length} reuniões fictícias em português, com ${report.decisions} decisões por participante, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 150 palavras e evidências com roundId reais, priorizando as rodadas em divergences. Diga onde cada participante se destacou ou tropeçou, por bateria, sem exagero. Se todos empataram, diga isso com clareza: empate também é resultado. Não use marcas, custo nem velocidade; esses números são mostrados separadamente pelo aplicativo. Não invente raciocínios dos participantes nem trate a amostra como benchmark universal. Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
+}
+
+// --- Rodada brava: Opus opens, comments each battery and writes the final reading, all blind ---
+export const bravaIntroSchema = z.object({ introduction: bounded });
+const bravaItem = (brava: Brava, item: BravaItem, mapping: Mapping) => ({
+  itemId: item.id,
+  title: item.title,
+  facts: item.facts,
+  question: item.question.text,
+  options: item.question.options?.map((o) => `${o.value}: ${o.label}`),
+  expected: String(item.question.expected),
+  ...Object.fromEntries(
+    participantsOf(mapping).map((l) => {
+      const r = brava.results[item.id]?.[mapping[l]!];
+      return [
+        l,
+        r?.answer && r.answer.type !== 'refusal'
+          ? { answer: r.answer.value, grade: r.grade.status }
+          : { answer: null, grade: 'unavailable' },
+      ];
+    }),
+  ),
+});
+const sensitiveNote =
+  'Alguns textos são comentários reais de redes sociais e podem conter ofensas: nunca reproduza esses trechos; descreva-os em termos gerais.';
+export function bravaIntroPrompt(brava: Brava) {
+  return `Escreva uma abertura curta, de até 70 palavras, em português, para a "rodada brava" de um vídeo: uma segunda bateria de testes, mais difícil, para modelos de decisão estruturada. Explique em linguagem simples o que será testado, sem prometer vencedor e sem citar marcas. Baterias: ${JSON.stringify(brava.batteries.map((b) => ({ title: b.title, description: b.description, items: b.itemIds.length })))}`;
+}
+export function batteryCommentPrompt(
+  brava: Brava,
+  battery: BravaBattery,
+  mapping: Mapping,
+  scores: Record<Participant, number>,
+) {
+  const items = battery.itemIds
+    .map((id) => brava.items.find((i) => i.id === id)!)
+    .filter((i) =>
+      participantsOf(mapping).some(
+        (l) => brava.results[i.id]?.[mapping[l]!]?.grade.status !== 'correct',
+      ),
+    )
+    .slice(0, 14)
+    .map((i) => bravaItem(brava, i, mapping));
+  return `Comente em até 100 palavras, em português, para o público de um vídeo, o resultado da bateria "${battery.title}". O que ela testa: ${battery.description} As notas já foram calculadas pelo aplicativo (fração de ${battery.unit === 'grupo' ? 'grupos inteiros acertados' : 'itens acertados'}) e não mudam: ${JSON.stringify(scores)}. Use os erros listados para explicar onde cada participante tropeçou, citando o tipo de armadilha. Se ninguém errou, diga isso. Não invente raciocínios dos modelos nem use marcas, custo ou velocidade. ${sensitiveNote} ${participantReferences(mapping)} Itens com algum erro: ${JSON.stringify(items)}`;
+}
+export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: Mapping) {
+  const letter = (p: Provider) => participantsOf(mapping).find((l) => mapping[l] === p)!;
+  const data = {
+    outcome: {
+      winner: blindWinner(mapping, report.winner),
+      rule: `${reasons[report.reason]}. A nota geral é a média simples das notas das baterias.`,
+      overall: Object.fromEntries(
+        report.standings.map((s) => [letter(s.provider), Number(s.score.toFixed(3))]),
+      ),
+      margins: report.margins.map((m) => ({
+        vs: letter(m.vs),
+        interval95: [Number(m.low.toFixed(3)), Number(m.high.toFixed(3))],
+        withinMargin: m.within,
+      })),
+    },
+    batteries: report.batteries.map((b) => ({
+      title: b.title,
+      units: b.units,
+      scores: Object.fromEntries(
+        report.participants.map((p) => [letter(p), Number(b.scores[p].toFixed(3))]),
+      ),
+    })),
+    robustnessFlipRate: Object.fromEntries(
+      report.standings.map((s) => [letter(s.provider), s.flipRate]),
+    ),
+    calibration: Object.fromEntries(
+      report.standings.map((s) => [letter(s.provider), { meanBrier: s.brier, ece: s.ece }]),
+    ),
+    abstention: Object.fromEntries(
+      report.standings.map((s) => [
+        letter(s.provider),
+        { guessedInsteadOfAbstaining: s.invented, of: s.abstentionItems },
+      ]),
+    ),
+    examples: report.divergences.slice(0, 20).map((d) =>
+      bravaItem(
+        brava,
+        brava.items.find((i) => i.id === d.itemId)!,
+        mapping,
+      ),
+    ),
+  };
+  return `Escreva a leitura final da "rodada brava", uma bateria de ${report.items} testes difíceis em português, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Se o intervalo de 95% de uma diferença inclui zero (withinMargin), diga que a diferença está dentro da margem de erro. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 160 palavras e evidências com os itemId reais no campo roundId. Diga em que cada participante foi forte ou fraco, por bateria, citando viradas de resposta na robustez, adivinhações onde deveria se abster e calibração quando forem relevantes. Não use marcas, custo nem velocidade. Não invente raciocínios. ${sensitiveNote} Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
 }

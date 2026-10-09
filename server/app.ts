@@ -7,6 +7,7 @@ import { scenarios } from './scenarios';
 import type { Engine } from './engine';
 import type { SeriesSnapshot } from '../shared/types';
 import { buildSeriesReport } from '../shared/report';
+import { view } from './brava/runner';
 export async function buildApp(engine: Engine) {
   const app = Fastify({ logger: false, bodyLimit: 16384 });
   app.addHook('onRequest', async (req, reply) => {
@@ -148,6 +149,40 @@ export async function buildApp(engine: Engine) {
     const value = snapshot(id);
     if (!value) return reply.code(404).send({ error: 'Maratona não encontrada.' });
     stream(reply, `series:${id}`, value);
+  });
+  app.get('/api/bravas', () => engine.store.listBravas());
+  app.post('/api/bravas', async (req) => {
+    const body = z
+      .object({ mode: z.enum(['demo', 'live']) })
+      .strict()
+      .parse(req.body);
+    return view(await engine.brava.start(body.mode));
+  });
+  app.get('/api/bravas/:id', async (req, reply) => {
+    const brava = engine.brava.get(idSchema.parse(req.params).id);
+    return brava ? view(brava) : reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+  });
+  app.post('/api/bravas/:id/cancel', (req) =>
+    view(engine.brava.cancel(idSchema.parse(req.params).id)),
+  );
+  app.delete('/api/bravas/:id', (req, reply) => {
+    const removed = engine.store.removeBrava(idSchema.parse(req.params).id);
+    return removed
+      ? { removed: 1 }
+      : reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+  });
+  app.get('/api/bravas/:id/export', async (req, reply) => {
+    const { id } = idSchema.parse(req.params);
+    const brava = engine.store.getBrava(id);
+    if (!brava) return reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+    return reply
+      .header('Content-Disposition', `attachment; filename="rodada-brava-${id}.json"`)
+      .send({ formatVersion: 1, brava });
+  });
+  app.get('/api/bravas/:id/events', async (req, reply) => {
+    const brava = engine.brava.get(idSchema.parse(req.params).id);
+    if (!brava) return reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+    stream(reply, `brava:${brava.id}`, view(brava));
   });
   const dist = resolve('dist');
   if (existsSync(dist)) {

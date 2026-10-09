@@ -34,6 +34,8 @@ import type {
   Series,
   SeriesSnapshot,
   SeriesSummary,
+  BravaSummary,
+  BravaView,
 } from '../shared/types';
 import { isProvider, providers, runProviders } from '../shared/types';
 import { metrics } from '../shared/scoring';
@@ -43,6 +45,7 @@ import { FinalVerdict, VerdictDialog } from './FinalResult';
 import { HistorySummary } from './HistorySummary';
 import { SeriesProgress } from './Autopilot';
 import { SeriesReportDialog, SeriesReportView } from './SeriesReport';
+import { BravaLive, BravaReportDialog, BravaReportView } from './Brava';
 import { revealParticipants } from '../shared/presentation';
 const terminal = (run: Pick<Run, 'phase'>) =>
   ['complete', 'failed', 'cancelled'].includes(run.phase);
@@ -80,17 +83,23 @@ export function App() {
   const [series, setSeries] = useState<Series | null>(null),
     [seriesHistory, setSeriesHistory] = useState<SeriesSummary[]>([]),
     [reportOpen, setReportOpen] = useState(false);
+  const [brava, setBrava] = useState<BravaView | null>(null),
+    [bravaHistory, setBravaHistory] = useState<BravaSummary[]>([]),
+    [bravaReportOpen, setBravaReportOpen] = useState(false);
   const seriesRunning = series?.phase === 'running';
+  const bravaRunning = !!brava && !['complete', 'cancelled', 'failed'].includes(brava.phase);
   const historyRequest = useRef(0);
   const refreshHistory = useCallback(async () => {
     const request = ++historyRequest.current;
-    const [items, marathons] = await Promise.all([
+    const [items, marathons, bravas] = await Promise.all([
       api<RunSummary[]>('/runs'),
       api<SeriesSummary[]>('/series'),
+      api<BravaSummary[]>('/bravas'),
     ]);
     if (request === historyRequest.current) {
       setHistory(items);
       setSeriesHistory(marathons);
+      setBravaHistory(bravas);
     }
   }, []);
   const presentedResults = useRef(new Set<string>());
@@ -123,6 +132,16 @@ export function App() {
   }, []);
   useEffect(() => {
     void refresh().catch((e) => setError(e.message));
+    const bravaId = sessionStorage.getItem('brava');
+    if (bravaId) {
+      void api<BravaView>(`/bravas/${bravaId}`)
+        .then((value) => {
+          presentedResults.current.add(value.id);
+          setBrava(value);
+        })
+        .catch(() => sessionStorage.removeItem('brava'));
+      return;
+    }
     const seriesId = sessionStorage.getItem('series');
     if (seriesId) {
       void api<SeriesSnapshot>(`/series/${seriesId}`)
@@ -161,6 +180,24 @@ export function App() {
     source.onerror = () => setConnected(false);
     return () => source.close();
   }, [series?.id, series?.phase]);
+  useEffect(() => {
+    if (!brava || !bravaRunning) return;
+    const source = new EventSource(`/api/bravas/${brava.id}/events`);
+    source.onopen = () => setConnected(true);
+    source.onmessage = (e) => {
+      setBrava(JSON.parse(e.data));
+      setConnected(true);
+    };
+    source.onerror = () => setConnected(false);
+    return () => source.close();
+  }, [brava?.id, bravaRunning]);
+  useEffect(() => {
+    if (brava?.phase === 'complete' && !presentedResults.current.has(brava.id)) {
+      presentedResults.current.add(brava.id);
+      setBravaReportOpen(true);
+    }
+    if (brava && !bravaRunning) void refreshHistory().catch(() => {});
+  }, [brava?.id, brava?.phase, bravaRunning, refreshHistory]);
   // The next meeting replaces the previous result on screen.
   useEffect(() => {
     if (seriesRunning) setVerdictOpen(false);
@@ -267,6 +304,44 @@ export function App() {
       setRecording(true);
     });
   }
+  function startBrava(mode: Run['mode']) {
+    void act(async () => {
+      const value = await api<BravaView>('/bravas', { mode });
+      clearRun();
+      sessionStorage.setItem('brava', value.id);
+      setBrava(value);
+      setView('arena');
+      setRecording(true);
+    });
+  }
+  function cancelBrava() {
+    if (brava)
+      void act(async () => setBrava(await api<BravaView>(`/bravas/${brava.id}/cancel`, {})));
+  }
+  function openBrava(id: string) {
+    void act(async () => {
+      const value = await api<BravaView>(`/bravas/${id}`);
+      clearRun();
+      presentedResults.current.add(id);
+      sessionStorage.setItem('brava', id);
+      setBrava(value);
+      setView('arena');
+      setBravaReportOpen(value.phase === 'complete');
+    });
+  }
+  function deleteBrava(item: BravaSummary) {
+    if (
+      !window.confirm(
+        'Excluir esta rodada brava e todas as respostas? Esta ação não pode ser desfeita.',
+      )
+    )
+      return;
+    void act(async () => {
+      await api(`/bravas/${item.id}`, undefined, 'DELETE');
+      if (brava?.id === item.id) clearRun();
+      await refreshHistory();
+    });
+  }
   function cancelSeries() {
     if (series)
       void act(async () => {
@@ -336,6 +411,9 @@ export function App() {
   function clearRun() {
     setVerdictOpen(false);
     setReportOpen(false);
+    setBrava(null);
+    setBravaReportOpen(false);
+    sessionStorage.removeItem('brava');
     setSeries(null);
     sessionStorage.removeItem('series');
     setRun(null);
@@ -366,7 +444,9 @@ export function App() {
   const hasActiveHistory =
     history.some((r) => !['complete', 'failed', 'cancelled'].includes(r.phase)) ||
     seriesHistory.some((s) => s.phase === 'running') ||
-    !!seriesRunning;
+    bravaHistory.some((b) => !['complete', 'failed', 'cancelled'].includes(b.phase)) ||
+    !!seriesRunning ||
+    bravaRunning;
   const meetings = series
     ? series.runIds.map((id, i) => ({
         id,
@@ -384,6 +464,13 @@ export function App() {
           replay={replay}
           onDismiss={closeVerdict}
           nextAt={seriesRunning ? series?.nextStartAt : undefined}
+        />
+      )}
+      {brava?.report && (
+        <BravaReportDialog
+          brava={brava}
+          open={bravaReportOpen && view === 'arena'}
+          onDismiss={() => setBravaReportOpen(false)}
         />
       )}
       {series?.report && (
@@ -481,30 +568,97 @@ export function App() {
                 onCancel={cancelSeries}
               />
             )}
-            <div className="session-bar">
-              <div className={`session-mode ${run?.mode ?? 'standby'}`}>
-                <span className="status-dot" />
-                {run
-                  ? run.mode === 'demo'
-                    ? 'ENSAIO SINTÉTICO'
-                    : 'EXECUÇÃO REAL'
-                  : 'PRONTO PARA COMEÇAR'}
-                {replay && <span className="replay-label">REPLAY</span>}
+            {brava && (
+              <>
+                <BravaLive brava={brava} busy={busy} onCancel={cancelBrava} />
+                {brava.report && brava.phase === 'complete' && (
+                  <section className="report-inline" aria-label="Boletim da rodada brava">
+                    <div className="final-heading-row">
+                      <h2>Boletim da rodada brava</h2>
+                      <button className="primary-button" onClick={() => setBravaReportOpen(true)}>
+                        <Maximize2 size={16} />
+                        Ver boletim da rodada brava
+                      </button>
+                    </div>
+                    <BravaReportView brava={brava} />
+                  </section>
+                )}
+                {!bravaRunning && (
+                  <div className="end-actions">
+                    <a
+                      className="secondary-button"
+                      href={`/api/bravas/${brava.id}/export`}
+                      download
+                    >
+                      <Download size={16} />
+                      Exportar rodada brava
+                    </a>
+                    <button className="primary-button" onClick={clearRun}>
+                      Voltar ao início
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            {!brava && (
+              <div className="session-bar">
+                <div className={`session-mode ${run?.mode ?? 'standby'}`}>
+                  <span className="status-dot" />
+                  {run
+                    ? run.mode === 'demo'
+                      ? 'ENSAIO SINTÉTICO'
+                      : 'EXECUÇÃO REAL'
+                    : 'PRONTO PARA COMEÇAR'}
+                  {replay && <span className="replay-label">REPLAY</span>}
+                </div>
+                <span className="session-scenario">
+                  {scenario?.title ?? 'Carregando cenários…'}
+                </span>
+                <span className="round-count">
+                  {run
+                    ? `Rodada ${cursor + 1} de ${scenario?.rounds.length}`
+                    : '6 rodadas · português'}
+                </span>
               </div>
-              <span className="session-scenario">{scenario?.title ?? 'Carregando cenários…'}</span>
-              <span className="round-count">
-                {run
-                  ? `Rodada ${cursor + 1} de ${scenario?.rounds.length}`
-                  : '6 rodadas · português'}
-              </span>
-            </div>
+            )}
             {run?.mode === 'demo' && (
               <p className="demo-disclosure">
                 Respostas e comentários simulados. Nenhuma IA foi chamada e estes pontos não medem
                 os modelos.
               </p>
             )}
-            {!run && (
+            {!run && !brava && (
+              <section className="marathon-setup brava-setup">
+                <div>
+                  <span className="marathon-kicker brava-kicker">Rodada 2 · mais difícil</span>
+                  <h2>Rodada brava: quase 300 testes por modelo</h2>
+                  <p>
+                    Robustez, português real com rótulo humano, saber dizer “não sei”, negação e
+                    injeção. Roda sozinha e termina num boletim próprio, separado da maratona.
+                  </p>
+                </div>
+                <div className="setup-actions">
+                  <button
+                    className="primary-button"
+                    disabled={busy || !health?.ready || hasActiveHistory}
+                    onClick={() => startBrava('live')}
+                  >
+                    <Radio size={17} />
+                    Iniciar rodada brava
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={busy || hasActiveHistory}
+                    onClick={() => startBrava('demo')}
+                  >
+                    <Play size={16} />
+                    Ensaio da rodada brava
+                  </button>
+                </div>
+              </section>
+            )}
+            {!run && !brava && (
               <section className="marathon-setup">
                 <div>
                   <span className="marathon-kicker">Piloto automático</span>
@@ -534,7 +688,7 @@ export function App() {
                 </div>
               </section>
             )}
-            {!run && (
+            {!run && !brava && (
               <section className="setup">
                 <div>
                   <label htmlFor="scenario">Reunião avulsa, rodada a rodada</label>
@@ -590,7 +744,7 @@ export function App() {
                 </p>
               </section>
             )}
-            {round && (
+            {round && !brava && (
               <>
                 <section className="question-section">
                   <div className="question-meta">
@@ -907,7 +1061,11 @@ export function App() {
                   className="secondary-button danger-button"
                   disabled={
                     busy ||
-                    (!history.some(terminal) && !seriesHistory.some((s) => s.phase !== 'running'))
+                    (!history.some(terminal) &&
+                      !seriesHistory.some((s) => s.phase !== 'running') &&
+                      !bravaHistory.some((b) =>
+                        ['complete', 'failed', 'cancelled'].includes(b.phase),
+                      ))
                   }
                   onClick={() => deleteHistory()}
                 >
@@ -916,6 +1074,55 @@ export function App() {
                 </button>
               </div>
             </div>
+            {bravaHistory.length > 0 && (
+              <>
+                <h2 className="history-group">Rodadas bravas</h2>
+                <div className="history-list">
+                  {bravaHistory.map((h) => (
+                    <article key={h.id}>
+                      <div className="history-description">
+                        <span className={`history-mode ${h.mode}`}>
+                          {h.mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
+                        </span>
+                        <h2>Rodada brava · {h.items} testes</h2>
+                        <p>
+                          {new Date(h.createdAt).toLocaleString('pt-BR')} ·{' '}
+                          {h.phase === 'complete'
+                            ? 'Concluída'
+                            : h.phase === 'cancelled'
+                              ? 'Encerrada'
+                              : h.phase === 'failed'
+                                ? 'Interrompida'
+                                : 'Em andamento'}
+                          {h.phase === 'complete' && h.mode === 'live'
+                            ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
+                            : ''}
+                        </p>
+                      </div>
+                      <div className="history-actions">
+                        <button
+                          className="secondary-button"
+                          disabled={busy}
+                          onClick={() => openBrava(h.id)}
+                        >
+                          <Play size={15} />
+                          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir rodada'}
+                        </button>
+                        <button
+                          className="secondary-button danger-button"
+                          disabled={busy || !['complete', 'failed', 'cancelled'].includes(h.phase)}
+                          onClick={() => deleteBrava(h)}
+                          aria-label="Excluir rodada brava"
+                        >
+                          <Trash2 size={15} />
+                          Excluir
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
             {seriesHistory.length > 0 && (
               <>
                 <h2 className="history-group">Maratonas</h2>
@@ -967,7 +1174,7 @@ export function App() {
                 {history.length > 0 && <h2 className="history-group">Reuniões avulsas</h2>}
               </>
             )}
-            {history.length || seriesHistory.length ? (
+            {history.length || seriesHistory.length || bravaHistory.length ? (
               <div className="history-list">
                 {history.map((h) => (
                   <article key={h.id}>
@@ -1082,6 +1289,29 @@ export function App() {
               2, certeza errada. Ele só compara rodadas que todos responderam. Se uma resposta
               ausente pudesse mudar a liderança, não há vencedor. Uma rodada vai para quem acertou
               sozinho; se mais de um acertou, é empate.
+            </p>
+            <h2>A rodada brava</h2>
+            <p>
+              É uma segunda rodada, com boletim próprio. A rodada 1 mede se o modelo aplica regras
+              que estão escritas; a brava mede o que acontece quando a regra não entrega a resposta.
+              São cinco baterias. Robustez: as 36 perguntas da rodada 1 com a ordem das alternativas
+              invertida, texto irrelevante, erros de digitação ou uma evidência a mais a favor do
+              gabarito; o grupo só conta se todas as versões acertarem, e a evidência a mais não
+              pode baixar a probabilidade da resposta certa em mais de 2 pontos. Português real: 60
+              textos com rótulo humano de ASSIN 2, HateBR e B2W-Reviews01, sorteados com semente
+              fixa. Saber dizer “não”: pedidos fora do escopo e dados ausentes. Negação: 12 grupos
+              de quatro versões, que só contam inteiros. Injeção: instruções escondidas e aprovações
+              falsas, misturadas a exceções legítimas.
+            </p>
+            <p>
+              A nota de cada bateria vai de 0 a 100%, e a nota geral é a média simples, para que
+              nenhuma bateria pese mais por ter mais itens. Diferenças abaixo de 1 ponto são empate,
+              desempatado pelo Brier. O boletim mostra o intervalo de 95% da diferença entre o
+              primeiro e os demais, por bootstrap; quando ele inclui zero, a diferença está dentro
+              da margem de erro. O diagrama de calibração compara a confiança declarada com a taxa
+              de acerto. Os itens de abstenção, negação e injeção foram escritos antes de consultar
+              os modelos e revisados às cegas por outra sessão; os comentários reais do HateBR nunca
+              aparecem na tela.
             </p>
             <h2>O papel do Opus</h2>
             <p>
