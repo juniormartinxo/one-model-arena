@@ -40,7 +40,7 @@ export function SeriesProgress({
   const status = !running
     ? null
     : series.report
-      ? { busy: true, text: 'Opus escreve a leitura final da maratona' }
+      ? { busy: true, text: 'Opus escreve a leitura final da Maratona de reuniões' }
       : next !== null
         ? { busy: false, text: `Próxima reunião em ${next} s` }
         : run && activity[run.phase]
@@ -54,11 +54,11 @@ export function SeriesProgress({
               }
             : null;
   return (
-    <div className="series-progress" aria-label="Progresso da maratona">
+    <div className="series-progress" aria-label="Progresso da Maratona de reuniões">
       <div className="series-progress-head">
         <span className="series-label">
-          {series.mode === 'demo' ? 'Ensaio da maratona' : 'Maratona'} · Reunião {index + 1} de{' '}
-          {series.scenarioIds.length}
+          {series.mode === 'demo' ? 'Ensaio da Maratona de reuniões' : 'Maratona de reuniões'} ·
+          Reunião {index + 1} de {series.scenarioIds.length}
         </span>
         {status && (
           <span className="series-status" aria-live="polite">
@@ -69,7 +69,7 @@ export function SeriesProgress({
         {running && (
           <button className="quiet-button" disabled={busy} onClick={onCancel}>
             <Square size={12} />
-            Encerrar maratona
+            Encerrar Maratona de reuniões
           </button>
         )}
       </div>

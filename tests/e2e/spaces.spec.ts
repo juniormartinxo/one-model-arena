@@ -11,15 +11,15 @@ test('each round and the meeting room live in their own space', async ({ page, r
   await page.getByRole('button', { name: 'Rodadas', exact: true }).click();
   await expect(page).toHaveURL(/#\/maratona$/);
   const tabs = page.getByRole('navigation', { name: 'Rodadas' });
-  await tabs.getByRole('link', { name: '2 · Brava' }).click();
+  await tabs.getByRole('link', { name: '2 · Resiliência' }).click();
   await expect(page).toHaveURL(/#\/brava$/);
-  await expect(page.getByRole('button', { name: 'Ensaio da rodada brava' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Ensaio da maratona' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Ensaio da Resiliência' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ensaio da Maratona de reuniões' })).toHaveCount(0);
   await tabs.getByRole('link', { name: '3 · Imagens' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Decisions × Clef');
   await page.goBack();
   await expect(page).toHaveURL(/#\/brava$/);
-  await expect(page.getByRole('button', { name: 'Ensaio da rodada brava' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ensaio da Resiliência' })).toBeVisible();
 
   // A meeting started in the room stays in the room; the other spaces point back to it.
   await page.getByRole('button', { name: 'Sala de reuniões', exact: true }).click();
@@ -30,7 +30,7 @@ test('each round and the meeting room live in their own space', async ({ page, r
   // "Rodadas" returns to the last round visited.
   await page.getByRole('button', { name: 'Rodadas', exact: true }).click();
   await expect(page).toHaveURL(/#\/brava$/);
-  await expect(page.getByRole('button', { name: 'Ensaio da rodada brava' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Ensaio da Resiliência' })).toBeDisabled();
   await page.getByRole('button', { name: 'Acompanhar.' }).click();
   await expect(page).toHaveURL(/#\/sala$/);
   await expect(page.getByRole('button', { name: 'Começar primeira rodada' })).toBeVisible();

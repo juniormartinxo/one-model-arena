@@ -1,0 +1,415 @@
+import { useEffect, useState } from 'react';
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  ChevronDown,
+  Download,
+  Code2,
+  Menu,
+  X,
+} from 'lucide-react';
+import { publicationSchema, type Publication } from '../shared/publication';
+import { ArenaSculpture } from './components/ArenaSculpture';
+import { Method } from './components/Method';
+import { Results } from './components/Results';
+import { datasets, models, repository, tests } from './content/catalog';
+
+const navigation = [
+  { href: '#resultados', label: 'Os testes' },
+  { href: '#metodo', label: 'O método' },
+  { href: '#datasets', label: 'Os datasets' },
+  { href: '#sobre', label: 'Sobre a Arena' },
+];
+const metrics = [
+  [
+    'Acerto e nota',
+    'A Maratona de reuniões conta acertos. Nas outras provas, cada bateria tem o mesmo peso na nota média. Grupos de robustez e negação exigem consistência entre versões.',
+  ],
+  [
+    'Brier e calibração',
+    'O Brier mede a distância entre probabilidades e gabarito. O ECE agrupa previsões por confiança e compara confiança com acerto. São medidas diferentes.',
+  ],
+  [
+    'Margem de erro',
+    'Na Resiliência e nas imagens, o bootstrap pareado reamostra grupos e itens. Se o intervalo de 95% da diferença inclui zero, a liderança deve ser lida com cautela.',
+  ],
+  [
+    'Tempo e custo',
+    'A mediana inclui a rede até cada API. A projeção de custo considera tokens de entrada e informa valores ausentes. Tokenizadores e tarifas influenciam a comparação.',
+  ],
+];
+function Sources() {
+  return (
+    <section
+      className="dataset-section section-shell"
+      id="datasets"
+      aria-labelledby="datasets-title"
+    >
+      <div className="section-heading">
+        <h2 id="datasets-title">
+          A evidência
+          <br />
+          <span>tem origem.</span>
+        </h2>
+        <p>
+          Conheça as fontes, a seleção das amostras
+          <br />e o que cada conjunto permite observar.
+        </p>
+      </div>
+      <div className="dataset-list">
+        {datasets.map((d) => (
+          <details key={d.name} className="dataset-row">
+            <summary>
+              <span className="dataset-name">{d.name}</span>
+              <span className="dataset-category">{d.category}</span>
+              <span className="dataset-year">{d.year}</span>
+              <span className="dataset-expand">
+                <ChevronDown size={21} />
+              </span>
+            </summary>
+            <div className="dataset-content">
+              <div>
+                <p>{d.description}</p>
+                <p>{d.sampling}</p>
+              </div>
+              <div>
+                <h3>Fonte e atribuição</h3>
+                <p>{d.license}</p>
+                <p className="dataset-citation">{d.citation}</p>
+                <div className="source-links">
+                  <a href={d.url} target="_blank" rel="noreferrer">
+                    Consultar a fonte <ArrowUpRight size={15} />
+                  </a>
+                  <a href={`${repository}/blob/main/${d.sample}`} target="_blank" rel="noreferrer">
+                    Ver seleção das amostras <ArrowUpRight size={15} />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </details>
+        ))}
+      </div>
+      <p className="dataset-footnote">
+        Textos e fotografias dos datasets permanecem nas fontes de origem. A Arena publica
+        referências, metodologia e resultados. O tamanho da amostra utilizada acompanha cada edição.
+      </p>
+    </section>
+  );
+}
+function Evidence({ publication }: { publication: Publication | null }) {
+  const edition = publication?.status === 'published' ? publication.edition : null;
+  return (
+    <section
+      className="evidence-section section-shell"
+      id="evidencias"
+      aria-labelledby="evidence-title"
+    >
+      <div>
+        <h2 id="evidence-title">
+          Você não precisa
+          <br />
+          <span>ficar só com o placar.</span>
+        </h2>
+        <p>
+          O código mostra como cada ponto é calculado. Cada edição publicada inclui sua origem, as
+          regras usadas e as referências das amostras.
+        </p>
+        <a
+          className="button button-outline"
+          href={`${repository}/tree/main/shared`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Examinar as regras <ArrowUpRight size={17} />
+        </a>
+      </div>
+      <div className="evidence-ledger">
+        <div>
+          <span>Código do experimento</span>
+          <a href={repository} target="_blank" rel="noreferrer">
+            Aberto no GitHub <ArrowUpRight size={15} />
+          </a>
+        </div>
+        <div>
+          <span>Gabaritos e pontuação</span>
+          <a href={`${repository}/blob/main/shared/scoring.ts`} target="_blank" rel="noreferrer">
+            Critérios verificáveis <ArrowUpRight size={15} />
+          </a>
+        </div>
+        <div>
+          <span>Edição pública</span>
+          <strong>{edition ? edition.title : 'Em preparação'}</strong>
+        </div>
+        {edition && (
+          <>
+            <div>
+              <span>Dados agregados</span>
+              <a href="/data/edition.json" download={`arena-${edition.id}.json`}>
+                Baixar JSON <Download size={15} />
+              </a>
+            </div>
+            <details className="provenance">
+              <summary>
+                Identificar esta edição <ChevronDown size={15} />
+              </summary>
+              <dl>
+                <dt>Revisão do código</dt>
+                <dd>
+                  <code>{edition.codeRevision}</code>
+                </dd>
+                <dt>SHA-256 das regras</dt>
+                <dd>
+                  <code>{edition.rulesHash}</code>
+                </dd>
+                {edition.results.map((r) => (
+                  <div key={r.sourceId}>
+                    <dt>{tests.find((test) => test.id === r.kind)?.name} · execução de origem</dt>
+                    <dd>
+                      <code>{r.sourceId}</code>
+                    </dd>
+                    <dt>Catálogos</dt>
+                    {r.catalogHashes.map((hash, i) => (
+                      <dd key={`${i}-${hash}`}>
+                        <code>{hash}</code>
+                      </dd>
+                    ))}
+                  </div>
+                ))}
+              </dl>
+            </details>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+function Limits() {
+  return (
+    <section className="limits-section section-shell" id="limites" aria-labelledby="limits-title">
+      <div className="section-heading">
+        <h2 id="limits-title">
+          Toda conclusão
+          <br />
+          <span>tem um alcance.</span>
+        </h2>
+        <p>
+          Este é um recorte de tarefas em português.
+          <br />
+          Os resultados não formam um ranking universal.
+        </p>
+      </div>
+      <div className="limits-grid">
+        <div className="metrics-glossary">
+          {metrics.map(([title, text]) => (
+            <details key={title}>
+              <summary>
+                {title}
+                <ChevronDown size={17} />
+              </summary>
+              <p>{text}</p>
+            </details>
+          ))}
+        </div>
+        <div className="limits-copy">
+          <h3>Transparência também é mostrar os limites.</h3>
+          <p>
+            Datasets públicos podem ter aparecido no treinamento dos modelos. Amostras pequenas e
+            discordâncias entre anotadores limitam as conclusões.
+          </p>
+          <p>
+            Itens autorais têm gabaritos definidos pelo experimento. Itens anulados saem da nota de
+            todos os participantes e são identificados na edição, com o motivo.
+          </p>
+          <p>
+            Uma mudança nas regras pode alterar a pontuação sem mudar as respostas. Por isso, os
+            resultados públicos ficam vinculados à revisão que os gerou. Comentários antigos da IA
+            não substituem esses números.
+          </p>
+          <a
+            className="inline-link"
+            href={`${repository}/blob/main/docs/o-que-foi-feito.md`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ler as decisões metodológicas <ArrowUpRight size={16} />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+export function PublicApp() {
+  const [menu, setMenu] = useState(false);
+  const [publication, setPublication] = useState<Publication | null>(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/data/edition.json', { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Edição indisponível');
+        return publicationSchema.parse(await response.json());
+      })
+      .then(setPublication)
+      .catch((e) => {
+        if (e.name !== 'AbortError') setError(true);
+      });
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenu(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  return (
+    <>
+      <a className="skip-link" href="#conteudo">
+        Ir para o conteúdo
+      </a>
+      <header className="public-header">
+        <div className="header-inner">
+          <a href="#inicio" className="public-brand" aria-label="One Model Arena — início">
+            <img src="/brand/one-model-arena-96.png" width="34" height="34" alt="" />
+            <span>
+              One Model <strong>Arena</strong>
+              <i>.</i>
+            </span>
+          </a>
+          <button
+            className="menu-toggle"
+            aria-label={menu ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={menu}
+            aria-controls="public-navigation"
+            onClick={() => setMenu((v) => !v)}
+          >
+            {menu ? <X size={23} /> : <Menu size={23} />}
+          </button>
+          <nav
+            id="public-navigation"
+            className={menu ? 'is-open' : ''}
+            aria-label="Navegação principal"
+          >
+            {navigation.map((n) => (
+              <a href={n.href} key={n.href} onClick={() => setMenu(false)}>
+                {n.label}
+              </a>
+            ))}
+            <a
+              className="repository-link"
+              href={repository}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Código no GitHub"
+            >
+              <Code2 size={18} />
+              <span>GitHub</span>
+              <ArrowUpRight size={14} />
+            </a>
+          </nav>
+        </div>
+      </header>
+      <main id="conteudo">
+        <section className="hero section-shell" id="inicio" aria-labelledby="hero-title">
+          <div className="hero-copy">
+            <h1 id="hero-title">
+              Modelos.
+              <br />
+              <span>À prova.</span>
+            </h1>
+            <p className="hero-statement">
+              A mesma pergunta.
+              <br />O que muda é a resposta.
+            </p>
+            <p className="hero-description">
+              Uma arena para comparar decisões de IA em português. Testes visíveis, critérios
+              explícitos e espaço para olhar além do vencedor.
+            </p>
+            <div className="hero-actions">
+              <a className="button button-primary" href="#resultados">
+                Explorar os testes <ArrowDown size={17} />
+              </a>
+              <a className="hero-method-link" href="#metodo">
+                Como chegamos lá <ArrowUpRight size={17} />
+              </a>
+            </div>
+          </div>
+          <ArenaSculpture />
+          <div className="hero-bottom">
+            <span>Três modelos. A mesma régua.</span>
+            <a href="#resultados" aria-label="Continuar para os testes">
+              <ArrowDown size={17} />
+            </a>
+          </div>
+        </section>
+        <div className="participants section-shell" aria-label="Modelos participantes">
+          {Object.entries(models).map(([id, model]) => (
+            <div key={id}>
+              <span className="participant-symbol" style={{ color: model.color }}>
+                {model.mark}
+              </span>
+              <div>
+                <strong>{model.name}</strong>
+                <span>{model.vendor}</span>
+              </div>
+              <small>{id === 'jev' ? 'Decisões estruturadas' : 'Decisões e imagens'}</small>
+            </div>
+          ))}
+        </div>
+        <Results publication={publication} error={error} />
+        <Method />
+        <Sources />
+        <Evidence publication={publication} />
+        <Limits />
+        <section className="about-section" id="sobre" aria-labelledby="about-title">
+          <div className="section-shell">
+            <div className="about-mark" aria-hidden="true">
+              <img
+                src="/brand/one-model-arena.png"
+                width="130"
+                height="130"
+                alt=""
+                loading="lazy"
+              />
+            </div>
+            <h2 id="about-title">
+              A melhor resposta
+              <br />
+              começa com uma
+              <br />
+              <span>boa pergunta.</span>
+            </h2>
+            <div className="about-copy">
+              <p>
+                One Model Arena é um experimento de comparação de modelos de IA. Este site reúne a
+                parte pública: o que foi testado, como foi avaliado e o que é possível concluir.
+              </p>
+              <p>
+                O objetivo é abrir a comparação para quem quer entender as escolhas por trás dos
+                números.
+              </p>
+              <a
+                className="button button-outline"
+                href={repository}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Conheça o projeto <ArrowUpRight size={17} />
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer className="public-footer section-shell">
+        <a href="#inicio" className="footer-brand">
+          One Model Arena<span>.</span>
+        </a>
+        <p>Evidências à vista. Sempre.</p>
+        <a href="#inicio">
+          Voltar ao topo <ArrowRight size={16} />
+        </a>
+      </footer>
+    </>
+  );
+}

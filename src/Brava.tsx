@@ -639,8 +639,8 @@ export function BravaReportView({
 
           {report.round1 && (
             <Section
-              title="Da rodada 1 para a rodada brava"
-              note="Rodada 1: acerto nas 36 perguntas com regras explícitas. Rodada brava: nota média das baterias difíceis."
+              title="Da rodada 1 para a Resiliência"
+              note="Rodada 1: acerto nas 36 perguntas com regras explícitas. Resiliência: nota média das baterias difíceis."
             >
               <div className="round-compare">
                 {report.participants.map((p) => (

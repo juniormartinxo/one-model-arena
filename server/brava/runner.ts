@@ -65,7 +65,7 @@ export class BravaRunner {
   }
 
   async start(mode: Run['mode'], kind: BravaKind = 'brava'): Promise<Brava> {
-    const name = kind === 'visual' ? 'a rodada das imagens' : 'a rodada brava';
+    const name = kind === 'visual' ? 'a rodada das imagens' : 'a Resiliência';
     if (this.engine.store.hasActive())
       throw new Error(`Conclua ou encerre a execução ativa antes de iniciar ${name}.`);
     const participants = kind === 'visual' ? visualProviders : providers;
@@ -157,7 +157,7 @@ export class BravaRunner {
       brava.introduction = live
         ? (await this.opus(brava, 'moderator', bravaIntroPrompt(brava), bravaIntroSchema, signal))
             .introduction
-        : `Ensaio da ${visual ? 'rodada das imagens' : 'rodada brava'}: respostas sintéticas, sem chamadas de IA, só para conferir a tela.`;
+        : `Ensaio da ${visual ? 'rodada das imagens' : 'Resiliência'}: respostas sintéticas, sem chamadas de IA, só para conferir a tela.`;
       await this.sleep(brava, config.AUTOPLAY_DELAY_MS, signal);
       for (const [index, battery] of brava.batteries.entries()) {
         brava.currentBattery = index;
@@ -274,7 +274,7 @@ export class BravaRunner {
       brava.error =
         e instanceof Error
           ? e.message
-          : `Falha inesperada na ${visual ? 'rodada das imagens' : 'rodada brava'}.`;
+          : `Falha inesperada na ${visual ? 'rodada das imagens' : 'Resiliência'}.`;
       this.persist(brava, true);
     } finally {
       if (!signal.aborted) {
@@ -289,7 +289,7 @@ export class BravaRunner {
   }
   cancel(id: string) {
     const brava = this.live.get(id) ?? this.engine.store.getBrava(id);
-    if (!brava) throw new Error('Rodada brava não encontrada.');
+    if (!brava) throw new Error('Resiliência não encontrada.');
     if (finished(brava.phase)) return brava;
     this.controllers.get(id)?.abort();
     this.controllers.delete(id);

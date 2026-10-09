@@ -28,10 +28,10 @@ export const roundNames: Record<
   { title: string; name: string; rehearsal: string; plural: string }
 > = {
   brava: {
-    title: 'Rodada brava',
-    name: 'rodada brava',
-    rehearsal: 'Ensaio da rodada brava',
-    plural: 'Rodadas bravas',
+    title: 'Resiliência',
+    name: 'Resiliência',
+    rehearsal: 'Ensaio da Resiliência',
+    plural: 'Rodadas de Resiliência',
   },
   visual: {
     title: 'Rodada das imagens',

@@ -123,7 +123,7 @@ export async function buildApp(engine: Engine) {
   });
   app.get('/api/series/:id', async (req, reply) => {
     const value = snapshot(idSchema.parse(req.params).id);
-    return value ?? reply.code(404).send({ error: 'Maratona não encontrada.' });
+    return value ?? reply.code(404).send({ error: 'Maratona de reuniões não encontrada.' });
   });
   app.post('/api/series/:id/cancel', (req) => {
     const { id } = idSchema.parse(req.params);
@@ -132,12 +132,14 @@ export async function buildApp(engine: Engine) {
   });
   app.delete('/api/series/:id', (req, reply) => {
     const removed = engine.store.removeSeries(idSchema.parse(req.params).id);
-    return removed ? { removed: 1 } : reply.code(404).send({ error: 'Maratona não encontrada.' });
+    return removed
+      ? { removed: 1 }
+      : reply.code(404).send({ error: 'Maratona de reuniões não encontrada.' });
   });
   app.get('/api/series/:id/export', async (req, reply) => {
     const { id } = idSchema.parse(req.params);
     const series = engine.store.getSeries(id);
-    if (!series) return reply.code(404).send({ error: 'Maratona não encontrada.' });
+    if (!series) return reply.code(404).send({ error: 'Maratona de reuniões não encontrada.' });
     return reply.header('Content-Disposition', `attachment; filename="maratona-${id}.json"`).send({
       formatVersion: 1,
       series,
@@ -150,7 +152,7 @@ export async function buildApp(engine: Engine) {
   app.get('/api/series/:id/events', async (req, reply) => {
     const { id } = idSchema.parse(req.params);
     const value = snapshot(id);
-    if (!value) return reply.code(404).send({ error: 'Maratona não encontrada.' });
+    if (!value) return reply.code(404).send({ error: 'Maratona de reuniões não encontrada.' });
     stream(reply, `series:${id}`, value);
   });
   app.get('/api/bravas', () => engine.store.listBravas());
@@ -173,7 +175,7 @@ export async function buildApp(engine: Engine) {
   });
   app.get('/api/bravas/:id', async (req, reply) => {
     const brava = engine.brava.get(idSchema.parse(req.params).id);
-    return brava ? view(brava) : reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+    return brava ? view(brava) : reply.code(404).send({ error: 'Resiliência não encontrada.' });
   });
   app.post('/api/bravas/:id/cancel', (req) =>
     view(engine.brava.cancel(idSchema.parse(req.params).id)),
@@ -182,12 +184,12 @@ export async function buildApp(engine: Engine) {
     const removed = engine.store.removeBrava(idSchema.parse(req.params).id);
     return removed
       ? { removed: 1 }
-      : reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+      : reply.code(404).send({ error: 'Resiliência não encontrada.' });
   });
   app.get('/api/bravas/:id/export', async (req, reply) => {
     const { id } = idSchema.parse(req.params);
     const brava = engine.store.getBrava(id);
-    if (!brava) return reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+    if (!brava) return reply.code(404).send({ error: 'Resiliência não encontrada.' });
     return reply
       .header(
         'Content-Disposition',
@@ -197,7 +199,7 @@ export async function buildApp(engine: Engine) {
   });
   app.get('/api/bravas/:id/events', async (req, reply) => {
     const brava = engine.brava.get(idSchema.parse(req.params).id);
-    if (!brava) return reply.code(404).send({ error: 'Rodada brava não encontrada.' });
+    if (!brava) return reply.code(404).send({ error: 'Resiliência não encontrada.' });
     stream(reply, `brava:${brava.id}`, view(brava));
   });
   const dist = resolve('dist');

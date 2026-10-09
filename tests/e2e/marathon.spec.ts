@@ -18,11 +18,13 @@ test('runs the whole rehearsal marathon without clicks and ends on the report', 
   await clearActive(request);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto('/');
-  await page.getByRole('link', { name: /^Rodada 1 · piloto automático Maratona/ }).click();
+  await page
+    .getByRole('link', { name: /^Rodada 1 · piloto automático Maratona de reuniões/ })
+    .click();
   await expect(page).toHaveURL(/#\/maratona$/);
-  await page.getByRole('button', { name: 'Ensaio da maratona', exact: true }).click();
+  await page.getByRole('button', { name: 'Ensaio da Maratona de reuniões', exact: true }).click();
   await expect(page.locator('.app')).toHaveClass(/recording/);
-  const progress = page.getByLabel('Progresso da maratona');
+  const progress = page.getByLabel('Progresso da Maratona de reuniões');
   await expect(progress).toContainText('Reunião 1 de 6');
   await expect(page.getByText('Piloto automático', { exact: true })).toBeVisible();
   await expect(page.locator('.opus-panel.has-feedback')).toBeVisible({ timeout: 30_000 });
@@ -35,7 +37,7 @@ test('runs the whole rehearsal marathon without clicks and ends on the report', 
   ).toHaveCount(0);
   await expect(progress).toContainText('Reunião 2 de 6', { timeout: 30_000 });
   await page.screenshot({ path: '.impeccable/review/marathon-running-fullhd.png' });
-  const report = page.getByRole('dialog', { name: 'Ensaio da maratona concluído' });
+  const report = page.getByRole('dialog', { name: 'Ensaio da Maratona de reuniões concluído' });
   await expect(report).toBeVisible({ timeout: 90_000 });
   await expect(report.locator('.podium-card')).toHaveCount(3);
   await expect(report).toContainText('36 decisões por modelo');
@@ -43,7 +45,7 @@ test('runs the whole rehearsal marathon without clicks and ends on the report', 
   await expect(report.locator('.recommendation')).toHaveCount(0);
   await expect(report.locator('.battery')).toHaveCount(3);
   await report.getByRole('button', { name: 'Ver detalhes' }).click();
-  await expect(page.getByRole('region', { name: 'Boletim da maratona' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Boletim da Maratona de reuniões' })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Histórico', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Abrir boletim' }).first()).toBeVisible();

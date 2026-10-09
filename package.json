@@ -16,7 +16,12 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "datasets": "tsx scripts/fetch-datasets.ts",
-    "imagens": "tsx scripts/fetch-images.ts"
+    "imagens": "tsx scripts/fetch-images.ts",
+    "dev:public": "vite --config vite.public.config.ts",
+    "build:public": "tsc --noEmit -p tsconfig.public.json && vite build --config vite.public.config.ts",
+    "preview:public": "vite preview --config vite.public.config.ts",
+    "public:export": "tsx scripts/export-public.ts",
+    "test:public": "playwright test --config playwright.public.config.ts"
   },
   "dependencies": {
     "@fastify/static": "^10.1.5",

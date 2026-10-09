@@ -83,7 +83,8 @@ export class Store {
   removeSeries(id: string) {
     const series = this.getSeries(id);
     if (!series) return false;
-    if (series.phase === 'running') throw new Error('Encerre a maratona antes de excluí-la.');
+    if (series.phase === 'running')
+      throw new Error('Encerre a Maratona de reuniões antes de excluí-la.');
     this.db.exec('BEGIN');
     try {
       for (const runId of series.runIds) {
@@ -139,7 +140,7 @@ export class Store {
     const brava = this.getBrava(id);
     if (!brava) return false;
     if (!['complete', 'cancelled', 'failed'].includes(brava.phase))
-      throw new Error('Encerre a rodada brava antes de excluí-la.');
+      throw new Error('Encerre a Resiliência antes de excluí-la.');
     this.db.prepare('DELETE FROM bravas WHERE id=?').run(id);
     return true;
   }
@@ -150,7 +151,7 @@ export class Store {
         brava.phase = 'failed';
         delete brava.nextAt;
         brava.error =
-          'Servidor reiniciado durante a rodada brava. Respostas recebidas foram preservadas.';
+          'Servidor reiniciado durante a Resiliência. Respostas recebidas foram preservadas.';
         this.saveBrava(brava);
       }
     }
@@ -170,7 +171,7 @@ export class Store {
         series.phase = 'failed';
         delete series.nextStartAt;
         series.error =
-          'Servidor reiniciado durante a maratona. Reuniões concluídas foram preservadas.';
+          'Servidor reiniciado durante a Maratona de reuniões. Reuniões concluídas foram preservadas.';
         this.saveSeries(series);
       }
     }

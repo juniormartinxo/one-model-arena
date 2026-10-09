@@ -1,0 +1,12 @@
+.env*
+data/
+server/
+src/
+tests/
+test-results/
+playwright-report/
+dist/
+dist-public/
+.impeccable/
+docs/
+scripts/

@@ -163,12 +163,12 @@ export function SeriesReportView({
   const headline = analysis
     ? revealParticipants(analysis.headline, analysis.mapping)
     : demo
-      ? 'Ensaio da maratona concluído'
+      ? 'Ensaio da Maratona de reuniões concluído'
       : winner
-        ? `${providerNames[winner]} lidera a maratona`
+        ? `${providerNames[winner]} lidera a Maratona de reuniões`
         : report.winner === 'tie'
-          ? 'Empate na maratona'
-          : 'Maratona sem vencedor declarado';
+          ? 'Empate na Maratona de reuniões'
+          : 'Maratona de reuniões sem vencedor declarado';
   const reasonText = {
     points: 'Mais acertos pelo gabarito.',
     calibration: 'Empate em acertos, desempate pela calibração.',
@@ -187,8 +187,8 @@ export function SeriesReportView({
           {winner ? <Trophy size={40} strokeWidth={1.5} /> : <Scale size={40} strokeWidth={1.5} />}
         </div>
         <p className="report-kicker">
-          {demo ? 'Ensaio sintético · ' : ''}Maratona concluída · {meetings.length} reuniões ·{' '}
-          {report.decisions} decisões por modelo
+          {demo ? 'Ensaio sintético · ' : ''}Maratona de reuniões concluída · {meetings.length}{' '}
+          reuniões · {report.decisions} decisões por modelo
         </p>
         <h2 id="series-report-title">{headline}</h2>
         <p className="report-reason">
@@ -215,7 +215,7 @@ export function SeriesReportView({
                   <h3>{providerNames[p]}</h3>
                   <span>{providerVendors[p]}</span>
                 </div>
-                {winner === p && <Trophy size={22} aria-label="Vencedor da maratona" />}
+                {winner === p && <Trophy size={22} aria-label="Vencedor da Maratona de reuniões" />}
               </header>
               <div className="podium-score">
                 <strong>
@@ -239,7 +239,7 @@ export function SeriesReportView({
               </ul>
               <dl className="podium-metrics">
                 <div>
-                  <dt>Custo da maratona</dt>
+                  <dt>Custo da Maratona de reuniões</dt>
                   <dd>
                     {demo ? '—' : s.unknownCosts ? `≥ ${usd(s.costUsd, 5)}` : usd(s.costUsd, 5)}
                   </dd>
@@ -283,7 +283,7 @@ export function SeriesReportView({
       {report.recommendations.length > 0 && (
         <Section
           title="Qual faz sentido para você?"
-          note="Frases geradas pelos números desta maratona, não por opinião."
+          note="Frases geradas pelos números desta Maratona de reuniões, não por opinião."
         >
           <div className="recommendations">
             {report.recommendations.map((r) => {
@@ -522,7 +522,7 @@ export function SeriesReportDialog({
       <footer className="verdict-modal-footer">
         <a className="secondary-button" href={`/api/series/${series.id}/export`} download>
           <Download size={16} />
-          Exportar maratona
+          Exportar Maratona de reuniões
         </a>
         <button className="primary-button" onClick={onDismiss}>
           Ver detalhes

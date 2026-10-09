@@ -38,8 +38,8 @@ export const spaces: Record<
 > = {
   maratona: {
     kicker: 'Rodada 1 · piloto automático',
-    title: 'Maratona',
-    tab: '1 · Maratona',
+    title: 'Maratona de reuniões',
+    tab: '1 · Maratona de reuniões',
     summary: 'Os seis cenários em sequência, sem cliques, com o Opus comentando cada rodada.',
     volume: '6 reuniões · 36 decisões por modelo',
     tone: 'marathon',
@@ -47,8 +47,8 @@ export const spaces: Record<
   },
   brava: {
     kicker: 'Rodada 2 · mais difícil',
-    title: 'Rodada brava',
-    tab: '2 · Brava',
+    title: 'Resiliência',
+    tab: '2 · Resiliência',
     summary: 'Robustez, português real, saber dizer “não sei”, negação e injeção.',
     volume: 'quase 300 testes por modelo',
     tone: 'brava',

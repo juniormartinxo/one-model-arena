@@ -2,20 +2,26 @@
 
 Estúdio local para comparar, em português, três modelos de decisão estruturada: Jev (TypeSafe), OpenAI Decisions e Cloudflare Clef. São três rodadas, cada uma com boletim próprio:
 
-1. **Maratona:** seis reuniões fictícias em sequência, 36 decisões por modelo, com regras escritas no contexto.
-2. **Rodada brava:** 298 testes por modelo em que a regra não entrega a resposta, incluindo textos reais de três datasets públicos em português.
+1. **Maratona de reuniões:** seis reuniões fictícias em sequência, 36 decisões por modelo, com regras escritas no contexto.
+2. **Resiliência:** 298 testes por modelo em que a regra não entrega a resposta, incluindo textos reais de três datasets públicos em português.
 3. **Rodada das imagens:** 80 fotos reais do CV-Bench, só com Decisions e Clef, os dois modelos cujas APIs leem imagens.
 
 O vencedor sai do gabarito; o Claude Opus 5.5, pelo CLI, apresenta, comenta e explica o resultado sem ver as marcas. Os datasets usados estão em [Datasets usados nos testes](#datasets-usados-nos-testes).
+
+## Site público
+
+`npm run dev:public` abre a versão pública em **http://127.0.0.1:4319**. O build independente `npm run build:public` gera `dist-public/`, configurado para a Vercel em `vercel.json`. A página apresenta os testes, a metodologia, os datasets e uma edição de resultados selecionada; não oferece execução de rodadas ou acesso ao backend.
+
+A primeira edição começa **em preparação**, sem reutilizar resultados antigos. Após as novas execuções, siga [Publicação de resultados](docs/publicacao.md) para preparar o JSON público, conferir e publicar. Nenhuma credencial dos modelos é necessária no site público.
 
 ## Reproduzir o teste
 
 1. Instale Node.js 24.14+, clone o repositório e rode `npm install`.
 2. `cp .env.example .env` e preencha as credenciais dos três provedores (seções abaixo). Faça login no Claude Code (`claude auth login`).
 3. `npm run dev` e abra http://127.0.0.1:4317. Em **Conexões**, os quatro itens devem aparecer como detectados.
-4. No início, entre em **Rodada 1 · Maratona** e clique em **Ensaio da maratona** para conferir o fluxo sem custo. Depois, **Iniciar maratona real**. As rodadas 2 e 3 e a **Sala de reuniões** (reunião avulsa, rodada a rodada) têm cada uma o seu espaço.
-5. A tela entra em modo gravação e avança sozinha. Ao final, exporte a maratona em JSON: ela inclui cenários congelados com hash, payloads, respostas originais, prompts e saídas do Opus.
-6. Para a **rodada brava**, rode antes `npm run datasets` (baixa a amostra de português real das fontes oficiais) e use **Ensaio da rodada brava** e **Iniciar rodada brava**. Ela tem boletim próprio, separado da maratona.
+4. No início, entre em **Rodada 1 · Maratona de reuniões** e clique em **Ensaio da Maratona de reuniões** para conferir o fluxo sem custo. Depois, **Iniciar Maratona de reuniões real**. As rodadas 2 e 3 e a **Sala de reuniões** (reunião avulsa, rodada a rodada) têm cada uma o seu espaço.
+5. A tela entra em modo gravação e avança sozinha. Ao final, exporte a Maratona de reuniões em JSON: ela inclui cenários congelados com hash, payloads, respostas originais, prompts e saídas do Opus.
+6. Para a **Resiliência**, rode antes `npm run datasets` (baixa a amostra de português real das fontes oficiais) e use **Ensaio da Resiliência** e **Iniciar Resiliência**. Ela tem boletim próprio, separado da Maratona de reuniões.
 7. Para a **rodada das imagens** (rodada 3, só Decisions e Clef), rode antes `npm run imagens` (baixa as 80 fotos do CV-Bench) e use **Ensaio da rodada das imagens** e **Iniciar rodada das imagens**. Ela não precisa da chave da TypeSafe.
 
 Os cenários e gabaritos estão em `server/scenarios.ts` e `server/advanced-scenarios.ts`. Para testar seus próprios casos, edite esses arquivos: o hash muda e identifica o roteiro usado.
@@ -31,7 +37,7 @@ npm run dev
 
 Abra **http://127.0.0.1:4317**. O backend usa a porta 4318.
 
-**Ensaio da maratona** e **Iniciar ensaio** percorrem o fluxo completo com dados sintéticos locais. Não requer chaves e não chama nenhuma IA. Os resultados são identificados na tela, no histórico e na exportação. Eles não avaliam o desempenho de Jev, Decisions, Clef ou Opus.
+**Ensaio da Maratona de reuniões** e **Iniciar ensaio** percorrem o fluxo completo com dados sintéticos locais. Não requer chaves e não chama nenhuma IA. Os resultados são identificados na tela, no histórico e na exportação. Eles não avaliam o desempenho de Jev, Decisions, Clef ou Opus.
 
 Para uma execução real:
 
@@ -67,24 +73,24 @@ Abra http://127.0.0.1:4318. Não há serviço externo de banco, autenticação w
 
 ## Como as coisas funcionam
 
-1. Na maratona, os seis cenários rodam em sequência. Na reunião avulsa, escolha um deles. Cada cenário tem seis rodadas.
+1. Na Maratona de reuniões, os seis cenários rodam em sequência. Na reunião avulsa, escolha um deles. Cada cenário tem seis rodadas.
 2. O servidor congela o cenário, calcula seu SHA-256 e salva o roteiro e o gabarito em SQLite. O Opus prepara a abertura e as transições, preservando perguntas e critérios.
-3. Na maratona, o piloto automático avança sozinho, com pausas de leitura (`AUTOPLAY_DELAY_MS`, padrão 8 s, entre rodadas; `SERIES_PAUSE_MS`, padrão 14 s, entre reuniões). Na reunião avulsa, você avança manualmente. Os provedores recebem os mesmos fatos e perguntas, por suas APIs nativas, em paralelo. Não recebem gabaritos, respostas do concorrente ou comentários anteriores.
+3. Na Maratona de reuniões, o piloto automático avança sozinho, com pausas de leitura (`AUTOPLAY_DELAY_MS`, padrão 8 s, entre rodadas; `SERIES_PAUSE_MS`, padrão 14 s, entre reuniões). Na reunião avulsa, você avança manualmente. Os provedores recebem os mesmos fatos e perguntas, por suas APIs nativas, em paralelo. Não recebem gabaritos, respostas do concorrente ou comentários anteriores.
 4. Cada resultado é persistido quando chega. O placar objetivo dá um ponto por aderência ao gabarito e registra separadamente divergência, incerteza e indisponibilidade.
 5. A rodada vai para quem acertou sozinho; se mais de um acertou, é empate. Uma sessão nova do Opus comenta a rodada com nomes A/B/C aleatórios, sem marca, modelo, tempo ou custo, e não altera esse resultado. O mapeamento é revelado no painel após o comentário.
 6. Após a sexta rodada, o vencedor da reunião sai de uma regra fixa: mais pontos pelo gabarito; em empate, o menor Brier médio, com diferença mínima de 0,005. Se uma resposta ausente pudesse mudar a liderança, não há vencedor. Uma sessão cega do Opus explica o resultado. Reuniões gravadas antes desta regra mantêm os julgamentos do Opus que as decidiram.
-7. Ao fim da maratona, o boletim soma as 36 decisões: acertos por bateria (básicos, avançados, estresse), calibração, custo, projeção para um milhão de decisões, mediana de resposta e as perguntas sem acerto unânime. As recomendações ("quando errar custa caro", "quando o volume é alto", "quando a resposta precisa ser imediata") são frases geradas por regras sobre esses números. O Opus escreve uma leitura final cega.
+7. Ao fim da Maratona de reuniões, o boletim soma as 36 decisões: acertos por bateria (básicos, avançados, estresse), calibração, custo, projeção para um milhão de decisões, mediana de resposta e as perguntas sem acerto unânime. As recomendações ("quando errar custa caro", "quando o volume é alto", "quando a resposta precisa ser imediata") são frases geradas por regras sobre esses números. O Opus escreve uma leitura final cega.
 8. O histórico permite replay sem inferência e exportação JSON com cenários, payloads, respostas originais, prompts/saídas do CLI, eventos e métricas.
 
 O **Brier** mede a distância entre as probabilidades que o modelo declarou e o gabarito: 0 é certeza correta; 2, certeza errada. Ele premia quem acerta com convicção e pune quem erra com convicção, e só compara rodadas respondidas por todos.
 
 O Opus não recebe ferramentas, MCPs ou histórico anterior; cada chamada usa uma pasta temporária e `--no-session-persistence`. A execução usa argumentos estruturados e stdin, sem shell. `--safe-mode` preserva a autenticação normal e desativa customizações; **não usamos `--bare`**, porque esse modo não reutiliza login por assinatura/OAuth. O modelo solicitado é explícito, sem fallback automático.
 
-Os comentários são interpretações do Opus, não explicações produzidas pelos concorrentes. As consequências exibidas são regras fictícias da simulação, não resultados financeiros ou comerciais observados. A maratona liga o “Modo gravação”, que reduz o chrome da interface e mantém o progresso fixo no topo; Escape retorna ao modo normal. Ele não grava um arquivo de vídeo: use seu gravador de tela.
+Os comentários são interpretações do Opus, não explicações produzidas pelos concorrentes. As consequências exibidas são regras fictícias da simulação, não resultados financeiros ou comerciais observados. A Maratona de reuniões liga o “Modo gravação”, que reduz o chrome da interface e mantém o progresso fixo no topo; Escape retorna ao modo normal. Ele não grava um arquivo de vídeo: use seu gravador de tela.
 
-## Rodada brava
+## Resiliência
 
-A rodada 1 mede se o modelo aplica regras escritas. A rodada brava mede o que acontece quando a regra não entrega a resposta. São 298 testes por modelo em cinco baterias, rodando em piloto automático, com o Opus abrindo, comentando cada bateria e escrevendo a leitura final, sempre às cegas (7 chamadas do CLI).
+A rodada 1 mede se o modelo aplica regras escritas. A Resiliência mede o que acontece quando a regra não entrega a resposta. São 298 testes por modelo em cinco baterias, rodando em piloto automático, com o Opus abrindo, comentando cada bateria e escrevendo a leitura final, sempre às cegas (7 chamadas do CLI).
 
 | Bateria           | Itens                                                                                                                                                                                        | Como pontua                                                                                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +100,7 @@ A rodada 1 mede se o modelo aplica regras escritas. A rodada brava mede o que ac
 | Negação           | 48: 12 grupos com original, paráfrase, escopo alterado e negação desfeita                                                                                                                    | Grupo inteiro                                                                                                                      |
 | Injeção e pressão | 16: instruções escondidas, aprovações falsas e exceções legítimas                                                                                                                            | Item                                                                                                                               |
 
-A nota geral é a média simples das notas das baterias. Diferenças abaixo de 1 ponto são empate, desempatado pelo Brier médio. Se uma resposta ausente puder mudar a liderança, não há vencedor. O boletim traz o intervalo de 95% da diferença entre o primeiro e cada rival, por bootstrap pareado: quando ele inclui zero, a diferença está dentro da margem de erro. Também mostra o diagrama de calibração, a taxa de mudança de resposta por tipo de alteração e a comparação com a última maratona concluída.
+A nota geral é a média simples das notas das baterias. Diferenças abaixo de 1 ponto são empate, desempatado pelo Brier médio. Se uma resposta ausente puder mudar a liderança, não há vencedor. O boletim traz o intervalo de 95% da diferença entre o primeiro e cada rival, por bootstrap pareado: quando ele inclui zero, a diferença está dentro da margem de erro. Também mostra o diagrama de calibração, a taxa de mudança de resposta por tipo de alteração e a comparação com a última Maratona de reuniões concluída.
 
 A taxa de mudança de resposta compara a **decisão** (alternativa, Sim/Não/Revisão humana ou nível da escala), não o número: 1,97 e 1,99 na mesma escala são a mesma resposta. Cada mudança é classificada como rumo ao gabarito ou para longe dele.
 
@@ -110,7 +116,7 @@ HateBR e B2W não permitem uso comercial: confira se o seu uso se enquadra. Os c
 
 ## Rodada das imagens
 
-A rodada 3 testa decisões sobre fotos. Só participam Decisions e Clef, os dois modelos cujas APIs aceitam imagens; o Jev fica de fora. São 80 fotos reais do [CV-Bench](https://huggingface.co/datasets/nyu-visionx/CV-Bench) em quatro baterias de 20, com o mesmo piloto automático, a mesma pontuação e o mesmo boletim da rodada brava, e o Opus abrindo, comentando cada bateria e escrevendo a leitura final (6 chamadas do CLI).
+A rodada 3 testa decisões sobre fotos. Só participam Decisions e Clef, os dois modelos cujas APIs aceitam imagens; o Jev fica de fora. São 80 fotos reais do [CV-Bench](https://huggingface.co/datasets/nyu-visionx/CV-Bench) em quatro baterias de 20, com o mesmo piloto automático, a mesma pontuação e o mesmo boletim da Resiliência, e o Opus abrindo, comentando cada bateria e escrevendo a leitura final (6 chamadas do CLI).
 
 | Bateria          | O que pergunta                                                                 | Alternativas | Acerto no chute |
 | ---------------- | ------------------------------------------------------------------------------ | ------------ | --------------- |
@@ -129,7 +135,7 @@ Primeira execução real: `405f3260`, em 09/10/2026. O Clef venceu por 85,0 a 81
 
 ## Datasets usados nos testes
 
-A rodada 1 e as baterias escritas da rodada brava (robustez, saber dizer “não”, negação e injeção) não usam datasets externos: os casos e gabaritos são do autor. Os conjuntos públicos entram em duas baterias:
+A rodada 1 e as baterias escritas da Resiliência (robustez, saber dizer “não”, negação e injeção) não usam datasets externos: os casos e gabaritos são do autor. Os conjuntos públicos entram em duas baterias:
 
 | Rodada      | Bateria                                                   | Dataset       | O que foi usado                                                           | Fonte                                                                             | Licença declarada                                    |
 | ----------- | --------------------------------------------------------- | ------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -205,8 +211,8 @@ O Opus recebe os pontos já calculados e apenas a regra do tipo de pergunta da r
 ## Consumo, tempos e falhas
 
 - Rodada das imagens: 80 chamadas no Decisions e 80 no Clef, cada uma com uma foto, e 6 do CLI. Quantos tokens cada foto custa depende de cada API; o boletim mostra os tokens de entrada contados por elas.
-- Rodada brava: 298 chamadas por provedor (até `BRAVA_CONCURRENCY` simultâneas, padrão 3) e 7 do CLI. No Clef, cerca de 150 mil tokens de entrada (uns 3.300 neurons), dentro da cota gratuita diária.
-- Até **6 chamadas Jev + 6 Decisions + 6 Clef + 8 CLI** por reunião real. CLI: 1 abertura + 6 comentários + 1 explicação. Na maratona: 36 por provedor e até 49 do CLI (6 × 8 + 1 leitura final). Sem retentativas automáticas do aplicativo.
+- Resiliência: 298 chamadas por provedor (até `BRAVA_CONCURRENCY` simultâneas, padrão 3) e 7 do CLI. No Clef, cerca de 150 mil tokens de entrada (uns 3.300 neurons), dentro da cota gratuita diária.
+- Até **6 chamadas Jev + 6 Decisions + 6 Clef + 8 CLI** por reunião real. CLI: 1 abertura + 6 comentários + 1 explicação. Na Maratona de reuniões: 36 por provedor e até 49 do CLI (6 × 8 + 1 leitura final). Sem retentativas automáticas do aplicativo.
 - Referência de 08/10/2026: Jev US$ 0,042, Decisions US$ 0,10 e Clef US$ 0,24 (Clef-flash US$ 0,09) por milhão de tokens de entrada. No Clef, os 10.000 neurons diários gratuitos da Cloudflare não são descontados da estimativa. A estimativa considera texto padrão; adicionais regionais, outras faixas de preço e mudanças futuras não são detectados automaticamente. O arquivo exportado guarda as tarifas usadas.
 - Os tempos das APIs incluem rede, leitura e validação; não são tempo puro de inferência. O tempo do Opus fica separado em cada registro de chamada.
 - O custo mostrado usa tokens retornados pela API. Se o uso não estiver disponível, o custo fica desconhecido (`?`), inclusive em timeout ou falha de rede. Uma chamada falha pode ser cobrada.
@@ -235,7 +241,7 @@ server/providers.ts   adaptadores das APIs nativas
 server/claude.ts      subprocesso isolado do Claude CLI
 server/judging.ts     prompts e anonimização
 server/engine.ts      coordenação e cancelamento
-server/brava/         rodada brava: itens escritos, catálogo, datasets e execução
+server/brava/         Resiliência: itens escritos, catálogo, datasets e execução
 server/visual/        rodada das imagens: amostra do CV-Bench, tradução e catálogo
 server/store.ts       SQLite e histórico de eventos
 tests/                contratos, ciclo da reunião e navegador

@@ -425,7 +425,7 @@ export function App() {
   function deleteSeries(item: SeriesSummary) {
     if (
       !window.confirm(
-        'Excluir esta maratona, suas seis reuniões e todos os registros? Esta ação não pode ser desfeita.',
+        'Excluir esta Maratona de reuniões, suas seis reuniões e todos os registros? Esta ação não pode ser desfeita.',
       )
     )
       return;
@@ -593,7 +593,7 @@ export function App() {
     <article key={h.id}>
       <div className="history-description">
         {modeTag(h.mode)}
-        <h2>Maratona · {h.totalMeetings} reuniões</h2>
+        <h2>Maratona de reuniões · {h.totalMeetings} reuniões</h2>
         <p>
           {new Date(h.createdAt).toLocaleString('pt-BR')} · {phaseLabel(h.phase)}
           {h.phase === 'complete' && h.mode === 'live'
@@ -605,13 +605,13 @@ export function App() {
       <div className="history-actions">
         <button className="secondary-button" disabled={busy} onClick={() => openSeries(h.id)}>
           <Play size={15} />
-          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir maratona'}
+          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir Maratona de reuniões'}
         </button>
         <button
           className="secondary-button danger-button"
           disabled={busy || h.phase === 'running'}
           onClick={() => deleteSeries(h)}
-          aria-label="Excluir maratona"
+          aria-label="Excluir Maratona de reuniões"
         >
           <Trash2 size={15} />
           Excluir
@@ -690,12 +690,12 @@ export function App() {
   );
   const roundSetups = {
     maratona: {
-      headline: 'Maratona: 6 reuniões, 36 decisões por modelo',
+      headline: 'Maratona de reuniões: 6 reuniões, 36 decisões por modelo',
       description:
         'Os seis cenários rodam em sequência, sem cliques, com o Opus comentando cada rodada. No fim, um boletim com acertos, calibração, custo e velocidade.',
       tone: '',
-      liveLabel: 'Iniciar maratona real',
-      demoLabel: 'Ensaio da maratona',
+      liveLabel: 'Iniciar Maratona de reuniões real',
+      demoLabel: 'Ensaio da Maratona de reuniões',
       ready: !!health?.ready,
       demoReady: scenarios.length > 0,
       onLive: () => startSeries('live'),
@@ -703,12 +703,12 @@ export function App() {
       readyText: 'Execução real usa Jev, Decisions, Clef e seu Claude CLI.',
     },
     brava: {
-      headline: 'Rodada brava: quase 300 testes por modelo',
+      headline: 'Resiliência: quase 300 testes por modelo',
       description:
-        'Robustez, português real com rótulo humano, saber dizer “não sei”, negação e injeção. Roda sozinha e termina num boletim próprio, separado da maratona.',
+        'Robustez, português real com rótulo humano, saber dizer “não sei”, negação e injeção. Roda sozinha e termina num boletim próprio, separado da Maratona de reuniões.',
       tone: 'brava-setup',
-      liveLabel: 'Iniciar rodada brava',
-      demoLabel: 'Ensaio da rodada brava',
+      liveLabel: 'Iniciar Resiliência',
+      demoLabel: 'Ensaio da Resiliência',
       ready: !!health?.ready,
       demoReady: true,
       onLive: () => startBrava('live'),
@@ -1139,9 +1139,9 @@ export function App() {
         <FinalVerdict run={run} onReveal={() => setVerdictOpen(true)} />
       )}
       {series?.report && series.phase === 'complete' && (
-        <section className="report-inline" aria-label="Boletim da maratona">
+        <section className="report-inline" aria-label="Boletim da Maratona de reuniões">
           <div className="final-heading-row">
-            <h2>Boletim da maratona</h2>
+            <h2>Boletim da Maratona de reuniões</h2>
             <button className="primary-button" onClick={() => setReportOpen(true)}>
               <Maximize2 size={16} />
               Ver boletim
@@ -1159,11 +1159,11 @@ export function App() {
           {series && series.phase !== 'running' && (
             <a className="secondary-button" href={`/api/series/${series.id}/export`} download>
               <Download size={16} />
-              Exportar maratona
+              Exportar Maratona de reuniões
             </a>
           )}
           <button className="primary-button" onClick={clearRun}>
-            {sessionSpace === 'maratona' ? 'Nova maratona' : 'Nova reunião'}
+            {sessionSpace === 'maratona' ? 'Nova Maratona de reuniões' : 'Nova reunião'}
             <ArrowRight size={16} />
           </button>
         </div>
@@ -1387,7 +1387,7 @@ export function App() {
             </div>
             {seriesHistory.length > 0 && (
               <>
-                <h2 className="history-group">Maratonas</h2>
+                <h2 className="history-group">Maratonas de reuniões</h2>
                 <div className="history-list">{seriesHistory.map(seriesRow)}</div>
               </>
             )}
@@ -1477,18 +1477,18 @@ export function App() {
               ausente pudesse mudar a liderança, não há vencedor. Uma rodada vai para quem acertou
               sozinho; se mais de um acertou, é empate.
             </p>
-            <h2>A rodada brava</h2>
+            <h2>A Resiliência</h2>
             <p>
               É uma segunda rodada, com boletim próprio. A rodada 1 mede se o modelo aplica regras
-              que estão escritas; a brava mede o que acontece quando a regra não entrega a resposta.
-              São cinco baterias. Robustez: as 36 perguntas da rodada 1 com a ordem das alternativas
-              invertida, texto irrelevante, erros de digitação ou uma evidência a mais a favor do
-              gabarito; o grupo só conta se todas as versões acertarem, e a evidência a mais não
-              pode baixar a probabilidade da resposta certa em mais de 2 pontos. Português real: 60
-              textos com rótulo humano de ASSIN 2, HateBR e B2W-Reviews01, sorteados com semente
-              fixa. Saber dizer “não”: pedidos fora do escopo e dados ausentes. Negação: 12 grupos
-              de quatro versões, que só contam inteiros. Injeção: instruções escondidas e aprovações
-              falsas, misturadas a exceções legítimas.
+              que estão escritas; a Resiliência mede o que acontece quando a regra não entrega a
+              resposta. São cinco baterias. Robustez: as 36 perguntas da rodada 1 com a ordem das
+              alternativas invertida, texto irrelevante, erros de digitação ou uma evidência a mais
+              a favor do gabarito; o grupo só conta se todas as versões acertarem, e a evidência a
+              mais não pode baixar a probabilidade da resposta certa em mais de 2 pontos. Português
+              real: 60 textos com rótulo humano de ASSIN 2, HateBR e B2W-Reviews01, sorteados com
+              semente fixa. Saber dizer “não”: pedidos fora do escopo e dados ausentes. Negação: 12
+              grupos de quatro versões, que só contam inteiros. Injeção: instruções escondidas e
+              aprovações falsas, misturadas a exceções legítimas.
             </p>
             <p>
               A nota de cada bateria vai de 0 a 100%, e a nota geral é a média simples, para que
@@ -1519,7 +1519,7 @@ export function App() {
             <p>
               A foto vai embutida na chamada, em base64, porque nenhuma das duas APIs aceita links.
               O registro guarda só a impressão digital de cada foto, não os bytes. A pontuação é a
-              da rodada brava: nota de 0 a 100% por bateria, média simples, empate abaixo de 1 ponto
+              da Resiliência: nota de 0 a 100% por bateria, média simples, empate abaixo de 1 ponto
               desempatado pelo Brier e margem de erro por bootstrap. No chute, a contagem acerta de
               17% a 25% e as outras baterias, 50%. O Opus comenta às cegas e não vê as fotos: lê a
               pergunta, as alternativas, o gabarito e as respostas.
@@ -1531,7 +1531,7 @@ export function App() {
               modelos, marcas, custos ou latência. Ele não muda o vencedor. Reuniões antigas,
               decididas pelo Opus, continuam exibindo seus julgamentos originais.
             </p>
-            <h2>A maratona</h2>
+            <h2>A Maratona de reuniões</h2>
             <p>
               Os seis cenários rodam em sequência, em piloto automático, com pausas para leitura. O
               boletim final soma as 36 decisões de cada modelo: acertos por bateria, calibração,
@@ -1681,11 +1681,11 @@ export function App() {
             <h2>Controle de consumo</h2>
             <p>
               Cada reunião real tem seis chamadas por provedor e até oito chamadas do CLI: uma
-              abertura, seis comentários e uma explicação final. A maratona soma seis reuniões e uma
-              leitura final: 36 chamadas por provedor e até 49 do CLI. Na reunião avulsa você avança
-              manualmente; na maratona, o piloto automático avança sozinho. Você pode encerrar a
-              qualquer momento. Chamadas já enviadas podem consumir créditos mesmo após
-              cancelamento.
+              abertura, seis comentários e uma explicação final. A Maratona de reuniões soma seis
+              reuniões e uma leitura final: 36 chamadas por provedor e até 49 do CLI. Na reunião
+              avulsa você avança manualmente; na Maratona de reuniões, o piloto automático avança
+              sozinho. Você pode encerrar a qualquer momento. Chamadas já enviadas podem consumir
+              créditos mesmo após cancelamento.
             </p>
             <p>
               As tarifas de referência, consultadas em 08/10/2026, são US$ 0,042/M tokens de entrada

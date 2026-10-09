@@ -326,7 +326,9 @@ export class Engine {
   }
   async startSeries(mode: Run['mode']): Promise<Series> {
     if (this.store.hasActive())
-      throw new Error('Conclua ou encerre a reunião ativa antes de iniciar uma maratona.');
+      throw new Error(
+        'Conclua ou encerre a reunião ativa antes de iniciar uma Maratona de reuniões.',
+      );
     await this.preflight(mode);
     if (this.store.hasActive()) throw new Error('Já existe uma reunião ativa.');
     const series: Series = {
@@ -418,7 +420,7 @@ export class Engine {
   }
   cancelSeries(id: string) {
     const series = this.store.getSeries(id);
-    if (!series) throw new Error('Maratona não encontrada.');
+    if (!series) throw new Error('Maratona de reuniões não encontrada.');
     const current = series.runIds.at(-1);
     this.stopSeries(id, 'cancelled');
     if (current) this.cancel(current);
