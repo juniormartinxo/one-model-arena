@@ -25,7 +25,7 @@ test('each round and the meeting room live in their own space', async ({ page, r
   await page.getByRole('button', { name: 'Sala de reuniões', exact: true }).click();
   await page.getByRole('button', { name: 'Iniciar ensaio', exact: true }).click();
   await expect(page.getByText('ENSAIO SINTÉTICO', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: /Mesa de decisão/ }).click();
+  await page.getByRole('link', { name: /One Model Arena/ }).click();
   await expect(page.getByText('Sala de reuniões: sessão em andamento.')).toBeVisible();
   // "Rodadas" returns to the last round visited.
   await page.getByRole('button', { name: 'Rodadas', exact: true }).click();

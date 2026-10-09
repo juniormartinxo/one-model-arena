@@ -1,5 +1,5 @@
 ---
-name: Mesa de decisão
+name: One Model Arena
 description: Estúdio escuro para comparar decisões com identidades equivalentes e evidências legíveis.
 colors:
   bg: '#101214'
@@ -137,7 +137,7 @@ components:
     padding: '20px 25px'
 ---
 
-# Design System: Mesa de decisão
+# Design System: One Model Arena
 
 ## Overview
 

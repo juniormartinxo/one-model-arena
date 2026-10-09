@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDot,
-  Columns2,
   Download,
   History,
   Layers,
@@ -998,15 +997,17 @@ export function App() {
             >
               <div className="final-heading-row">
                 <h2>Boletim da {roundNames[brava.kind ?? 'brava'].name}</h2>
-                <button className="primary-button" onClick={() => setBravaReportOpen(true)}>
-                  <Maximize2 size={16} />
-                  Ver boletim da {roundNames[brava.kind ?? 'brava'].name}
-                </button>
+                {!recording && (
+                  <button className="primary-button" onClick={() => setBravaReportOpen(true)}>
+                    <Maximize2 size={16} />
+                    Ver boletim da {roundNames[brava.kind ?? 'brava'].name}
+                  </button>
+                )}
               </div>
-              <BravaReportView brava={brava} />
+              <BravaReportView brava={brava} summary={recording} />
             </section>
           )}
-          {!bravaRunning && (
+          {!bravaRunning && !recording && (
             <div className="end-actions">
               <a className="secondary-button" href={`/api/bravas/${brava.id}/export`} download>
                 <Download size={16} />
@@ -1222,9 +1223,15 @@ export function App() {
             setView('home');
           }}
         >
-          <Columns2 size={24} />
+          <img
+            className="brand-mark"
+            src="/brand/one-model-arena-96.png"
+            alt=""
+            width={32}
+            height={32}
+          />
           <span>
-            Mesa de decisão<span className="brand-dot">.</span>
+            One Model Arena<span className="brand-dot">.</span>
           </span>
         </a>
         <nav aria-label="Navegação principal">
@@ -1303,10 +1310,44 @@ export function App() {
                   {space === 'imagens' ? 'As mesmas fotos.' : 'Os mesmos fatos.'} Opus na análise.
                 </p>
               </div>
-              <button className="quiet-button recording-toggle" onClick={() => record(!recording)}>
-                {recording ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                <span>{recording ? 'Sair da gravação' : 'Modo gravação'}</span>
-              </button>
+              <div className="arena-actions" role="group" aria-label="Ações da rodada">
+                {recording && here && brava && !bravaRunning && (
+                  <>
+                    {brava.report && brava.phase === 'complete' && (
+                      <button
+                        className="secondary-button"
+                        aria-label={`Ver boletim da ${roundNames[brava.kind ?? 'brava'].name}`}
+                        onClick={() => setBravaReportOpen(true)}
+                      >
+                        <Maximize2 size={14} /> Ver boletim
+                      </button>
+                    )}
+                    <a
+                      className="secondary-button"
+                      href={`/api/bravas/${brava.id}/export`}
+                      download
+                      aria-label={`Exportar ${roundNames[brava.kind ?? 'brava'].name}`}
+                    >
+                      <Download size={14} /> Exportar
+                    </a>
+                    <button
+                      className="primary-button"
+                      onClick={clearRun}
+                      aria-label={`Nova ${roundNames[brava.kind ?? 'brava'].name}`}
+                    >
+                      Nova rodada <ArrowRight size={14} />
+                    </button>
+                  </>
+                )}
+                <button
+                  className="quiet-button recording-toggle"
+                  aria-label={recording ? 'Sair da gravação' : 'Modo gravação'}
+                  onClick={() => record(!recording)}
+                >
+                  {recording ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  <span>{recording ? 'Sair da gravação' : 'Modo gravação'}</span>
+                </button>
+              </div>
             </div>
             {here ? session : setup(space)}
           </>
@@ -1667,7 +1708,7 @@ export function App() {
         )}
       </main>
       <footer className="site-footer">
-        <span>Mesa de decisão</span>
+        <span>One Model Arena</span>
         <span>Jev × Decisions × Clef · avaliação em português</span>
         <span>Feito para mostrar as evidências.</span>
       </footer>

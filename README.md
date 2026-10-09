@@ -1,4 +1,4 @@
-# Mesa de decisão · Jev × Decisions × Clef
+# One Model Arena · Jev × Decisions × Clef
 
 Estúdio local para comparar, em português, três modelos de decisão estruturada: Jev (TypeSafe), OpenAI Decisions e Cloudflare Clef. São três rodadas, cada uma com boletim próprio:
 

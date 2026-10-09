@@ -8,7 +8,7 @@ store.recover();
 const engine = new Engine(store);
 const app = await buildApp(engine);
 await app.listen({ host: '127.0.0.1', port: config.PORT });
-console.log(`Mesa de decisão: backend em http://127.0.0.1:${config.PORT}`);
+console.log(`One Model Arena: backend em http://127.0.0.1:${config.PORT}`);
 let closing = false;
 async function close() {
   if (closing) return;

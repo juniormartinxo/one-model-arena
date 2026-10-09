@@ -9,8 +9,8 @@ export function exitFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
 
-// While recording, the stage must fit the screen: when its content is taller, it is scaled
-// down until it fits, and grows back once there is room again.
+// Fit the live stage, never a finished report: long documents must retain their readable
+// scale and scroll naturally instead of shrinking the entire recording.
 export function useFitToScreen(ref: RefObject<HTMLElement | null>, enabled: boolean) {
   const [zoom, setZoom] = useState(1);
   useLayoutEffect(() => {
@@ -22,6 +22,10 @@ export function useFitToScreen(ref: RefObject<HTMLElement | null>, enabled: bool
     let frame = 0;
     const measure = () => {
       frame = 0;
+      if (el.querySelector('.report-inline') || innerWidth <= 1020) {
+        setZoom(1);
+        return;
+      }
       const bottom = el.getBoundingClientRect().bottom;
       setZoom((z) => {
         const fit = Math.min(1, Math.max(0.55, Math.floor((z * innerHeight * 100) / bottom) / 100));

@@ -184,7 +184,7 @@ export function BravaLive({
   }, [items]);
   return (
     <section
-      className={`brava-live ${running ? 'is-running' : ''}`}
+      className={`brava-live ${running ? 'is-running' : ''} ${brava.kind === 'visual' ? 'is-visual' : ''}`}
       aria-label={`${names.title} ao vivo`}
     >
       <div className="brava-head">
@@ -219,7 +219,10 @@ export function BravaLive({
           )}
         </div>
       </div>
-      <ol className="brava-steps">
+      <ol
+        className="brava-steps"
+        style={{ '--batteries': brava.batteries.length } as CSSProperties}
+      >
         {brava.batteries.map((b, i) => {
           const done = b.itemIds.filter((id) =>
             brava.providers.every((p) => brava.results[id]?.[p]),
@@ -399,7 +402,13 @@ function Calibration({ report }: { report: BravaReport }) {
   );
 }
 
-export function BravaReportView({ brava }: { brava: BravaView }) {
+export function BravaReportView({
+  brava,
+  summary = false,
+}: {
+  brava: BravaView;
+  summary?: boolean;
+}) {
   const report = brava.report!;
   const demo = brava.mode === 'demo';
   const visual = brava.kind === 'visual';
@@ -429,7 +438,9 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
   const [all, setAll] = useState(false);
   const divergences = all ? report.divergences : report.divergences.slice(0, 8);
   return (
-    <div className={`series-report brava-report ${demo ? 'is-demo' : ''}`}>
+    <div
+      className={`series-report brava-report ${demo ? 'is-demo' : ''} ${summary ? 'is-summary' : ''}`}
+    >
       <div className="report-hero">
         <div className={`report-emblem ${winner ? `mark-${winner}` : ''}`} aria-hidden="true">
           {winner ? <Trophy size={40} strokeWidth={1.5} /> : <Scale size={40} strokeWidth={1.5} />}
@@ -533,248 +544,256 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
         })}
       </div>
 
-      {report.highlights.length > 0 && (
-        <Section
-          title="Quem foi melhor em quê"
-          note="Frases geradas pelos números desta rodada, não por opinião."
-        >
-          <div className="recommendations">
-            {report.highlights.map((h) => (
-              <article
-                key={h.kind}
-                className={`recommendation ${h.providers.length === 1 ? `ink-${h.providers[0]}` : 'is-tie'}`}
-              >
-                <Trophy size={20} />
-                <div>
-                  <h4>{h.title}</h4>
-                  <strong>
-                    {h.providers.length === report.participants.length && h.providers.length > 1
-                      ? 'Empate'
-                      : h.providers.map((p) => providerNames[p]).join(' e ')}
-                  </strong>
-                  <p>{h.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      <div className="report-charts">
-        <Section
-          title="Nota por bateria"
-          note={
-            visual
-              ? 'Cada bateria conta fotos. No chute, a contagem acerta de 17% a 25%; as demais, 50%.'
-              : 'Robustez e negação contam grupos inteiros; as demais, itens.'
-          }
-        >
-          <div className="battery-grid">
-            {report.batteries.map((b) => (
-              <div key={b.id} className="battery">
-                <h4>
-                  {b.title}{' '}
-                  <span>
-                    {b.units} {b.unit === 'grupo' ? 'grupos' : 'itens'}
-                  </span>
-                </h4>
-                <BarRows
-                  report={report}
-                  value={(p) => b.scores[p]}
-                  max={1}
-                  label={(p) => pct(b.scores[p])}
-                  tip={(p) => `${providerNames[p]} · ${b.title}: ${pct(b.scores[p])}`}
-                />
-              </div>
-            ))}
-          </div>
-        </Section>
-        <div className="report-side">
-          <Section
-            title="Quando disse X%, acertou quanto?"
-            note="Cada ponto agrupa respostas pela confiança. Sobre a linha ideal, a confiança é honesta."
-          >
-            <Calibration report={report} />
-          </Section>
-          {!visual && (
+      {!summary && (
+        <>
+          {report.highlights.length > 0 && (
             <Section
-              title="Mudou de resposta quando só a forma mudou"
-              note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão. Uma mudança pode corrigir um erro: entre parênteses, quantas foram para longe do gabarito."
+              title="Quem foi melhor em quê"
+              note="Frases geradas pelos números desta rodada, não por opinião."
+            >
+              <div className="recommendations">
+                {report.highlights.map((h) => (
+                  <article
+                    key={h.kind}
+                    className={`recommendation ${h.providers.length === 1 ? `ink-${h.providers[0]}` : 'is-tie'}`}
+                  >
+                    <Trophy size={20} />
+                    <div>
+                      <h4>{h.title}</h4>
+                      <strong>
+                        {h.providers.length === report.participants.length && h.providers.length > 1
+                          ? 'Empate'
+                          : h.providers.map((p) => providerNames[p]).join(' e ')}
+                      </strong>
+                      <p>{h.text}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          <div className="report-charts">
+            <Section
+              title="Nota por bateria"
+              note={
+                visual
+                  ? 'Cada bateria conta fotos. No chute, a contagem acerta de 17% a 25%; as demais, 50%.'
+                  : 'Robustez e negação contam grupos inteiros; as demais, itens.'
+              }
             >
               <div className="battery-grid">
-                {(['ordem', 'ruido', 'digitacao', 'direcao'] as const).map((v) => (
-                  <div key={v} className="battery">
-                    <h4>{variantNames[v]}</h4>
+                {report.batteries.map((b) => (
+                  <div key={b.id} className="battery">
+                    <h4>
+                      {b.title}{' '}
+                      <span>
+                        {b.units} {b.unit === 'grupo' ? 'grupos' : 'itens'}
+                      </span>
+                    </h4>
                     <BarRows
                       report={report}
-                      value={(p) => by[p].flipRate[v]}
-                      max={Math.max(0.1, ...report.standings.map((s) => s.flipRate[v] ?? 0))}
-                      label={(p) =>
-                        `${pct(by[p].flipRate[v] ?? 0)} (${by[p].flips[v]?.away ?? 0} ↓)`
-                      }
-                      tip={(p) =>
-                        `${providerNames[p]} mudou de decisão em ${by[p].flips[v]?.changed ?? 0} de ${by[p].flips[v]?.compared ?? 0} perguntas (${variantNames[v]}): ${by[p].flips[v]?.toward ?? 0} rumo ao gabarito, ${by[p].flips[v]?.away ?? 0} para longe`
-                      }
+                      value={(p) => b.scores[p]}
+                      max={1}
+                      label={(p) => pct(b.scores[p])}
+                      tip={(p) => `${providerNames[p]} · ${b.title}: ${pct(b.scores[p])}`}
                     />
                   </div>
                 ))}
               </div>
             </Section>
-          )}
-        </div>
-      </div>
-
-      {report.round1 && (
-        <Section
-          title="Da rodada 1 para a rodada brava"
-          note="Rodada 1: acerto nas 36 perguntas com regras explícitas. Rodada brava: nota média das baterias difíceis."
-        >
-          <div className="round-compare">
-            {report.participants.map((p) => (
-              <div key={p} className={`round-compare-row mark-${p} ink-${p}`}>
-                <span>{providerNames[p]}</span>
-                <span className="round-compare-track">
-                  <i style={{ left: `${by[p].score * 100}%` }} className="is-brava" />
-                  <b
-                    style={{
-                      left: `${Math.min(by[p].score, report.round1!.accuracy[p]) * 100}%`,
-                      width: `${Math.abs(report.round1!.accuracy[p] - by[p].score) * 100}%`,
-                    }}
-                  />
-                  <i
-                    style={{ left: `${report.round1!.accuracy[p] * 100}%` }}
-                    className="is-round1"
-                  />
-                </span>
-                <strong>
-                  {pct(report.round1!.accuracy[p])} → {pct(by[p].score)}
-                </strong>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      <Section
-        title="Onde eles erraram"
-        note={`${report.divergences.length} de ${report.items} testes sem acerto unânime.`}
-      >
-        <ol className={`divergence-list ${visual ? 'is-visual' : ''}`}>
-          {divergences.map((d) => (
-            <li key={d.itemId}>
-              <div className="divergence-question">
-                <span>
-                  {brava.batteries.find((b) => b.id === d.battery)?.title} · {d.title}
-                </span>
-                <p>{d.question}</p>
-                {visual ? (
-                  <Photo item={brava.items.find((i) => i.id === d.itemId)!} className="is-thumb" />
-                ) : d.facts ? (
-                  <p className="divergence-facts">{d.facts}</p>
-                ) : (
-                  <p className="brava-hidden">
-                    <EyeOff size={13} /> Texto real oculto: pode conter ofensas.
-                  </p>
-                )}
-                <small>Gabarito: {d.expected}</small>
-              </div>
-              <ul>
-                {report.participants.map((p) => {
-                  const a = d.answers[p]!;
-                  const Icon = statusIcon[a.status];
-                  return (
-                    <li key={p} className={`status-${a.status}`}>
-                      <span className={`ink-${p}`}>{providerNames[p]}</span>
-                      <strong>{a.label}</strong>
-                      <em>
-                        <Icon size={13} /> {statusText[a.status]}
-                      </em>
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
-          ))}
-        </ol>
-        {report.divergences.length > 8 && (
-          <button className="text-button" onClick={() => setAll(!all)}>
-            {all ? 'Mostrar menos' : `Mostrar todos os ${report.divergences.length}`}
-          </button>
-        )}
-      </Section>
-
-      {(analysis || brava.analysisError) && (
-        <Section
-          title="A leitura do Opus"
-          note="Avaliação cega: o Opus não viu marcas, custos nem tempos."
-        >
-          {analysis ? (
-            <div className="report-analysis">
-              <AudioLines size={18} />
-              <div>
-                <p>{revealParticipants(analysis.summary, analysis.mapping)}</p>
-                <ul>
-                  {analysis.evidence.map((e, i) => (
-                    <li key={i}>
-                      <strong>
-                        {e.roundId} ·{' '}
-                        {e.participant === 'both'
-                          ? 'Todos'
-                          : providerNames[analysis.mapping[e.participant]!]}
-                        :
-                      </strong>{' '}
-                      {revealParticipants(e.observation, analysis.mapping)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <div className="report-side">
+              <Section
+                title="Quando disse X%, acertou quanto?"
+                note="Cada ponto agrupa respostas pela confiança. Sobre a linha ideal, a confiança é honesta."
+              >
+                <Calibration report={report} />
+              </Section>
+              {!visual && (
+                <Section
+                  title="Mudou de resposta quando só a forma mudou"
+                  note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão. Uma mudança pode corrigir um erro: entre parênteses, quantas foram para longe do gabarito."
+                >
+                  <div className="battery-grid">
+                    {(['ordem', 'ruido', 'digitacao', 'direcao'] as const).map((v) => (
+                      <div key={v} className="battery">
+                        <h4>{variantNames[v]}</h4>
+                        <BarRows
+                          report={report}
+                          value={(p) => by[p].flipRate[v]}
+                          max={Math.max(0.1, ...report.standings.map((s) => s.flipRate[v] ?? 0))}
+                          label={(p) =>
+                            `${pct(by[p].flipRate[v] ?? 0)} (${by[p].flips[v]?.away ?? 0} ↓)`
+                          }
+                          tip={(p) =>
+                            `${providerNames[p]} mudou de decisão em ${by[p].flips[v]?.changed ?? 0} de ${by[p].flips[v]?.compared ?? 0} perguntas (${variantNames[v]}): ${by[p].flips[v]?.toward ?? 0} rumo ao gabarito, ${by[p].flips[v]?.away ?? 0} para longe`
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
             </div>
-          ) : (
-            <p className="error-copy">{brava.analysisError}</p>
+          </div>
+
+          {report.round1 && (
+            <Section
+              title="Da rodada 1 para a rodada brava"
+              note="Rodada 1: acerto nas 36 perguntas com regras explícitas. Rodada brava: nota média das baterias difíceis."
+            >
+              <div className="round-compare">
+                {report.participants.map((p) => (
+                  <div key={p} className={`round-compare-row mark-${p} ink-${p}`}>
+                    <span>{providerNames[p]}</span>
+                    <span className="round-compare-track">
+                      <i style={{ left: `${by[p].score * 100}%` }} className="is-brava" />
+                      <b
+                        style={{
+                          left: `${Math.min(by[p].score, report.round1!.accuracy[p]) * 100}%`,
+                          width: `${Math.abs(report.round1!.accuracy[p] - by[p].score) * 100}%`,
+                        }}
+                      />
+                      <i
+                        style={{ left: `${report.round1!.accuracy[p] * 100}%` }}
+                        className="is-round1"
+                      />
+                    </span>
+                    <strong>
+                      {pct(report.round1!.accuracy[p])} → {pct(by[p].score)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            </Section>
           )}
-        </Section>
-      )}
 
-      {report.annulled.length > 0 && (
-        <Section
-          title="Itens anulados"
-          note="Ficam no registro e na exportação, mas fora da nota de todos os modelos."
-        >
-          <ul className="annulled-list">
-            {report.annulled.map((a) => (
-              <li key={a.itemId}>
-                <strong>
-                  {a.itemId} · {a.title}
-                </strong>
-                <span>{a.reason}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+          <Section
+            title="Onde eles erraram"
+            note={`${report.divergences.length} de ${report.items} testes sem acerto unânime.`}
+          >
+            <ol className={`divergence-list ${visual ? 'is-visual' : ''}`}>
+              {divergences.map((d) => (
+                <li key={d.itemId}>
+                  <div className="divergence-question">
+                    <span>
+                      {brava.batteries.find((b) => b.id === d.battery)?.title} · {d.title}
+                    </span>
+                    <p>{d.question}</p>
+                    {visual ? (
+                      <Photo
+                        item={brava.items.find((i) => i.id === d.itemId)!}
+                        className="is-thumb"
+                      />
+                    ) : d.facts ? (
+                      <p className="divergence-facts">{d.facts}</p>
+                    ) : (
+                      <p className="brava-hidden">
+                        <EyeOff size={13} /> Texto real oculto: pode conter ofensas.
+                      </p>
+                    )}
+                    <small>Gabarito: {d.expected}</small>
+                  </div>
+                  <ul>
+                    {report.participants.map((p) => {
+                      const a = d.answers[p]!;
+                      const Icon = statusIcon[a.status];
+                      return (
+                        <li key={p} className={`status-${a.status}`}>
+                          <span className={`ink-${p}`}>{providerNames[p]}</span>
+                          <strong>{a.label}</strong>
+                          <em>
+                            <Icon size={13} /> {statusText[a.status]}
+                          </em>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+            {report.divergences.length > 8 && (
+              <button className="text-button" onClick={() => setAll(!all)}>
+                {all ? 'Mostrar menos' : `Mostrar todos os ${report.divergences.length}`}
+              </button>
+            )}
+          </Section>
 
-      <p className="report-caveat">
-        <ShieldCheck size={15} />
-        {visual ? (
-          <span>
-            Fotos e gabaritos do CV-Bench (anotações Apache-2.0; fotos de ADE20K, COCO e Omni3D),
-            público desde 2024 e possivelmente presente nos dados de treino. Perguntas vertidas para
-            o português por frases-padrão, mantendo as alternativas do dataset. Só participam os
-            modelos cujas APIs aceitam imagens. Nota geral: média simples das baterias; empate
-            abaixo de 1 ponto é desempatado pelo Brier. Margem: intervalo de 95% por bootstrap.
-            Custo só por tokens de entrada; latência inclui rede e o envio da foto.
-          </span>
-        ) : (
-          <span>
-            Robustez reaproveita as perguntas da rodada 1; abstenção, negação e injeção foram
-            escritas antes de consultar os modelos; português real usa rótulos humanos de ASSIN 2,
-            HateBR (CC BY-NC 4.0) e B2W-Reviews01 (CC BY-NC-SA 4.0), que podem estar nos dados de
-            treino. Nota geral: média simples das baterias; empate abaixo de 1 ponto é desempatado
-            pelo Brier. Margem: intervalo de 95% por bootstrap. Custo só por tokens de entrada;
-            latência inclui rede.
-          </span>
-        )}
-      </p>
+          {(analysis || brava.analysisError) && (
+            <Section
+              title="A leitura do Opus"
+              note="Avaliação cega: o Opus não viu marcas, custos nem tempos."
+            >
+              {analysis ? (
+                <div className="report-analysis">
+                  <AudioLines size={18} />
+                  <div>
+                    <p>{revealParticipants(analysis.summary, analysis.mapping)}</p>
+                    <ul>
+                      {analysis.evidence.map((e, i) => (
+                        <li key={i}>
+                          <strong>
+                            {e.roundId} ·{' '}
+                            {e.participant === 'both'
+                              ? 'Todos'
+                              : providerNames[analysis.mapping[e.participant]!]}
+                            :
+                          </strong>{' '}
+                          {revealParticipants(e.observation, analysis.mapping)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <p className="error-copy">{brava.analysisError}</p>
+              )}
+            </Section>
+          )}
+
+          {report.annulled.length > 0 && (
+            <Section
+              title="Itens anulados"
+              note="Ficam no registro e na exportação, mas fora da nota de todos os modelos."
+            >
+              <ul className="annulled-list">
+                {report.annulled.map((a) => (
+                  <li key={a.itemId}>
+                    <strong>
+                      {a.itemId} · {a.title}
+                    </strong>
+                    <span>{a.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          <p className="report-caveat">
+            <ShieldCheck size={15} />
+            {visual ? (
+              <span>
+                Fotos e gabaritos do CV-Bench (anotações Apache-2.0; fotos de ADE20K, COCO e
+                Omni3D), público desde 2024 e possivelmente presente nos dados de treino. Perguntas
+                vertidas para o português por frases-padrão, mantendo as alternativas do dataset. Só
+                participam os modelos cujas APIs aceitam imagens. Nota geral: média simples das
+                baterias; empate abaixo de 1 ponto é desempatado pelo Brier. Margem: intervalo de
+                95% por bootstrap. Custo só por tokens de entrada; latência inclui rede e o envio da
+                foto.
+              </span>
+            ) : (
+              <span>
+                Robustez reaproveita as perguntas da rodada 1; abstenção, negação e injeção foram
+                escritas antes de consultar os modelos; português real usa rótulos humanos de ASSIN
+                2, HateBR (CC BY-NC 4.0) e B2W-Reviews01 (CC BY-NC-SA 4.0), que podem estar nos
+                dados de treino. Nota geral: média simples das baterias; empate abaixo de 1 ponto é
+                desempatado pelo Brier. Margem: intervalo de 95% por bootstrap. Custo só por tokens
+                de entrada; latência inclui rede.
+              </span>
+            )}
+          </p>
+        </>
+      )}
     </div>
   );
 }
