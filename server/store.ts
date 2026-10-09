@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Brava, BravaSummary, Run, RunSummary, Series, SeriesSummary } from '../shared/types';
 import { summarizeRun, summarizeSeries } from '../shared/run-summary';
+import { withCurrentReport } from '../shared/brava-report';
 const terminal = "('complete', 'cancelled', 'failed')";
 export class Store {
   private db: DatabaseSync;
@@ -107,15 +108,23 @@ export class Store {
   }
   getBrava(id: string): Brava | undefined {
     const row = this.db.prepare('SELECT snapshot FROM bravas WHERE id=?').get(id);
-    return row ? JSON.parse(String(row.snapshot)) : undefined;
+    return row ? withCurrentReport(JSON.parse(String(row.snapshot))) : undefined;
   }
   listBravas(): BravaSummary[] {
     return this.db
-      .prepare(
-        "SELECT json_extract(snapshot, '$.id') id, json_extract(snapshot, '$.mode') mode, json_extract(snapshot, '$.createdAt') createdAt, json_extract(snapshot, '$.phase') phase, json_array_length(snapshot, '$.items') items, json_extract(snapshot, '$.report.winner') winner FROM bravas ORDER BY rowid DESC LIMIT 100",
-      )
+      .prepare('SELECT id FROM bravas ORDER BY rowid DESC LIMIT 100')
       .all()
-      .map((r) => ({ ...r, items: Number(r.items), winner: r.winner ?? null }) as BravaSummary);
+      .map((row) => {
+        const b = this.getBrava(String(row.id))!;
+        return {
+          id: b.id,
+          mode: b.mode,
+          createdAt: b.createdAt,
+          phase: b.phase,
+          items: b.items.length,
+          winner: b.report?.winner ?? null,
+        };
+      });
   }
   latestSeries(mode: Series['mode']): Series | undefined {
     const row = this.db

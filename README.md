@@ -89,6 +89,10 @@ A rodada 1 mede se o modelo aplica regras escritas. A rodada brava mede o que ac
 
 A nota geral é a média simples das notas das baterias. Diferenças abaixo de 1 ponto são empate, desempatado pelo Brier médio. Se uma resposta ausente puder mudar a liderança, não há vencedor. O boletim traz o intervalo de 95% da diferença entre o primeiro e cada rival, por bootstrap pareado: quando ele inclui zero, a diferença está dentro da margem de erro. Também mostra o diagrama de calibração, a taxa de mudança de resposta por tipo de alteração e a comparação com a última maratona concluída.
 
+A taxa de mudança de resposta compara a **decisão** (alternativa, Sim/Não/Revisão humana ou nível da escala), não o número: 1,97 e 1,99 na mesma escala são a mesma resposta. Cada mudança é classificada como rumo ao gabarito ou para longe dele.
+
+Itens considerados ambíguos depois de uma rodada são **anulados** em `annulledItems` (`shared/brava-report.ts`): continuam no registro e na exportação, mas saem da nota de todos os modelos, e o boletim mostra o motivo. O boletim de uma rodada concluída é recalculado a partir das respostas salvas sempre que é aberto. Até agora, um item foi anulado: `inj-10`, em que “exceções” podia ser lido como exceção só ao limite de valor. Ele foi reescrito como `inj-10b`.
+
 Os itens de abstenção, negação e injeção estão em `server/brava/authored.ts`. Foram escritos antes de consultar os modelos e respondidos às cegas por outra sessão: as 94 respostas coincidiram com os gabaritos, e os 6 itens apontados como passíveis de outra leitura foram reescritos.
 
 ### Datasets de português real

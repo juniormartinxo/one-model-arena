@@ -2887,3 +2887,22 @@ details[open] > summary {
   background: none;
   vertical-align: middle;
 }
+
+.annulled-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.annulled-list li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.annulled-list span {
+  color: var(--muted);
+}

@@ -56,12 +56,20 @@ const variantNames: Record<Perturbation, string> = {
   direcao: 'direção',
 };
 
+function changesText(s: BravaReport['standings'][number]) {
+  const all = Object.values(s.flips);
+  if (!all.length) return '—';
+  const changed = all.reduce((n, d) => n + d.changed, 0);
+  const compared = all.reduce((n, d) => n + d.compared, 0);
+  const away = all.reduce((n, d) => n + d.away, 0);
+  return `${changed} de ${compared} · ${away} para pior`;
+}
 // A robustness answer that differs from the same model's answer to the original wording.
 function flipped(brava: BravaView, item: BravaItem, p: Provider) {
   if (item.battery !== 'robustez' || item.variant === 'original') return false;
   const original = brava.results[`rob-${item.group}-original`]?.[p];
   const mine = brava.results[item.id]?.[p];
-  return !!(original?.label && mine?.label && original.label !== mine.label);
+  return !!(original?.decision && mine?.decision && original.decision !== mine.decision);
 }
 
 function Tile({ result, flip, title }: { result?: CompactResult; flip: boolean; title: string }) {
@@ -434,15 +442,8 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
               <p className="podium-caption">nota média das baterias</p>
               <dl className="podium-metrics">
                 <div>
-                  <dt>Mudou de resposta (média)</dt>
-                  <dd>
-                    {Object.keys(s.flipRate).length
-                      ? pct(
-                          Object.values(s.flipRate).reduce((a, b) => a + b, 0) /
-                            Object.keys(s.flipRate).length,
-                        )
-                      : '—'}
-                  </dd>
+                  <dt>Mudou de decisão</dt>
+                  <dd>{changesText(s)}</dd>
                 </div>
                 <div>
                   <dt>Adivinhou sem dados</dt>
@@ -539,7 +540,7 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
           </Section>
           <Section
             title="Mudou de resposta quando só a forma mudou"
-            note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão."
+            note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão. Uma mudança pode corrigir um erro: entre parênteses, quantas foram para longe do gabarito."
           >
             <div className="battery-grid">
               {(['ordem', 'ruido', 'digitacao', 'direcao'] as const).map((v) => (
@@ -549,9 +550,9 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
                     report={report}
                     value={(p) => by[p].flipRate[v]}
                     max={Math.max(0.1, ...report.standings.map((s) => s.flipRate[v] ?? 0))}
-                    label={(p) => pct(by[p].flipRate[v] ?? 0)}
+                    label={(p) => `${pct(by[p].flipRate[v] ?? 0)} (${by[p].flips[v]?.away ?? 0} ↓)`}
                     tip={(p) =>
-                      `${providerNames[p]} mudou de resposta em ${pct(by[p].flipRate[v] ?? 0)} das perguntas (${variantNames[v]})`
+                      `${providerNames[p]} mudou de decisão em ${by[p].flips[v]?.changed ?? 0} de ${by[p].flips[v]?.compared ?? 0} perguntas (${variantNames[v]}): ${by[p].flips[v]?.toward ?? 0} rumo ao gabarito, ${by[p].flips[v]?.away ?? 0} para longe`
                     }
                   />
                 </div>
@@ -667,6 +668,24 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
           ) : (
             <p className="error-copy">{brava.analysisError}</p>
           )}
+        </Section>
+      )}
+
+      {report.annulled.length > 0 && (
+        <Section
+          title="Itens anulados"
+          note="Ficam no registro e na exportação, mas fora da nota de todos os modelos."
+        >
+          <ul className="annulled-list">
+            {report.annulled.map((a) => (
+              <li key={a.itemId}>
+                <strong>
+                  {a.itemId} · {a.title}
+                </strong>
+                <span>{a.reason}</span>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 

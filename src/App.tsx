@@ -1313,6 +1313,12 @@ export function App() {
               os modelos e revisados às cegas por outra sessão; os comentários reais do HateBR nunca
               aparecem na tela.
             </p>
+            <p>
+              A mudança de resposta compara a decisão, não o número: 1,97 e 1,99 na mesma escala são
+              a mesma resposta. Cada mudança é separada entre as que corrigiram um erro e as que
+              criaram um. Itens considerados ambíguos depois de uma rodada são anulados: ficam no
+              registro, saem da nota de todos os modelos e aparecem no boletim com o motivo.
+            </p>
             <h2>O papel do Opus</h2>
             <p>
               O Opus abre cada reunião, comenta cada rodada e explica o resultado, sempre em sessões

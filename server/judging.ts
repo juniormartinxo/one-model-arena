@@ -223,6 +223,12 @@ export function batteryCommentPrompt(
     .map((i) => bravaItem(brava, i, mapping));
   return `Comente em até 100 palavras, em português, para o público de um vídeo, o resultado da bateria "${battery.title}". O que ela testa: ${battery.description} As notas já foram calculadas pelo aplicativo (fração de ${battery.unit === 'grupo' ? 'grupos inteiros acertados' : 'itens acertados'}) e não mudam: ${JSON.stringify(scores)}. Use os erros listados para explicar onde cada participante tropeçou, citando o tipo de armadilha. Se ninguém errou, diga isso. Não invente raciocínios dos modelos nem use marcas, custo ou velocidade. ${sensitiveNote} ${participantReferences(mapping)} Itens com algum erro: ${JSON.stringify(items)}`;
 }
+const perturbationNames = {
+  ordem: 'mesmas alternativas em ordem invertida',
+  ruido: 'texto irrelevante acrescentado antes dos fatos',
+  digitacao: 'erros de digitação nos fatos',
+  direcao: 'uma evidência a mais a favor do gabarito acrescentada aos fatos',
+} as const;
 export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: Mapping) {
   const letter = (p: Provider) => participantsOf(mapping).find((l) => mapping[l] === p)!;
   const data = {
@@ -245,9 +251,24 @@ export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: 
         report.participants.map((p) => [letter(p), Number(b.scores[p].toFixed(3))]),
       ),
     })),
-    robustnessFlipRate: Object.fromEntries(
-      report.standings.map((s) => [letter(s.provider), s.flipRate]),
+    // Descriptive names: short keys led Opus to call the added evidence an inverted question.
+    robustnessDecisionChanges: Object.fromEntries(
+      report.standings.map((s) => [
+        letter(s.provider),
+        Object.fromEntries(
+          Object.entries(s.flips).map(([variant, d]) => [
+            perturbationNames[variant as keyof typeof perturbationNames],
+            {
+              questions: d.compared,
+              decisionChanged: d.changed,
+              towardReferenceAnswer: d.toward,
+              awayFromReferenceAnswer: d.away,
+            },
+          ]),
+        ),
+      ]),
     ),
+    annulledItems: report.annulled.map((a) => ({ itemId: a.itemId, reason: a.reason })),
     calibration: Object.fromEntries(
       report.standings.map((s) => [letter(s.provider), { meanBrier: s.brier, ece: s.ece }]),
     ),
@@ -265,5 +286,5 @@ export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: 
       ),
     ),
   };
-  return `Escreva a leitura final da "rodada brava", uma bateria de ${report.items} testes difíceis em português, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Se o intervalo de 95% de uma diferença inclui zero (withinMargin), diga que a diferença está dentro da margem de erro. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 160 palavras e evidências com os itemId reais no campo roundId. Diga em que cada participante foi forte ou fraco, por bateria, citando viradas de resposta na robustez, adivinhações onde deveria se abster e calibração quando forem relevantes. Não use marcas, custo nem velocidade. Não invente raciocínios. ${sensitiveNote} Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
+  return `Escreva a leitura final da "rodada brava", uma bateria de ${report.items} testes difíceis em português, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Se o intervalo de 95% de uma diferença inclui zero (withinMargin), diga que a diferença está dentro da margem de erro. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 160 palavras e evidências com os itemId reais no campo roundId. Diga em que cada participante foi forte ou fraco, por bateria, citando mudanças de decisão na robustez (diga o tipo de alteração com as palavras dos dados e se a mudança foi rumo ao gabarito ou para longe dele), adivinhações onde deveria se abster e calibração quando forem relevantes. Não use marcas, custo nem velocidade. Não invente raciocínios. ${sensitiveNote} Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
 }

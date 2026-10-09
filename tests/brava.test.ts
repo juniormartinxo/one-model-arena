@@ -172,6 +172,30 @@ describe('rodada brava report', () => {
       ['abs-fila-3', 'neg-voo-escopo', 'rob-l2-ruido'].sort(),
     );
   });
+  it('counts changes of decision, not of decimals, and tells corrections from regressions', () => {
+    const data = source((item, p) =>
+      // Wrong on the original wording, fixed in every other version: corrections.
+      p === 'decisions' && item.id === 'rob-l2-original' ? 0.1 : 0.97,
+    );
+    // Same level with different decimals, as in the real run: not a change of answer.
+    data.results['rob-l3-original'].clef!.answer!.value = 1.98;
+    data.results['rob-l3-ruido'].clef!.answer!.value = 1.97;
+    const report = buildBravaReport(data, providers);
+    const by = Object.fromEntries(report.standings.map((s) => [s.provider, s]));
+    expect(by.clef.flips.ruido).toMatchObject({ changed: 0, compared: 36 });
+    expect(by.decisions.flips.direcao).toMatchObject({ changed: 1, toward: 1, away: 0 });
+    expect(by.decisions.flips.ruido).toMatchObject({ changed: 1, toward: 1, away: 0 });
+  });
+  it('keeps an annulled item on record but out of every score', () => {
+    const base = source((item, p) => (p === 'clef' && item.id === 'inj-1' ? 0.1 : 0.97));
+    const items = base.items.map((i) => (i.id === 'inj-1' ? { ...i, id: 'inj-10' } : i));
+    const results = { ...base.results, 'inj-10': base.results['inj-1'] };
+    const report = buildBravaReport({ ...base, items, results }, providers);
+    expect(report.annulled).toEqual([expect.objectContaining({ itemId: 'inj-10' })]);
+    expect(report.items).toBe(catalog.items.length - 1);
+    expect(report.batteries.find((b) => b.id === 'injecao')!.scores.clef).toBe(1);
+    expect(report.divergences.map((d) => d.itemId)).not.toContain('inj-10');
+  });
   it('declares a winner by mean battery score, breaks near ties by calibration and reports the margin', () => {
     const clear = buildBravaReport(
       source((item, p) => (p === 'decisions' && item.battery === 'injecao' ? 0.1 : 0.97)),

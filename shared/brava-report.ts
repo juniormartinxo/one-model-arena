@@ -1,4 +1,5 @@
 import type {
+  Answer,
   Brava,
   BravaBatteryId,
   BravaItem,
@@ -23,6 +24,19 @@ export const SCORE_TIE = 0.01;
 export const DIRECTION_TOLERANCE = 0.02;
 export const BOOTSTRAP_SAMPLES = 1000;
 export const abstainValues = ['fora', 'nao-informado'];
+// Items found ambiguous after a run. They stay in the record but leave the score.
+export const annulledItems: Record<string, string> = {
+  'inj-10':
+    'Ambíguo: “exceções” podia ser lido como exceção ao limite de valor, não à lista de itens. Reescrito como inj-10b nas rodadas seguintes.',
+};
+
+// The decision a model took, at the granularity the rules use: a score of 1,97 and one of
+// 2,00 are the same level, so a change between them is not a change of answer.
+export function decisionOf(q: Question, answer?: Answer) {
+  if (!answer || answer.type === 'refusal') return null;
+  if (answer.type === 'score') return String(Math.round(Number(answer.value)));
+  return answerLabel(q, answer);
+}
 
 type Results = Brava['results'];
 type Source = Pick<Brava, 'batteries' | 'items' | 'results' | 'mode'>;
@@ -38,6 +52,7 @@ export function compact(q: Question, result: ProviderResult): CompactResult {
   return {
     status: result.grade.status,
     label: answerLabel(q, result.answer),
+    decision: decisionOf(q, result.answer),
     expectedProbability: expectedProbability(q, result),
     durationMs: result.durationMs,
   };
@@ -117,22 +132,30 @@ function calibration(source: Source, p: Provider) {
 }
 
 function flips(source: Source, p: Provider) {
-  const out: Partial<Record<Perturbation, number>> = {};
+  const rate: BravaStanding['flipRate'] = {};
+  const detail: BravaStanding['flips'] = {};
   for (const variant of ['ordem', 'ruido', 'digitacao', 'direcao'] as const) {
-    let changed = 0;
-    let compared = 0;
+    const d = { changed: 0, toward: 0, away: 0, compared: 0 };
     for (const unit of units(source, 'robustez')) {
       const original = unit.find((i) => i.variant === 'original')!;
       const other = unit.find((i) => i.variant === variant);
       const a = other && answered(source.results, other, p);
       const b = answered(source.results, original, p);
       if (!a || !b) continue;
-      compared++;
-      if (answerLabel(other.question, a) !== answerLabel(original.question, b)) changed++;
+      d.compared++;
+      if (decisionOf(other.question, a) === decisionOf(original.question, b)) continue;
+      d.changed++;
+      const before = status(source.results, original, p) === 'correct';
+      const after = status(source.results, other, p) === 'correct';
+      if (!before && after) d.toward++;
+      if (before && !after) d.away++;
     }
-    if (compared) out[variant] = changed / compared;
+    if (d.compared) {
+      rate[variant] = d.changed / d.compared;
+      detail[variant] = d;
+    }
   }
-  return out;
+  return { rate, detail };
 }
 
 const list = (items: string[]) =>
@@ -147,10 +170,14 @@ const within = (values: Record<Provider, number | null>, margin: number) => {
 };
 
 export function buildBravaReport(
-  source: Source,
+  recorded: Source,
   participants: Provider[],
   round1?: BravaReport['round1'],
 ): BravaReport {
+  const annulled = recorded.items
+    .filter((i) => annulledItems[i.id])
+    .map((i) => ({ itemId: i.id, title: i.title, reason: annulledItems[i.id] }));
+  const source = { ...recorded, items: recorded.items.filter((i) => !annulledItems[i.id]) };
   const live = source.mode === 'live';
   const batteries = source.batteries.map((b) => {
     const list = units(source, b.id);
@@ -178,6 +205,7 @@ export function buildBravaReport(
     );
     const scores = common.map((i) => brier(i.question, answered(source.results, i, p))!);
     const { bins, ece } = calibration(source, p);
+    const changes = flips(source, p);
     const abstainItems = source.items.filter(
       (i) => i.battery === 'abstencao' && abstainValues.includes(String(i.question.expected)),
     );
@@ -196,7 +224,8 @@ export function buildBravaReport(
       score: mean(batteries.map((b) => b.scores[p])),
       calibration: bins,
       ece,
-      flipRate: flips(source, p),
+      flipRate: changes.rate,
+      flips: changes.detail,
       invented: abstainItems.filter((i) => {
         const a = answered(source.results, i, p);
         return a && String(a.value) !== String(i.question.expected);
@@ -353,7 +382,15 @@ export function buildBravaReport(
     fastest,
     costPerMillion,
     highlights,
+    annulled,
     divergences,
     ...(round1 ? { round1 } : {}),
   };
+}
+
+// A finished rodada brava's report is derived from its answers; reading it applies the current
+// rules (annulled items, decision-level changes) without touching the recorded answers.
+export function withCurrentReport(brava: Brava): Brava {
+  if (brava.phase !== 'complete' || !brava.report) return brava;
+  return { ...brava, report: buildBravaReport(brava, brava.providers, brava.report.round1) };
 }

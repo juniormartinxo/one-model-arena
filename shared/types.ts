@@ -251,6 +251,8 @@ export type BravaBattery = {
 export type CompactResult = {
   status: Grade['status'];
   label: string | null;
+  // The decision taken: the option, Sim/Não/Revisão humana, or the nearest scale level.
+  decision: string | null;
   // Probability given to the reference answer.
   expectedProbability: number | null;
   durationMs: number;
@@ -274,7 +276,12 @@ export type BravaStanding = Standing & {
   score: number;
   calibration: CalibrationBin[];
   ece: number | null;
+  // Share of round 1 questions whose decision changed in each version.
   flipRate: Partial<Record<Perturbation, number>>;
+  // Changes split by direction: toward the reference answer or away from it.
+  flips: Partial<
+    Record<Perturbation, { changed: number; toward: number; away: number; compared: number }>
+  >;
   invented: number;
   abstentionItems: number;
 };
@@ -300,6 +307,8 @@ export type BravaReport = {
     providers: Provider[];
     text: string;
   }[];
+  // Items removed from scoring after the run, with the reason shown in the report.
+  annulled: { itemId: string; title: string; reason: string }[];
   divergences: {
     itemId: string;
     battery: BravaBatteryId;
