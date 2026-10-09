@@ -1,6 +1,12 @@
 # Mesa de decisão · Jev × Decisions × Clef
 
-Estúdio local para comparar, em português, três modelos de decisão estruturada: Jev (TypeSafe), OpenAI Decisions e Cloudflare Clef. Uma **maratona automática** roda seis reuniões fictícias em sequência, 36 decisões por modelo, e termina num boletim com acertos, calibração, custo e velocidade. O vencedor sai do gabarito; o Claude Opus 5.5, pelo CLI, apresenta, comenta cada rodada e explica o resultado sem ver as marcas.
+Estúdio local para comparar, em português, três modelos de decisão estruturada: Jev (TypeSafe), OpenAI Decisions e Cloudflare Clef. São três rodadas, cada uma com boletim próprio:
+
+1. **Maratona:** seis reuniões fictícias em sequência, 36 decisões por modelo, com regras escritas no contexto.
+2. **Rodada brava:** 298 testes por modelo em que a regra não entrega a resposta, incluindo textos reais de três datasets públicos em português.
+3. **Rodada das imagens:** 80 fotos reais do CV-Bench, só com Decisions e Clef, os dois modelos cujas APIs leem imagens.
+
+O vencedor sai do gabarito; o Claude Opus 5.5, pelo CLI, apresenta, comenta e explica o resultado sem ver as marcas. Os datasets usados estão em [Datasets usados nos testes](#datasets-usados-nos-testes).
 
 ## Reproduzir o teste
 
@@ -98,13 +104,7 @@ Os itens de abstenção, negação e injeção estão em `server/brava/authored.
 
 ### Datasets de português real
 
-`npm run datasets` baixa os dados das fontes oficiais para `data/datasets/`, que não vai para o Git, e seleciona os itens listados em `server/brava/portugues-ids.json` (sorteio com semente fixa; `npm run datasets -- --resample` sorteia de novo e muda o hash do catálogo). O repositório não redistribui nenhum texto desses conjuntos.
-
-| Conjunto      | Fonte                                                                             | Licença declarada                      | Citação                                 |
-| ------------- | --------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------- |
-| ASSIN 2       | [nilc-nlp/assin2](https://huggingface.co/datasets/nilc-nlp/assin2)                | Não declarada pela fonte               | Real, Fonseca e Oliveira (2020), PROPOR |
-| HateBR        | [franciellevargas/HateBR](https://github.com/franciellevargas/HateBR)             | CC BY-NC 4.0, uso de pesquisa          | Vargas et al. (2022), LREC              |
-| B2W-Reviews01 | [americanas-tech/b2w-reviews01](https://github.com/americanas-tech/b2w-reviews01) | CC BY-NC-SA 4.0, crédito à B2W Digital | Real et al. (2019), STIL                |
+`npm run datasets` baixa os dados das fontes oficiais para `data/datasets/`, que não vai para o Git, e seleciona os itens listados em `server/brava/portugues-ids.json` (sorteio com semente fixa; `npm run datasets -- --resample` sorteia de novo e muda o hash do catálogo). O repositório não redistribui nenhum texto desses conjuntos. Fontes, licenças e citações estão em [Datasets usados nos testes](#datasets-usados-nos-testes).
 
 HateBR e B2W não permitem uso comercial: confira se o seu uso se enquadra. Os comentários do HateBR podem conter ofensas e discurso de ódio; a interface nunca os exibe, mas eles vão para os modelos, para o Opus e para o JSON exportado. Por serem públicos e antigos, esses textos podem estar nos dados de treino dos modelos.
 
@@ -123,7 +123,42 @@ Os gabaritos são os do dataset. As perguntas do CV-Bench seguem quatro frases-p
 
 A foto vai embutida em cada chamada como data URL em base64, porque nenhuma das duas APIs aceita links: no Decisions, como uma parte `input_image` ao lado do texto; no Clef, no campo `images`, a extensão do contrato do Jev. O registro e a exportação guardam só o tamanho e o sha256 de cada foto, não os bytes. O Opus não vê as fotos: comenta a partir da pergunta, das alternativas, do gabarito e das respostas.
 
-`npm run imagens` baixa as fotos do servidor de datasets do Hugging Face para `data/datasets/imagens/`, que não vai para o Git. A amostra (20 por tarefa, semente fixa) fica em `server/visual/cvbench-sample.json`, com as perguntas e os gabaritos; `npm run imagens -- --resample` sorteia de novo e muda o hash do catálogo. O script também reduz toda foto para no máximo 1600 px no lado maior, inclusive as baixadas antes: o Workers AI recusou uma foto de 2200×1650 estimando 132 mil tokens, acima da janela de 65.536 do Clef, embora a documentação aceite até 16 megapixels. Os dois modelos recebem o mesmo arquivo reduzido. As anotações do CV-Bench são Apache-2.0; as fotos vêm de ADE20K, COCO e Omni3D, com termos próprios, e por isso não são redistribuídas. O CV-Bench é público desde 2024 e pode estar nos dados de treino dos modelos. Citação: Tong et al. (2024), _Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs_, NeurIPS 2024.
+`npm run imagens` baixa as fotos do servidor de datasets do Hugging Face para `data/datasets/imagens/`, que não vai para o Git. A amostra (20 por tarefa, semente fixa) fica em `server/visual/cvbench-sample.json`, com as perguntas e os gabaritos; `npm run imagens -- --resample` sorteia de novo e muda o hash do catálogo. O script também reduz toda foto para no máximo 1600 px no lado maior, inclusive as baixadas antes: o Workers AI recusou uma foto de 2200×1650 estimando 132 mil tokens, acima da janela de 65.536 do Clef, embora a documentação aceite até 16 megapixels. Os dois modelos recebem o mesmo arquivo reduzido. As fotos não são redistribuídas. O CV-Bench é público desde 2024 e pode estar nos dados de treino dos modelos. Fontes, licenças e citações estão em [Datasets usados nos testes](#datasets-usados-nos-testes).
+
+Primeira execução real: `405f3260`, em 09/10/2026. O Clef venceu por 85,0 a 81,2, dentro da margem de erro, e a diferença saiu da distância real. Detalhes em `docs/o-que-foi-feito.md`.
+
+## Datasets usados nos testes
+
+A rodada 1 e as baterias escritas da rodada brava (robustez, saber dizer “não”, negação e injeção) não usam datasets externos: os casos e gabaritos são do autor. Os conjuntos públicos entram em duas baterias:
+
+| Rodada      | Bateria                                                   | Dataset       | O que foi usado                                                           | Fonte                                                                             | Licença declarada                                    |
+| ----------- | --------------------------------------------------------- | ------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 2 · Brava   | Português real                                            | ASSIN 2       | 20 pares de frases do teste, implicação ou não (10 + 10)                  | [nilc-nlp/assin2](https://huggingface.co/datasets/nilc-nlp/assin2)                | Não declarada pela fonte                             |
+| 2 · Brava   | Português real                                            | HateBR        | 20 comentários do Instagram, ofensivos ou não (10 + 10)                   | [franciellevargas/HateBR](https://github.com/franciellevargas/HateBR)             | CC BY-NC 4.0, uso de pesquisa                        |
+| 2 · Brava   | Português real                                            | B2W-Reviews01 | 20 avaliações de compra, recomendaria ou não (10 + 10), sem as estrelas   | [americanas-tech/b2w-reviews01](https://github.com/americanas-tech/b2w-reviews01) | CC BY-NC-SA 4.0, crédito à B2W Digital               |
+| 3 · Imagens | Contagem, posição relativa, profundidade e distância real | CV-Bench      | 80 perguntas de múltipla escolha com foto, 20 por tarefa, do split `test` | [nyu-visionx/CV-Bench](https://huggingface.co/datasets/nyu-visionx/CV-Bench)      | Apache-2.0 nas anotações; fotos com termos de origem |
+
+As 80 fotos do CV-Bench vêm de três conjuntos anteriores, que o CV-Bench reaproveita com as caixas coloridas desenhadas:
+
+| Origem                                               | Fotos | Usadas em                     |
+| ---------------------------------------------------- | ----- | ----------------------------- |
+| COCO 2017, validação                                 | 22    | Contagem e posição relativa   |
+| ADE20K, validação                                    | 18    | Contagem e posição relativa   |
+| Omni3D (subconjuntos SUN RGB-D, Hypersim e nuScenes) | 40    | Profundidade e distância real |
+
+Cada um desses conjuntos tem termos próprios, e alguns restringem uso comercial, como o nuScenes (CC BY-NC-SA 4.0). Por isso o repositório guarda só as perguntas e os gabaritos, e `npm run imagens` baixa as fotos localmente.
+
+Todas as amostras foram sorteadas com semente fixa e ficam versionadas: `server/brava/portugues-ids.json` e `server/visual/cvbench-sample.json`. Os gabaritos são os rótulos humanos de cada dataset, sem correção do autor.
+
+**Referências:**
+
+- **ASSIN 2:** Real, L.; Fonseca, E.; Gonçalo Oliveira, H. (2020). _The ASSIN 2 Shared Task: A Quick Overview_. PROPOR 2020.
+- **HateBR:** Vargas, F. et al. (2022). _HateBR: A Large Expert Annotated Corpus of Brazilian Instagram Comments for Offensive Language and Hate Speech Detection_. LREC 2022.
+- **B2W-Reviews01:** Real, L.; Oshiro, M.; Mafra, A. (2019). _B2W-Reviews01: An Open Product Reviews Corpus_. STIL 2019. Dados de B2W Digital.
+- **CV-Bench:** Tong, S. et al. (2024). _Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs_. NeurIPS 2024.
+- **COCO:** Lin, T.-Y. et al. (2014). _Microsoft COCO: Common Objects in Context_. ECCV 2014.
+- **ADE20K:** Zhou, B. et al. (2017). _Scene Parsing through ADE20K Dataset_. CVPR 2017.
+- **Omni3D:** Brazil, G. et al. (2023). _Omni3D: A Large Benchmark and Model for 3D Object Detection in the Wild_. CVPR 2023.
 
 ## Clef
 

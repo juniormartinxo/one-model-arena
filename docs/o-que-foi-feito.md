@@ -29,6 +29,7 @@ Os três modelos de decisão recebem **o mesmo texto e as mesmas alternativas**,
 6. **Rodada brava:** segunda rodada, mais difícil, com 298 testes e boletim próprio.
 7. **Correções pós-execução:** métrica de mudança de resposta, item ambíguo anulado, recálculo do boletim ao abrir.
 8. **Rodada das imagens:** terceira rodada, só com Decisions e Clef, os dois que leem imagens, em 80 fotos do CV-Bench.
+9. **Espaços próprios:** a página inicial passou a levar a um espaço por rodada e à sala de reuniões, cada um com endereço próprio, e o modo gravação passou a ocupar a tela inteira.
 
 ## 4. Rodada 1: a maratona
 
@@ -239,8 +240,8 @@ Correções anteriores, da maratona:
 - **Gabaritos:**
   - Os da rodada 1 e os itens escritos à mão são do autor do teste, embora revisados às cegas.
   - Os do português real são humanos, mas têm discordância entre anotadores.
-- **Contaminação:** ASSIN 2 (2019), HateBR (2022) e B2W (2018) são públicos e antigos, e podem estar nos dados de treino.
-- **Licenças:** HateBR (CC BY-NC 4.0) e B2W (CC BY-NC-SA 4.0) proíbem uso comercial. A licença do ASSIN 2 não é declarada. O repositório não redistribui os textos.
+- **Contaminação:** ASSIN 2 (2019), HateBR (2022), B2W (2018) e CV-Bench (2024) são públicos e podem estar nos dados de treino.
+- **Licenças:** HateBR (CC BY-NC 4.0) e B2W (CC BY-NC-SA 4.0) proíbem uso comercial. A licença do ASSIN 2 não é declarada. As anotações do CV-Bench são Apache-2.0, mas as fotos seguem os termos de COCO, ADE20K e Omni3D; o nuScenes, por exemplo, é CC BY-NC-SA 4.0. O repositório não redistribui textos nem fotos.
 - **Medição:**
   - Latência inclui a rede.
   - Custo considera só tokens de entrada.
@@ -249,7 +250,30 @@ Correções anteriores, da maratona:
 - **Rodada das imagens:** 20 fotos por bateria é pouco; o CV-Bench é público desde 2024 e pode estar nos dados de treino; as perguntas foram vertidas para o português por frases-padrão, não por um tradutor humano.
 - **Amostra:** 36 perguntas na rodada 1 não sustentam conclusões estatísticas. A rodada brava, com margem por bootstrap, sustenta só a separação contra o Jev.
 
-## 12. Como reproduzir
+## 12. Datasets usados
+
+A rodada 1 e as baterias escritas da rodada brava não usam datasets externos. Os conjuntos públicos entram em duas baterias:
+
+| Rodada      | Dataset       | O que foi usado                                                                    | Licença declarada                                    |
+| ----------- | ------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 2 · Brava   | ASSIN 2       | 20 pares de frases, implicação ou não, balanceados                                 | Não declarada pela fonte                             |
+| 2 · Brava   | HateBR        | 20 comentários do Instagram, ofensivos ou não, balanceados; nunca aparecem na tela | CC BY-NC 4.0, uso de pesquisa                        |
+| 2 · Brava   | B2W-Reviews01 | 20 avaliações de compra, recomendaria ou não, balanceadas, sem as estrelas         | CC BY-NC-SA 4.0, crédito à B2W Digital               |
+| 3 · Imagens | CV-Bench      | 80 perguntas com foto, 20 por tarefa: contagem, posição, profundidade e distância  | Apache-2.0 nas anotações; fotos com termos de origem |
+
+As fotos do CV-Bench vêm de COCO 2017 (22), ADE20K (18) e Omni3D (40, dos subconjuntos SUN RGB-D, Hypersim e nuScenes). Os gabaritos são os rótulos de cada dataset, sem correção do autor. As amostras foram sorteadas com semente fixa e ficam em `server/brava/portugues-ids.json` e `server/visual/cvbench-sample.json`.
+
+**Referências:**
+
+- **ASSIN 2:** Real, L.; Fonseca, E.; Gonçalo Oliveira, H. (2020). _The ASSIN 2 Shared Task: A Quick Overview_. PROPOR 2020. [nilc-nlp/assin2](https://huggingface.co/datasets/nilc-nlp/assin2).
+- **HateBR:** Vargas, F. et al. (2022). _HateBR: A Large Expert Annotated Corpus of Brazilian Instagram Comments for Offensive Language and Hate Speech Detection_. LREC 2022. [franciellevargas/HateBR](https://github.com/franciellevargas/HateBR).
+- **B2W-Reviews01:** Real, L.; Oshiro, M.; Mafra, A. (2019). _B2W-Reviews01: An Open Product Reviews Corpus_. STIL 2019. [americanas-tech/b2w-reviews01](https://github.com/americanas-tech/b2w-reviews01).
+- **CV-Bench:** Tong, S. et al. (2024). _Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs_. NeurIPS 2024. [nyu-visionx/CV-Bench](https://huggingface.co/datasets/nyu-visionx/CV-Bench).
+- **COCO:** Lin, T.-Y. et al. (2014). _Microsoft COCO: Common Objects in Context_. ECCV 2014.
+- **ADE20K:** Zhou, B. et al. (2017). _Scene Parsing through ADE20K Dataset_. CVPR 2017.
+- **Omni3D:** Brazil, G. et al. (2023). _Omni3D: A Large Benchmark and Model for 3D Object Detection in the Wild_. CVPR 2023.
+
+## 13. Como reproduzir
 
 ```sh
 git clone git@github.com:juniormartinxo/one-model-arena.git
@@ -264,7 +288,7 @@ npm run dev             # abra http://127.0.0.1:4317
 
 A página inicial leva a quatro espaços, cada um com endereço próprio: Rodada 1 · Maratona (`#/maratona`), Rodada 2 · Brava (`#/brava`), Rodada 3 · Imagens (`#/imagens`) e a Sala de reuniões (`#/sala`), para reuniões avulsas rodada a rodada. Em cada espaço: **Ensaio da maratona**, **Ensaio da rodada brava** e **Ensaio da rodada das imagens** rodam sem custo, com dados sintéticos. **Iniciar maratona real**, **Iniciar rodada brava** e **Iniciar rodada das imagens** usam as APIs; a rodada das imagens precisa só das chaves da OpenAI e da Cloudflare. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos, tempos e prompts e saídas do Opus.
 
-## 13. Mapa dos arquivos
+## 14. Mapa dos arquivos
 
 | Caminho                                               | O que tem                                                                            |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------ |
