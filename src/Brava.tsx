@@ -318,7 +318,7 @@ export function BravaLive({
                 </div>
               </div>
               <div className="opus-copy">
-                <p>{revealParticipants(comment.text, comment.mapping)}</p>
+                <p>{revealParticipants(comment.text, comment.mapping, true)}</p>
                 {comment.error && <p className="error-copy">{comment.error}</p>}
               </div>
             </section>
@@ -420,7 +420,7 @@ export function BravaReportView({
   const winner = report.winner === 'tie' || report.winner === 'inconclusive' ? null : report.winner;
   const analysis = brava.analysis;
   const headline = analysis
-    ? revealParticipants(analysis.headline, analysis.mapping)
+    ? revealParticipants(analysis.headline, analysis.mapping, true)
     : demo
       ? `${names.rehearsal} concluído`
       : winner
@@ -435,7 +435,8 @@ export function BravaReportView({
     unavailable: 'Respostas ausentes poderiam mudar a liderança.',
   }[report.reason];
   const withinMargin = report.margins.filter((m) => m.within).map((m) => providerNames[m.vs]);
-  const [all, setAll] = useState(false);
+  // The photo grid is compact enough to open complete; the text list starts with eight.
+  const [all, setAll] = useState(visual);
   const divergences = all ? report.divergences : report.divergences.slice(0, 8);
   return (
     <div
@@ -662,22 +663,24 @@ export function BravaReportView({
               {divergences.map((d) => (
                 <li key={d.itemId}>
                   <div className="divergence-question">
-                    <span>
-                      {brava.batteries.find((b) => b.id === d.battery)?.title} · {d.title}
-                    </span>
-                    <p>{d.question}</p>
-                    {visual ? (
+                    {visual && (
                       <Photo
                         item={brava.items.find((i) => i.id === d.itemId)!}
                         className="is-thumb"
                       />
-                    ) : d.facts ? (
-                      <p className="divergence-facts">{d.facts}</p>
-                    ) : (
-                      <p className="brava-hidden">
-                        <EyeOff size={13} /> Texto real oculto: pode conter ofensas.
-                      </p>
                     )}
+                    <span>
+                      {brava.batteries.find((b) => b.id === d.battery)?.title} · {d.title}
+                    </span>
+                    <p>{d.question}</p>
+                    {!visual &&
+                      (d.facts ? (
+                        <p className="divergence-facts">{d.facts}</p>
+                      ) : (
+                        <p className="brava-hidden">
+                          <EyeOff size={13} /> Texto real oculto: pode conter ofensas.
+                        </p>
+                      ))}
                     <small>Gabarito: {d.expected}</small>
                   </div>
                   <ul>
@@ -698,7 +701,7 @@ export function BravaReportView({
                 </li>
               ))}
             </ol>
-            {report.divergences.length > 8 && (
+            {!visual && report.divergences.length > 8 && (
               <button className="text-button" onClick={() => setAll(!all)}>
                 {all ? 'Mostrar menos' : `Mostrar todos os ${report.divergences.length}`}
               </button>
@@ -714,7 +717,7 @@ export function BravaReportView({
                 <div className="report-analysis">
                   <AudioLines size={18} />
                   <div>
-                    <p>{revealParticipants(analysis.summary, analysis.mapping)}</p>
+                    <p>{revealParticipants(analysis.summary, analysis.mapping, true)}</p>
                     <ul>
                       {analysis.evidence.map((e, i) => (
                         <li key={i}>
@@ -725,7 +728,7 @@ export function BravaReportView({
                               : providerNames[analysis.mapping[e.participant]!]}
                             :
                           </strong>{' '}
-                          {revealParticipants(e.observation, analysis.mapping)}
+                          {revealParticipants(e.observation, analysis.mapping, true)}
                         </li>
                       ))}
                     </ul>

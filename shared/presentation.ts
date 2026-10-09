@@ -62,13 +62,21 @@ export function expectedLabel(question: Question): string {
 // New evaluations use explicit placeholders so Portuguese articles such as
 // “A diferença” are never mistaken for participant A. The conservative fallback
 // also renders existing recordings, without rewriting their original evidence.
-export function revealParticipants(text: string, mapping?: Mapping): string {
+// Recordings made with placeholders skip the loose-letter guess: there a bare letter is
+// usually an answer option, as in the rodada das imagens (options A to F). Callers whose
+// texts were all written with placeholders say so, since a sentence about both
+// participants may contain none.
+export function revealParticipants(
+  text: string,
+  mapping?: Mapping,
+  placeholders = /\[\[[ABC]\]\]/.test(text),
+): string {
   if (!mapping) return text;
   const name = (id: string) => {
     const provider = mapping[id as Participant];
     return provider ? providerNames[provider] : id;
   };
-  return text
+  const revealed = text
     .replace(/\[\[([ABC])\]\]/g, (_, id: string) => name(id))
     .replace(
       /\b(participante|modelo|concorrente)\s+([ABC])\b/gi,
@@ -77,26 +85,27 @@ export function revealParticipants(text: string, mapping?: Mapping): string {
     .replace(
       /\b([ABC])(?=\s+(?:e|ou|contra|versus)\s+(?:[ABC]|Jev|Decisions|Clef)\b)/g,
       (_, id: string) => name(id),
-    )
-    .replace(/\b[ABC]\b/g, (id: string, offset: number, sentence: string) => {
-      if (!mapping[id as Participant]) return id;
-      const before = sentence.slice(0, offset);
-      const after = sentence.slice(offset + 1);
-      // B and C are not Portuguese articles, but may be part of a named plan/option.
-      if (/\b(?:plano|opção|alternativa|nível|letra)\s+$/i.test(before)) return id;
-      if (id !== 'A') return name(id);
-      if (/\b(?:de|do|para|por|com|entre|contra|que|enquanto|superou)\s+$/.test(before))
-        return name(id);
-      if (/(?:Jev|Decisions|Clef)\s+(?:e|ou|contra|versus)\s+$/.test(before)) return name(id);
-      if (/^\s*(?:[(:,;/]|[0-9]|$)/.test(after)) return name(id);
-      if (
-        /^\s+(?:venceu|ganhou|perdeu|empatou|respondeu|responde|escolheu|escolhe|acertou|errou|recebeu|recebe|obteve|marcou|pontuou|pontua|fez|foi|ficou|fica|deu|disse|teve|tem|tinha|tomou|decidiu|decide|classificou|classifica|identificou|reconheceu|confirmou|recusou|rejeitou|negou|aprovou|indicou|atribuiu|retornou|apontou|interpretou|inferiu|tratou|preservou|manteve|mantém|encerrou|encaminhou|evitou|mudou|ajustou|acompanhou|aderiu|atendeu|considerou|demonstrou|mostrou|contribuiu|superou|falhou|permaneceu|priorizou|solicitou|pediu|sugeriu|com|também|ainda|já|não|se)\b/i.test(
-          after,
-        )
+    );
+  if (placeholders) return revealed;
+  return revealed.replace(/\b[ABC]\b/g, (id: string, offset: number, sentence: string) => {
+    if (!mapping[id as Participant]) return id;
+    const before = sentence.slice(0, offset);
+    const after = sentence.slice(offset + 1);
+    // B and C are not Portuguese articles, but may be part of a named plan/option.
+    if (/\b(?:plano|opção|alternativa|nível|letra)\s+$/i.test(before)) return id;
+    if (id !== 'A') return name(id);
+    if (/\b(?:de|do|para|por|com|entre|contra|que|enquanto|superou)\s+$/.test(before))
+      return name(id);
+    if (/(?:Jev|Decisions|Clef)\s+(?:e|ou|contra|versus)\s+$/.test(before)) return name(id);
+    if (/^\s*(?:[(:,;/]|[0-9]|$)/.test(after)) return name(id);
+    if (
+      /^\s+(?:venceu|ganhou|perdeu|empatou|respondeu|responde|escolheu|escolhe|acertou|errou|recebeu|recebe|obteve|marcou|pontuou|pontua|fez|foi|ficou|fica|deu|disse|teve|tem|tinha|tomou|decidiu|decide|classificou|classifica|identificou|reconheceu|confirmou|recusou|rejeitou|negou|aprovou|indicou|atribuiu|retornou|apontou|interpretou|inferiu|tratou|preservou|manteve|mantém|encerrou|encaminhou|evitou|mudou|ajustou|acompanhou|aderiu|atendeu|considerou|demonstrou|mostrou|contribuiu|superou|falhou|permaneceu|priorizou|solicitou|pediu|sugeriu|com|também|ainda|já|não|se)\b/i.test(
+        after,
       )
-        return name(id);
-      return id;
-    });
+    )
+      return name(id);
+    return id;
+  });
 }
 
 const joined = (items: string[]) =>

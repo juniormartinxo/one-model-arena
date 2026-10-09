@@ -39,13 +39,33 @@ describe('participant names after blind judging', () => {
   });
   it('reveals a third participant without touching unmapped letters', () => {
     const three = { A: 'jev', B: 'decisions', C: 'clef' } as const;
-    expect(
-      revealParticipants('[[C]] errou; [[A]] e [[B]] acertaram. C venceu a rodada.', three),
-    ).toBe('Clef errou; Jev e Decisions acertaram. Clef venceu a rodada.');
+    expect(revealParticipants('C errou; A e B acertaram. C venceu a rodada.', three)).toBe(
+      'Clef errou; Jev e Decisions acertaram. Clef venceu a rodada.',
+    );
     expect(revealParticipants('Participante C superou o nível C.', three)).toBe(
       'Participante Clef superou o nível C.',
     );
     expect(revealParticipants('C venceu.', mapping)).toBe('C venceu.');
+  });
+  it('keeps answer options when the text already names participants with placeholders', () => {
+    const images = { A: 'clef', B: 'decisions' } as const;
+    // Opus output from the rodada das imagens 405f3260: (A) and (B) are the options' letters.
+    expect(
+      revealParticipants(
+        'Distância real, livros: [[A]] acertou a mesa (B) e [[B]] escolheu a estante (A).',
+        images,
+      ),
+    ).toBe('Distância real, livros: Clef acertou a mesa (B) e Decisions escolheu a estante (A).');
+    expect(
+      revealParticipants(
+        'Os dois erraram: responderam o ônibus (B), mas o gabarito era a moto (A).',
+        images,
+        true,
+      ),
+    ).toBe('Os dois erraram: responderam o ônibus (B), mas o gabarito era a moto (A).');
+    expect(revealParticipants('O participante B e [[A]] empataram.', images)).toBe(
+      'O participante Decisions e Clef empataram.',
+    );
   });
   it('uses each pass’s mapping rather than the winner or current round mapping', () => {
     const text = '[[B]] venceu. A vantagem de [[B]] foi pequena.';

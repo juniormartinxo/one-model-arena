@@ -2424,6 +2424,30 @@ details[open] > summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
 }
+/* Rodada das imagens: one card per photo, as many columns as the width allows. Each card is a
+   subgrid of five rows (photo, kicker, question, key, answers), so every row lines up across
+   the cards beside it even when a question wraps. */
+.divergence-list.is-visual {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 0 12px;
+}
+.divergence-list.is-visual > li {
+  grid-row: span 5;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+  gap: 0;
+  margin-bottom: 12px;
+}
+.divergence-list.is-visual .divergence-question {
+  display: contents;
+}
+.divergence-list.is-visual > li > ul {
+  align-self: start;
+  margin-top: 12px;
+}
+.divergence-list.is-visual .brava-photo.is-thumb {
+  margin: 0 0 12px;
+}
 .divergence-list ul li {
   display: grid;
   align-content: start;
@@ -2619,10 +2643,13 @@ details[open] > summary {
   background: #000;
   object-fit: contain;
 }
+/* In the report list every photo gets the same square frame, cropped from the centre. */
 .brava-photo.is-thumb {
-  width: auto;
-  max-width: 100%;
-  max-height: 180px;
+  width: 100%;
+  max-height: none;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: center;
 }
 .brava-live {
   display: grid;

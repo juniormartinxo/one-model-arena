@@ -112,7 +112,7 @@ Os itens de abstenção, negação e injeção estão em `server/brava/authored.
 
 - **Nota de cada bateria**, de 0 a 100%: grupos inteiros na robustez e na negação, itens nas demais.
 - **Nota geral = média simples das baterias**, para que a robustez, com 144 itens, não pese mais que a injeção, com 16.
-- **Empate:** diferenças menores que 1 ponto, desempatadas pelo Brier.
+- **Empate:** diferenças menores que 1 ponto percentual; o menor Brier desempata se tiver vantagem de pelo menos 0,005 sobre o segundo menor Brier entre os candidatos.
 - **Margem de erro:** intervalo de 95% por bootstrap pareado (seção 8).
 - **Itens anulados:** ficam no registro e saem da nota de todos (seção 10).
 
@@ -120,17 +120,94 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 
 ## 8. Glossário das métricas
 
-| Métrica                            | O que mede                                                                                                                | Como ler                                                                                                                                                                                                            |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Brier**                          | Distância entre as probabilidades declaradas e o gabarito. Para cada pergunta, soma o quadrado da diferença em cada opção | 0 = certeza correta; 2 = certeza errada. Menor é melhor. Premia acertar com convicção e pune errar com convicção. Só compara perguntas que os três responderam                                                      |
-| **Erro de calibração (ECE)**       | Agrupa respostas pela confiança e compara com a taxa real de acerto                                                       | 0% = quando diz 90%, acerta 90%. Estima a diferença entre confiança e frequência de acerto por faixa                                                                                                                |
-| **Brier × ECE**                    | Medem coisas diferentes                                                                                                   | Na rodada brava, o Decisions teve o menor ECE (0,5%: menor diferença entre confiança e frequência de acerto por faixa) e o Clef, o menor Brier (mais certeiro e convicto). Os dois podem ser verdade ao mesmo tempo |
-| **Intervalo de 95% (bootstrap)**   | Reamostra os grupos e itens de cada bateria mil vezes e recalcula a diferença entre dois modelos                          | Se o intervalo inclui zero, a diferença está **dentro da margem de erro**                                                                                                                                           |
-| **Mudou de decisão**               | Na robustez, quantas perguntas tiveram decisão diferente da versão original                                               | Compara a decisão (alternativa, Sim/Não/Revisão, nível da escala), não o número. Separa mudanças “rumo ao gabarito” (corrigiram um erro) e “para longe” (criaram um)                                                |
-| **Adivinhou sem dados**            | Na abstenção, quantas vezes escolheu uma resposta onde o certo era “fora do escopo” ou “não informado”                    | Menor é melhor                                                                                                                                                                                                      |
-| **Tokens por decisão**             | Tokens de entrada contados pela API para o mesmo texto                                                                    | Tokenizadores diferentes mudam o preço real                                                                                                                                                                         |
-| **Custo por 1 milhão de decisões** | Tokens de entrada × tarifa, projetados                                                                                    | Não inclui a cota grátis do Clef                                                                                                                                                                                    |
-| **Mediana de resposta**            | Tempo típico por chamada                                                                                                  | Inclui a rede até cada API                                                                                                                                                                                          |
+| Métrica                            | O que mede                                                                                                    | Como ler                                                                                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Brier**                          | Erro das probabilidades em relação ao gabarito                                                                | De 0 (certeza correta) a 2 (certeza errada), nesta arena. Menor é melhor. Usa perguntas respondidas por todos os participantes                                       |
+| **Erro de calibração (ECE)**       | Diferença absoluta entre confiança média e frequência de acerto por faixa, ponderada pelo número de respostas | Menor é melhor. 0% significa coincidência das médias nas faixas observadas, não garantia de calibração perfeita fora da amostra                                      |
+| **Brier × ECE**                    | Brier avalia a distribuição de probabilidades; ECE resume a calibração por faixa                              | Podem ter líderes diferentes. As explicações e os exemplos abaixo mostram por quê                                                                                    |
+| **Intervalo de 95% (bootstrap)**   | Reamostra os grupos e itens de cada bateria mil vezes e recalcula a diferença entre dois modelos              | Se o intervalo inclui zero, a diferença está **dentro da margem de erro**                                                                                            |
+| **Mudou de decisão**               | Na robustez, quantas perguntas tiveram decisão diferente da versão original                                   | Compara a decisão (alternativa, Sim/Não/Revisão, nível da escala), não o número. Separa mudanças “rumo ao gabarito” (corrigiram um erro) e “para longe” (criaram um) |
+| **Adivinhou sem dados**            | Na abstenção, quantas vezes escolheu uma resposta onde o certo era “fora do escopo” ou “não informado”        | Menor é melhor                                                                                                                                                       |
+| **Tokens por decisão**             | Tokens de entrada contados pela API para o mesmo texto                                                        | Tokenizadores diferentes mudam o preço real                                                                                                                          |
+| **Custo por 1 milhão de decisões** | Tokens de entrada × tarifa, projetados                                                                        | Não inclui a cota grátis do Clef                                                                                                                                     |
+| **Mediana de resposta**            | Tempo típico por chamada                                                                                      | Inclui a rede até cada API                                                                                                                                           |
+
+### 8.1. O que é Brier?
+
+O **Brier é uma nota de erro das probabilidades**. Ele mede o quanto as probabilidades que o modelo declarou ficaram longe do gabarito. Quanto menor, melhor: a arena usa a soma sobre todas as alternativas, que vai de **0, certeza correta, a 2, certeza errada**.
+
+Para cada pergunta, o modelo dá uma probabilidade a cada alternativa. No resultado ideal, a alternativa certa teria 100% e as erradas, 0%. Para cada alternativa, calcula-se a diferença entre a probabilidade declarada e esse ideal, eleva-se ao quadrado e soma-se tudo:
+
+`Brier da pergunta = soma de (probabilidade declarada − probabilidade ideal)²`
+
+O boletim mostra a média por pergunta, considerando somente aquelas respondidas por **todos os participantes da comparação**. Itens anulados ficam fora. Na Resiliência e nas imagens, essa média é por item, diferente da nota geral, que dá o mesmo peso a cada bateria.
+
+**Exemplo: uma pergunta de sim ou não cuja resposta certa é “Sim”.** Na conta, 100% vira 1, 90% vira 0,9, e assim por diante.
+
+| O modelo disse                     | Conta                   | Brier                 |
+| ---------------------------------- | ----------------------- | --------------------- |
+| Sim 100%, Não 0%                   | (1 − 1)² + (0 − 0)²     | **0 (perfeito)**      |
+| Sim 90%, Não 10%                   | (0,9 − 1)² + (0,1 − 0)² | 0,02                  |
+| Sim 60%, Não 40% (hesitou)         | (0,6 − 1)² + (0,4 − 0)² | 0,32                  |
+| Sim 50%, Não 50% (sem preferência) | (0,5 − 1)² + (0,5 − 0)² | 0,5                   |
+| Sim 10%, Não 90% (errou convicto)  | (0,1 − 1)² + (0,9 − 0)² | 1,62                  |
+| Sim 0%, Não 100%                   | (0 − 1)² + (1 − 0)²     | **2 (pior possível)** |
+
+**Por que importa:** acertar com convicção reduz o Brier; errar com convicção pesa muito. Neste exemplo binário, dar 95% à alternativa errada produz Brier 1,805, bem pior que dar 60% à certa, que produz 0,32.
+
+Na maratona histórica `c70f2fd8`, o Jev teve Brier melhor que o Decisions mesmo somando menos pontos. O Decisions errou uma pergunta com 95% de certeza; o Jev teve duas respostas na faixa de revisão humana. Isso ilustra por que contar pontos e avaliar probabilidades pode produzir ordens diferentes.
+
+**Como desempata na arena:** na maratona, o Brier entra quando há igualdade de pontos. Na Resiliência e nas imagens, entram no desempate os modelos a menos de **1 ponto percentual da maior nota**. Em ambos os casos, o menor Brier precisa ter vantagem de pelo menos **0,005** sobre o segundo menor entre os candidatos; sem essa diferença, permanece o empate. Respostas ausentes que possam mudar a liderança podem tornar o resultado inconclusivo.
+
+Foi assim que o Clef venceu a rodada brava histórica `4f26181a`: ficou cerca de 0,7 ponto abaixo do Decisions na nota geral, mas teve Brier 0,0116 contra 0,0182, uma vantagem de aproximadamente 0,0066.
+
+O cálculo por pergunta está em [`shared/scoring.ts`](../shared/scoring.ts); as médias e os desempates, em [`shared/report.ts`](../shared/report.ts) e [`shared/brava-report.ts`](../shared/brava-report.ts).
+
+### 8.2. O que é ECE?
+
+O **ECE (Expected Calibration Error, erro de calibração esperado)** mede se a confiança do modelo combina com a taxa observada de acerto. Quanto menor, melhor. **ECE de 0% significa que confiança média e frequência de acerto coincidiram em cada faixa observada.** Não garante que isso acontecerá em novas perguntas.
+
+A ideia: se o modelo diz “tenho 90% de certeza” em 100 respostas, esperamos cerca de 90 acertos. Se acertar só 70, a confiança ficou acima do acerto observado. Se acertar todas as 100, ficou abaixo. É nesse sentido informal que se fala em confiança “honesta”: alinhamento estatístico, não intenção do modelo.
+
+**Como a arena calcula**, em [`shared/brava-report.ts`](../shared/brava-report.ts):
+
+1. Para cada resposta disponível, pega a alternativa de **maior probabilidade** e usa essa probabilidade como confiança.
+2. Agrupa as respostas em cinco faixas de confiança, rotuladas como 50–60%, 60–70%, 70–80%, 80–90% e 90–100%.
+3. Em cada faixa, calcula a confiança média e a proporção de vezes em que essa alternativa correspondeu ao gabarito.
+4. Tira a diferença absoluta entre essas duas médias e faz a média das diferenças, com peso pelo número de respostas em cada faixa.
+
+`ECE = soma de (respostas na faixa ÷ total de respostas) × |confiança média − frequência de acerto|`
+
+**Exemplo: um modelo com 100 respostas.**
+
+| Faixa   | Respostas | Confiança média | Acertou  | Diferença absoluta    |
+| ------- | --------- | --------------- | -------- | --------------------- |
+| 90–100% | 80        | 95%             | 76 (95%) | 0 ponto percentual    |
+| 70–80%  | 20        | 75%             | 10 (50%) | 25 pontos percentuais |
+
+`ECE = (80 × 0 + 20 × 0,25) ÷ 100 = 0,05 = 5%`
+
+Na primeira faixa, confiança e acerto coincidiram. Na segunda, a confiança ficou 25 pontos acima do acerto observado; como ela reúne só 20% das respostas, sua contribuição ao ECE é de 5 pontos percentuais.
+
+No boletim da Resiliência e das imagens, o gráfico **“Quando disse X%, acertou quanto?”** mostra essa comparação. Cada ponto representa uma faixa com respostas; a linha tracejada indica confiança igual a acerto. O ECE resume as distâncias verticais até essa linha, ponderadas pela quantidade de respostas.
+
+**Detalhes da implementação que afetam a leitura:**
+
+- A taxa de acerto do ECE compara a alternativa mais provável com o gabarito. Não usa os pontos nem o encaminhamento para revisão: “Sim 60%, Não 40%”, com gabarito Sim, conta como acerto nesse cálculo, embora valha zero na pontuação de sim/não.
+- Em perguntas com várias alternativas, a maior probabilidade pode ficar abaixo de 50%. A implementação atual inclui esses casos na primeira faixa, apesar do rótulo 50–60%.
+- Cada modelo usa suas próprias respostas disponíveis no ECE. Já o Brier comparativo usa somente perguntas respondidas por todos. Itens anulados ficam fora de ambos.
+
+### 8.3. Como ler Brier e ECE juntos
+
+O **Brier combina acerto e confiança**, avaliando todas as probabilidades de cada resposta. O **ECE avalia o alinhamento entre confiança e acerto por faixa**. Por isso, um não substitui o outro.
+
+Em um exemplo binário, um modelo que sempre dá 50% para cada alternativa e cuja alternativa mais provável, após o desempate, acerta metade das perguntas tem **ECE 0% e Brier 0,5**. Sua confiança está alinhada ao acerto observado, mas ele não distingue quais perguntas sabe responder melhor. O ECE perfeito, sozinho, não significa alto desempenho.
+
+A arena usa o **Brier no desempate** e mostra o **ECE como informação complementar**. Na rodada brava histórica `4f26181a`, o Clef teve o menor Brier (0,0116), enquanto o Decisions teve o menor ECE (0,5%). O Decisions também teve mais acertos pontuados: 292 contra 291. A vantagem do Clef foi no erro agregado das probabilidades, não na quantidade de acertos. ECE de 0,5% indica pequena diferença média nas faixas daquela amostra; não significa que toda confiança declarada coincidiu exatamente com o acerto.
+
+**Cuidado com amostras pequenas:** em uma faixa com três respostas, um único erro muda a taxa de acerto em 33,3 pontos percentuais. O efeito no ECE total depende do peso dessa faixa e da diferença para sua confiança média. O agrupamento também pode esconder diferenças entre respostas dentro da mesma faixa.
+
+Na rodada histórica de imagens `405f3260`, os ECE de Clef (6,1%) e Decisions (5,9%) ficaram próximos. Essa diferença, sozinha, não basta para afirmar que um é mais bem calibrado. O boletim calcula intervalo por bootstrap para a **diferença de nota**, não para o ECE; portanto, não oferece um teste de significância dessa diferença de calibração.
 
 ## 9. Resultados reais
 

@@ -88,6 +88,8 @@ Abra http://127.0.0.1:4318. Não há serviço externo de banco, autenticação w
 
 O **Brier** mede a distância entre as probabilidades que o modelo declarou e o gabarito: 0 é certeza correta; 2, certeza errada. Ele premia quem acerta com convicção e pune quem erra com convicção, e só compara rodadas respondidas por todos. Não mede apenas calibração: o ECE compara confiança e frequência de acerto por faixa, e pode ter outro líder. Nas perguntas de sim/não, a arena marca probabilidades entre 20% e 80% para revisão; isso não é um pedido de ajuda do modelo nem prova segurança em produção.
 
+Veja [o que são Brier e ECE, com contas e exemplos](docs/o-que-foi-feito.md#8-glossário-das-métricas), incluindo as regras de desempate e os cuidados para interpretar amostras pequenas.
+
 O Opus não recebe ferramentas, MCPs ou histórico anterior; cada chamada usa uma pasta temporária e `--no-session-persistence`. A execução usa argumentos estruturados e stdin, sem shell. `--safe-mode` preserva a autenticação normal e desativa customizações; **não usamos `--bare`**, porque esse modo não reutiliza login por assinatura/OAuth. O modelo solicitado é explícito, sem fallback automático.
 
 Os comentários são interpretações do Opus, não explicações produzidas pelos concorrentes. As consequências exibidas são regras fictícias da simulação, não resultados financeiros ou comerciais observados. A Maratona de reuniões liga o “Modo gravação”, que reduz o chrome da interface e mantém o progresso fixo no topo; Escape retorna ao modo normal. Ele não grava um arquivo de vídeo: use seu gravador de tela.
