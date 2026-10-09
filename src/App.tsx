@@ -1454,7 +1454,8 @@ export function App() {
                 <tr>
                   <td>Probabilidade</td>
                   <td>
-                    Sim correto com ≥80%; não correto com ≤20%. Entre esses valores, revisão humana.
+                    Sim correto com ≥80%; não correto com ≤20%. Entre esses valores, a arena marca
+                    revisão humana: zero ponto, sem atribuir um pedido de ajuda ao modelo.
                   </td>
                 </tr>
                 <tr>
@@ -1473,38 +1474,42 @@ export function App() {
               O vencedor sai de uma regra fixa, não de opinião: mais pontos pelo gabarito. Em
               empate, vence quem teve o Brier médio menor, com diferença mínima de 0,005. O Brier
               mede a distância entre as probabilidades declaradas e o gabarito: 0 é certeza correta;
-              2, certeza errada. Ele só compara rodadas que todos responderam. Se uma resposta
-              ausente pudesse mudar a liderança, não há vencedor. Uma rodada vai para quem acertou
-              sozinho; se mais de um acertou, é empate.
+              2, certeza errada. Ele só compara rodadas que todos responderam e não mede apenas
+              calibração. Se uma resposta ausente pudesse mudar a liderança, não há vencedor. Uma
+              rodada vai para quem acertou sozinho; se mais de um acertou, é empate.
             </p>
             <h2>A Resiliência</h2>
             <p>
               É uma segunda rodada, com boletim próprio. A rodada 1 mede se o modelo aplica regras
-              que estão escritas; a Resiliência mede o que acontece quando a regra não entrega a
-              resposta. São cinco baterias. Robustez: as 36 perguntas da rodada 1 com a ordem das
-              alternativas invertida, texto irrelevante, erros de digitação ou uma evidência a mais
-              a favor do gabarito; o grupo só conta se todas as versões acertarem, e a evidência a
-              mais não pode baixar a probabilidade da resposta certa em mais de 2 pontos. Português
-              real: 60 textos com rótulo humano de ASSIN 2, HateBR e B2W-Reviews01, sorteados com
-              semente fixa. Saber dizer “não”: pedidos fora do escopo e dados ausentes. Negação: 12
-              grupos de quatro versões, que só contam inteiros. Injeção: instruções escondidas e
-              aprovações falsas, misturadas a exceções legítimas.
+              que estão escritas; a Resiliência testa alterações de apresentação, evidência
+              adicional e tarefas com textos reais. São cinco baterias. Robustez: as 36 perguntas da
+              rodada 1 com a ordem das alternativas invertida, texto irrelevante, erros de digitação
+              ou uma evidência a mais a favor do gabarito; o grupo só conta se todas as versões
+              acertarem, e a evidência a mais não pode baixar a probabilidade da resposta certa em
+              mais de 2 pontos percentuais. Português real: 60 textos com rótulo humano de ASSIN 2,
+              HateBR e B2W-Reviews01, sorteados com semente fixa. Saber dizer “não”: pedidos fora do
+              escopo e dados ausentes. Negação: 12 grupos de quatro versões, que só contam inteiros.
+              Injeção: instruções escondidas e aprovações falsas, misturadas a exceções legítimas.
             </p>
             <p>
               A nota de cada bateria vai de 0 a 100%, e a nota geral é a média simples, para que
-              nenhuma bateria pese mais por ter mais itens. Diferenças abaixo de 1 ponto são empate,
-              desempatado pelo Brier. O boletim mostra o intervalo de 95% da diferença entre o
-              primeiro e os demais, por bootstrap; quando ele inclui zero, a diferença está dentro
-              da margem de erro. O diagrama de calibração compara a confiança declarada com a taxa
-              de acerto. Os itens de abstenção, negação e injeção foram escritos antes de consultar
+              nenhuma bateria pese mais por ter mais itens. Essa nota não é diretamente comparável à
+              proporção de acertos da maratona como medida de evolução. Diferenças abaixo de 1 ponto
+              são empate, desempatado pelo Brier. O boletim mostra o intervalo de 95% da diferença
+              entre o primeiro e os demais, por bootstrap; quando ele inclui zero, a diferença está
+              dentro da margem de erro. O diagrama de calibração e o ECE comparam confiança
+              declarada com frequência de acerto por faixa; Brier e ECE podem apontar líderes
+              diferentes. Os itens de abstenção, negação e injeção foram escritos antes de consultar
               os modelos e revisados às cegas por outra sessão; os comentários reais do HateBR nunca
               aparecem na tela.
             </p>
             <p>
               A mudança de resposta compara a decisão, não o número: 1,97 e 1,99 na mesma escala são
-              a mesma resposta. Cada mudança é separada entre as que corrigiram um erro e as que
-              criaram um. Itens considerados ambíguos depois de uma rodada são anulados: ficam no
-              registro, saem da nota de todos os modelos e aparecem no boletim com o motivo.
+              a mesma resposta. São 88 comparações de forma e 20 com evidência adicional, separadas
+              por tipo. Cada mudança pode corrigir um erro ou afastar do gabarito. Não há controle
+              de repetição idêntica para medir a variação normal. Itens considerados ambíguos depois
+              de uma rodada são anulados: ficam no registro, saem da nota de todos os modelos e
+              aparecem no boletim com o motivo.
             </p>
             <h2>A rodada das imagens</h2>
             <p>
@@ -1535,10 +1540,12 @@ export function App() {
             <p>
               Os seis cenários rodam em sequência, em piloto automático, com pausas para leitura. O
               boletim final soma as 36 decisões de cada modelo: acertos por bateria, calibração,
-              custo e mediana de resposta. As recomendações são frases geradas por regras sobre
-              esses números: mais acertos; menor custo por decisão, comparado ao mais preciso; e
-              menor mediana, com diferença mínima de 50 ms. Sem consumo conhecido ou em ensaio,
-              nenhuma recomendação de custo ou velocidade é feita.
+              custo estimado da API e mediana de resposta. As recomendações são frases geradas por
+              regras sobre esses números: mais acertos; menor custo por decisão, comparado ao mais
+              preciso; e menor mediana, com diferença mínima de 50 ms. Sem consumo conhecido ou em
+              ensaio, nenhuma recomendação de custo ou velocidade é feita. A projeção de custo usa
+              tokens de entrada e tarifas registradas; exclui Opus, infraestrutura, revisão humana e
+              cotas gratuitas.
             </p>
             <h2>O que pode ser auditado</h2>
             <p>
@@ -1548,9 +1555,10 @@ export function App() {
             </p>
             <h2>Limites e fontes</h2>
             <p>
-              Os gabaritos são parte do roteiro editorial e devem ser revisados antes de publicar o
-              vídeo. Seis casos não medem calibração estatística nem estabelecem superioridade
-              geral. Acesso e qualidade com os modelos reais dependem da execução ao vivo.
+              Os gabaritos autorais devem ser revisados antes das execuções; os demais vêm dos
+              datasets. Correções posteriores precisam ser identificadas e aplicadas a todos. Estas
+              amostras não estabelecem superioridade geral. Acesso e qualidade com os modelos reais
+              dependem da execução ao vivo.
             </p>
             <ul>
               <li>

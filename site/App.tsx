@@ -24,7 +24,7 @@ const navigation = [
 const metrics = [
   [
     'Acerto e nota',
-    'A Maratona de reuniões conta acertos. Nas outras provas, cada bateria tem o mesmo peso na nota média. Grupos de robustez e negação exigem consistência entre versões.',
+    'A Maratona de reuniões conta acertos. Nas outras provas, cada bateria tem o mesmo peso na nota média. Robustez e negação exigem grupos inteiros. As notas de provas diferentes não medem evolução do modelo.',
   ],
   [
     'Brier e calibração',
@@ -36,7 +36,7 @@ const metrics = [
   ],
   [
     'Tempo e custo',
-    'A mediana inclui a rede até cada API. A projeção de custo considera tokens de entrada e informa valores ausentes. Tokenizadores e tarifas influenciam a comparação.',
+    'A mediana inclui a rede até cada API. O custo estimado da API considera tokens de entrada, sem Opus, infraestrutura, revisão humana ou cotas gratuitas. Valores ausentes são informados.',
   ],
 ];
 function Sources() {

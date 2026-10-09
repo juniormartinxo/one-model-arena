@@ -63,7 +63,7 @@ export function CountUp({
 
 const badges: { key: keyof Report; label: string; Icon: typeof Trophy }[] = [
   { key: 'mostAccurate', label: 'Mais preciso', Icon: Target },
-  { key: 'bestCalibrated', label: 'Melhor calibrado', Icon: Crosshair },
+  { key: 'bestCalibrated', label: 'Menor Brier', Icon: Crosshair },
   { key: 'cheapest', label: 'Mais barato', Icon: BadgeDollarSign },
   { key: 'fastest', label: 'Mais rápido', Icon: Zap },
 ];
@@ -77,7 +77,7 @@ const statusIcon: Record<Grade['status'], typeof Check> = {
 const statusText: Record<Grade['status'], string> = {
   correct: 'acertou',
   incorrect: 'divergiu',
-  uncertain: 'pediu revisão',
+  uncertain: 'para revisão',
   unavailable: 'sem resposta',
 };
 
@@ -171,8 +171,8 @@ export function SeriesReportView({
           : 'Maratona de reuniões sem vencedor declarado';
   const reasonText = {
     points: 'Mais acertos pelo gabarito.',
-    calibration: 'Empate em acertos, desempate pela calibração.',
-    tie: 'Mesmos acertos e calibração equivalente.',
+    calibration: 'Empate em acertos, desempate pelo Brier.',
+    tie: 'Mesmos acertos e Brier dentro da faixa de empate.',
     unavailable: 'Respostas ausentes poderiam mudar a liderança.',
   }[report.reason];
   const costMax = Math.max(0, ...Object.values(report.costPerMillion));
@@ -239,13 +239,13 @@ export function SeriesReportView({
               </ul>
               <dl className="podium-metrics">
                 <div>
-                  <dt>Custo da Maratona de reuniões</dt>
+                  <dt>Custo estimado da API</dt>
                   <dd>
                     {demo ? '—' : s.unknownCosts ? `≥ ${usd(s.costUsd, 5)}` : usd(s.costUsd, 5)}
                   </dd>
                 </div>
                 <div>
-                  <dt>1 milhão de decisões</dt>
+                  <dt>API · estimativa por milhão</dt>
                   <dd>
                     {report.costPerMillion[p] !== undefined ? usd(report.costPerMillion[p]!) : '—'}
                   </dd>
@@ -259,7 +259,7 @@ export function SeriesReportView({
                   <dd>{s.medianMs === null ? '—' : seconds(s.medianMs)}</dd>
                 </div>
                 <div>
-                  <dt>Revisões humanas</dt>
+                  <dt>Marcadas para revisão</dt>
                   <dd>{s.uncertain}</dd>
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export function SeriesReportView({
                   <dd>{s.incorrect}</dd>
                 </div>
                 <div className="podium-wide">
-                  <dt>Calibração (Brier)</dt>
+                  <dt>Brier · menor é melhor</dt>
                   <dd>
                     {s.brier === null
                       ? '—'
@@ -333,8 +333,8 @@ export function SeriesReportView({
         </Section>
         <div className="report-side">
           <Section
-            title="Custo para 1 milhão de decisões como estas"
-            note="Projeção pelos tokens de entrada medidos e pelas tarifas de referência. Não inclui cotas gratuitas."
+            title="Custo estimado da API por milhão"
+            note="Projeção pelos tokens de entrada e tarifas registradas. Exclui Opus, infraestrutura, revisão humana e cotas gratuitas."
           >
             {hasCosts ? (
               <BarRows

@@ -40,7 +40,7 @@ test('runs the rehearsal rodada das imagens with two models and ends on its own 
   // A finished round marks every battery done, the last one included.
   await expect(live.locator('.brava-steps li.done')).toHaveCount(4);
   await expect(report.getByText('Acertos').first()).toBeVisible();
-  await expect(report.getByText('Mudou de resposta quando só a forma mudou')).toHaveCount(0);
+  await expect(report.getByText('Mudanças de decisão por variante')).toHaveCount(0);
   await report.getByRole('button', { name: 'Ver detalhes' }).click();
   await expect(page.getByRole('region', { name: 'Boletim da rodada das imagens' })).toBeVisible();
   // Completing the round must not shrink the whole page to fit the full report.

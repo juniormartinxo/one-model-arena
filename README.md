@@ -14,6 +14,10 @@ O vencedor sai do gabarito; o Claude Opus 5.5, pelo CLI, apresenta, comenta e ex
 
 A primeira edição começa **em preparação**, sem reutilizar resultados antigos. Após as novas execuções, siga [Publicação de resultados](docs/publicacao.md) para preparar o JSON público, conferir e publicar. Nenhuma credencial dos modelos é necessária no site público.
 
+## Nova edição de testes
+
+O [roteiro](docs/roteiro-video.md) está preparado com resultados pendentes. Siga o [protocolo da nova bateria](docs/protocolo-nova-bateria.md) para preservar o histórico, registrar a versão das regras e executar as três provas. Os números em `docs/o-que-foi-feito.md` são históricos, de 08–09/10/2026; não são resultados desta nova edição.
+
 ## Reproduzir o teste
 
 1. Instale Node.js 24.14+, clone o repositório e rode `npm install`.
@@ -82,7 +86,7 @@ Abra http://127.0.0.1:4318. Não há serviço externo de banco, autenticação w
 7. Ao fim da Maratona de reuniões, o boletim soma as 36 decisões: acertos por bateria (básicos, avançados, estresse), calibração, custo, projeção para um milhão de decisões, mediana de resposta e as perguntas sem acerto unânime. As recomendações ("quando errar custa caro", "quando o volume é alto", "quando a resposta precisa ser imediata") são frases geradas por regras sobre esses números. O Opus escreve uma leitura final cega.
 8. O histórico permite replay sem inferência e exportação JSON com cenários, payloads, respostas originais, prompts/saídas do CLI, eventos e métricas.
 
-O **Brier** mede a distância entre as probabilidades que o modelo declarou e o gabarito: 0 é certeza correta; 2, certeza errada. Ele premia quem acerta com convicção e pune quem erra com convicção, e só compara rodadas respondidas por todos.
+O **Brier** mede a distância entre as probabilidades que o modelo declarou e o gabarito: 0 é certeza correta; 2, certeza errada. Ele premia quem acerta com convicção e pune quem erra com convicção, e só compara rodadas respondidas por todos. Não mede apenas calibração: o ECE compara confiança e frequência de acerto por faixa, e pode ter outro líder. Nas perguntas de sim/não, a arena marca probabilidades entre 20% e 80% para revisão; isso não é um pedido de ajuda do modelo nem prova segurança em produção.
 
 O Opus não recebe ferramentas, MCPs ou histórico anterior; cada chamada usa uma pasta temporária e `--no-session-persistence`. A execução usa argumentos estruturados e stdin, sem shell. `--safe-mode` preserva a autenticação normal e desativa customizações; **não usamos `--bare`**, porque esse modo não reutiliza login por assinatura/OAuth. O modelo solicitado é explícito, sem fallback automático.
 
@@ -90,7 +94,7 @@ Os comentários são interpretações do Opus, não explicações produzidas pel
 
 ## Resiliência
 
-A rodada 1 mede se o modelo aplica regras escritas. A Resiliência mede o que acontece quando a regra não entrega a resposta. São 298 testes por modelo em cinco baterias, rodando em piloto automático, com o Opus abrindo, comentando cada bateria e escrevendo a leitura final, sempre às cegas (7 chamadas do CLI).
+A rodada 1 mede se o modelo aplica regras escritas. A Resiliência testa alterações de apresentação, evidência adicional e tarefas com textos reais. São 298 testes por modelo em cinco baterias, rodando em piloto automático, com o Opus abrindo, comentando cada bateria e escrevendo a leitura final, sempre às cegas (7 chamadas do CLI).
 
 | Bateria           | Itens                                                                                                                                                                                        | Como pontua                                                                                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -102,7 +106,7 @@ A rodada 1 mede se o modelo aplica regras escritas. A Resiliência mede o que ac
 
 A nota geral é a média simples das notas das baterias. Diferenças abaixo de 1 ponto são empate, desempatado pelo Brier médio. Se uma resposta ausente puder mudar a liderança, não há vencedor. O boletim traz o intervalo de 95% da diferença entre o primeiro e cada rival, por bootstrap pareado: quando ele inclui zero, a diferença está dentro da margem de erro. Também mostra o diagrama de calibração, a taxa de mudança de resposta por tipo de alteração e a comparação com a última Maratona de reuniões concluída.
 
-A taxa de mudança de resposta compara a **decisão** (alternativa, Sim/Não/Revisão humana ou nível da escala), não o número: 1,97 e 1,99 na mesma escala são a mesma resposta. Cada mudança é classificada como rumo ao gabarito ou para longe dele.
+A taxa de mudança de resposta compara a **decisão** (alternativa, Sim/Não/Revisão humana ou nível da escala), não o número: 1,97 e 1,99 na mesma escala são a mesma resposta. Cada mudança é classificada como rumo ao gabarito ou para longe dele. Das 108 comparações, 88 alteram a forma (16 de ordem, 36 de ruído e 36 de digitação) e 20 acrescentam evidência favorável. Não há controle de repetição idêntica para medir variação normal. A nota média das baterias e a proporção de acertos da maratona são medidas diferentes; sua diferença não mede evolução do modelo.
 
 Itens considerados ambíguos depois de uma rodada são **anulados** em `annulledItems` (`shared/brava-report.ts`): continuam no registro e na exportação, mas saem da nota de todos os modelos, e o boletim mostra o motivo. O boletim de uma rodada concluída é recalculado a partir das respostas salvas sempre que é aberto. Até agora, um item foi anulado: `inj-10`, em que “exceções” podia ser lido como exceção só ao limite de valor. Ele foi reescrito como `inj-10b`.
 

@@ -44,7 +44,7 @@ const statusIcon: Record<Grade['status'], typeof Check> = {
 const statusText: Record<Grade['status'], string> = {
   correct: 'acertou',
   incorrect: 'errou',
-  uncertain: 'pediu revisão',
+  uncertain: 'para revisão',
   unavailable: 'sem resposta',
 };
 const phaseText: Partial<Record<BravaView['phase'], string>> = {
@@ -58,7 +58,7 @@ const variantNames: Record<Perturbation, string> = {
   ordem: 'ordem',
   ruido: 'ruído',
   digitacao: 'digitação',
-  direcao: 'direção',
+  direcao: 'evidência adicional',
 };
 
 function changesText(s: BravaReport['standings'][number]) {
@@ -291,7 +291,7 @@ export function BravaLive({
                 <span className="brava-tile is-incorrect" /> errou
               </li>
               <li>
-                <span className="brava-tile is-uncertain" /> pediu revisão
+                <span className="brava-tile is-uncertain" /> para revisão
               </li>
               <li>
                 <span className="brava-tile is-pending" /> aguardando
@@ -430,8 +430,8 @@ export function BravaReportView({
           : `${names.title} sem vencedor declarado`;
   const reason = {
     points: 'Maior nota média nas baterias.',
-    calibration: 'Notas empatadas; desempate pela calibração.',
-    tie: 'Notas e calibração equivalentes.',
+    calibration: 'Notas na faixa de empate; desempate pelo Brier.',
+    tie: 'Notas e Brier dentro das faixas de empate.',
     unavailable: 'Respostas ausentes poderiam mudar a liderança.',
   }[report.reason];
   const withinMargin = report.margins.filter((m) => m.within).map((m) => providerNames[m.vs]);
@@ -517,7 +517,7 @@ export function BravaReportView({
                   </>
                 )}
                 <div>
-                  <dt>Calibração (Brier)</dt>
+                  <dt>Brier · menor é melhor</dt>
                   <dd>
                     {s.brier === null
                       ? '—'
@@ -529,7 +529,7 @@ export function BravaReportView({
                   <dd>{s.ece === null ? '—' : pct(s.ece)}</dd>
                 </div>
                 <div>
-                  <dt>1 milhão de decisões</dt>
+                  <dt>API · estimativa por milhão</dt>
                   <dd>
                     {report.costPerMillion[p] !== undefined ? usd(report.costPerMillion[p]!) : '—'}
                   </dd>
@@ -605,14 +605,14 @@ export function BravaReportView({
             <div className="report-side">
               <Section
                 title="Quando disse X%, acertou quanto?"
-                note="Cada ponto agrupa respostas pela confiança. Sobre a linha ideal, a confiança é honesta."
+                note="Cada ponto agrupa respostas pela confiança. Na linha ideal, a confiança coincide com a frequência de acerto observada."
               >
                 <Calibration report={report} />
               </Section>
               {!visual && (
                 <Section
-                  title="Mudou de resposta quando só a forma mudou"
-                  note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão. Uma mudança pode corrigir um erro: entre parênteses, quantas foram para longe do gabarito."
+                  title="Mudanças de decisão por variante"
+                  note="Ordem, ruído e digitação alteram a forma; evidência adicional acrescenta informação favorável. Entre parênteses, mudanças para longe do gabarito. Sem controle de repetição idêntica."
                 >
                   <div className="battery-grid">
                     {(['ordem', 'ruido', 'digitacao', 'direcao'] as const).map((v) => (
@@ -639,29 +639,15 @@ export function BravaReportView({
 
           {report.round1 && (
             <Section
-              title="Da rodada 1 para a Resiliência"
-              note="Rodada 1: acerto nas 36 perguntas com regras explícitas. Resiliência: nota média das baterias difíceis."
+              title="Duas provas, critérios diferentes"
+              note="Maratona: acertos individuais. Resiliência: média das baterias, algumas por grupo inteiro. A diferença entre as medidas não indica evolução do modelo."
             >
               <div className="round-compare">
                 {report.participants.map((p) => (
                   <div key={p} className={`round-compare-row mark-${p} ink-${p}`}>
                     <span>{providerNames[p]}</span>
-                    <span className="round-compare-track">
-                      <i style={{ left: `${by[p].score * 100}%` }} className="is-brava" />
-                      <b
-                        style={{
-                          left: `${Math.min(by[p].score, report.round1!.accuracy[p]) * 100}%`,
-                          width: `${Math.abs(report.round1!.accuracy[p] - by[p].score) * 100}%`,
-                        }}
-                      />
-                      <i
-                        style={{ left: `${report.round1!.accuracy[p] * 100}%` }}
-                        className="is-round1"
-                      />
-                    </span>
-                    <strong>
-                      {pct(report.round1!.accuracy[p])} → {pct(by[p].score)}
-                    </strong>
+                    <span>Maratona: {pct(report.round1!.accuracy[p])} de acertos</span>
+                    <strong>Resiliência: {pct(by[p].score)} de nota</strong>
                   </div>
                 ))}
               </div>
@@ -669,7 +655,7 @@ export function BravaReportView({
           )}
 
           <Section
-            title="Onde eles erraram"
+            title="Casos sem acerto unânime"
             note={`${report.divergences.length} de ${report.items} testes sem acerto unânime.`}
           >
             <ol className={`divergence-list ${visual ? 'is-visual' : ''}`}>
@@ -778,7 +764,8 @@ export function BravaReportView({
                 vertidas para o português por frases-padrão, mantendo as alternativas do dataset. Só
                 participam os modelos cujas APIs aceitam imagens. Nota geral: média simples das
                 baterias; empate abaixo de 1 ponto é desempatado pelo Brier. Margem: intervalo de
-                95% por bootstrap. Custo só por tokens de entrada; latência inclui rede e o envio da
+                95% por bootstrap. Custo estimado da API só por tokens de entrada, sem Opus,
+                infraestrutura, revisão humana ou cotas gratuitas; latência inclui rede e o envio da
                 foto.
               </span>
             ) : (
@@ -787,8 +774,10 @@ export function BravaReportView({
                 escritas antes de consultar os modelos; português real usa rótulos humanos de ASSIN
                 2, HateBR (CC BY-NC 4.0) e B2W-Reviews01 (CC BY-NC-SA 4.0), que podem estar nos
                 dados de treino. Nota geral: média simples das baterias; empate abaixo de 1 ponto é
-                desempatado pelo Brier. Margem: intervalo de 95% por bootstrap. Custo só por tokens
-                de entrada; latência inclui rede.
+                desempatado pelo Brier. Margem: intervalo de 95% por bootstrap. Revisão é uma
+                classificação da arena para probabilidades entre 20% e 80%, não um pedido do modelo.
+                Custo estimado da API só por tokens de entrada, sem Opus, infraestrutura, revisão
+                humana ou cotas gratuitas; latência inclui rede.
               </span>
             )}
           </p>

@@ -2,6 +2,8 @@
 
 Este documento explica a arena de ponta a ponta: o que ela compara, como cada rodada funciona, como os pontos são calculados, o que cada métrica significa, o que os resultados reais mostraram e quais são os limites. Para o roteiro do vídeo, veja `docs/roteiro-video.md`.
 
+**Escopo histórico:** os resultados da seção 9 pertencem às execuções de 08–09/10/2026, identificadas por seus IDs. Foram preservados como registro de desenvolvimento e não representam a próxima edição. O novo roteiro tem resultados pendentes; a preparação está em [Protocolo da nova bateria](protocolo-nova-bateria.md).
+
 ---
 
 ## 1. A ideia em uma frase
@@ -24,7 +26,7 @@ Os três modelos de decisão recebem **o mesmo texto e as mesmas alternativas**,
 1. **Primeira versão (Jev × Decisions):** três cenários fictícios, o Opus decidia o vencedor com dois julgamentos invertidos. As duas primeiras reuniões reais deram 6 × 6 (Loja) e 6 × 5 para o Decisions (Produto).
 2. **Cenários avançados:** como deu empate, entraram três cenários mais difíceis (lançamento, conversas, dossiê).
 3. **Clef entra:** terceiro participante e julgamento cego com A, B e C.
-4. **Vencedor objetivo:** o Opus deixou de votar. O vencedor passou a sair do gabarito, com desempate pela calibração. O Opus só explica.
+4. **Vencedor objetivo:** o Opus deixou de votar. O vencedor passou a sair do gabarito, com desempate pelo Brier. O Opus só explica.
 5. **Maratona automática:** os seis cenários em sequência, sem cliques, com boletim final.
 6. **Rodada brava:** segunda rodada, mais difícil, com 298 testes e boletim próprio.
 7. **Correções pós-execução:** métrica de mudança de resposta, item ambíguo anulado, recálculo do boletim ao abrir.
@@ -45,9 +47,9 @@ Os três modelos de decisão recebem **o mesmo texto e as mesmas alternativas**,
 
 **Onde está:** cenários em `server/scenarios.ts` e `server/advanced-scenarios.ts`; motor em `server/engine.ts`; boletim em `shared/report.ts`.
 
-## 5. Rodada 2: a rodada brava
+## 5. Rodada 2: Resiliência (antes chamada rodada brava)
 
-**Por que existe:** na rodada 1, os três ficaram perto de 100%, porque o contexto de cada cenário escreve a regra que resolve a pergunta. A rodada brava testa o que acontece quando a regra **não entrega** a resposta.
+**Por que existe:** na rodada 1, os três ficaram perto de 100%, porque o contexto de cada cenário escreve a regra que resolve a pergunta. A Resiliência testa alterações de apresentação, evidência adicional e tarefas com textos reais.
 
 | Bateria           | Itens                          | Como pontua                                                                                                                        | De onde veio                                                                                 |
 | ----------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -65,6 +67,8 @@ As quatro versões da robustez são:
 - **Uma quarta versão, que depende do tipo de pergunta:**
   - escolha: alternativas em ordem invertida;
   - sim/não ou escala: uma frase a mais confirmando o gabarito.
+
+As variantes somam 88 comparações de forma (16 de ordem, 36 de ruído e 36 de digitação) e 20 com evidência adicional.
 
 Os itens de abstenção, negação e injeção estão em `server/brava/authored.ts`. Foram escritos antes de consultar os modelos e respondidos às cegas por outra sessão: as 94 respostas coincidiram com os gabaritos. Seis itens foram apontados como passíveis de outra leitura e foram reescritos antes da execução real.
 
@@ -100,7 +104,7 @@ Os itens de abstenção, negação e injeção estão em `server/brava/authored.
 ### Rodada 1
 
 - **Escolha:** acerta se a alternativa é a do gabarito.
-- **Sim/não:** acerta com probabilidade de “sim” ≥ 80% quando o gabarito é sim, ou ≤ 20% quando é não. **Entre 20% e 80%, é revisão humana: vale zero, mas não é erro.**
+- **Sim/não:** acerta com probabilidade de “sim” ≥ 80% quando o gabarito é sim, ou ≤ 20% quando é não. **Entre 20% e 80%, a arena marca revisão humana: vale zero, mas fica separada de erro.** É uma regra de encaminhamento do sistema, não um pedido de ajuda do modelo.
 - **Escala:** acerta se ficar a no máximo 0,4 do nível esperado.
 - **Vencedor:** mais acertos. Em empate, o menor Brier médio, com diferença mínima de 0,005. Se uma resposta ausente pudesse mudar a liderança, não há vencedor.
 
@@ -116,17 +120,17 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 
 ## 8. Glossário das métricas
 
-| Métrica                            | O que mede                                                                                                                | Como ler                                                                                                                                                             |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Brier**                          | Distância entre as probabilidades declaradas e o gabarito. Para cada pergunta, soma o quadrado da diferença em cada opção | 0 = certeza correta; 2 = certeza errada. Menor é melhor. Premia acertar com convicção e pune errar com convicção. Só compara perguntas que os três responderam       |
-| **Erro de calibração (ECE)**       | Agrupa respostas pela confiança e compara com a taxa real de acerto                                                       | 0% = quando diz 90%, acerta 90%. Mede honestidade da confiança, não acerto                                                                                           |
-| **Brier × ECE**                    | Medem coisas diferentes                                                                                                   | Na rodada brava, o Decisions teve o menor ECE (0,5%: confiança honesta) e o Clef, o menor Brier (mais certeiro e convicto). Os dois podem ser verdade ao mesmo tempo |
-| **Intervalo de 95% (bootstrap)**   | Reamostra os grupos e itens de cada bateria mil vezes e recalcula a diferença entre dois modelos                          | Se o intervalo inclui zero, a diferença está **dentro da margem de erro**                                                                                            |
-| **Mudou de decisão**               | Na robustez, quantas perguntas tiveram decisão diferente da versão original                                               | Compara a decisão (alternativa, Sim/Não/Revisão, nível da escala), não o número. Separa mudanças “rumo ao gabarito” (corrigiram um erro) e “para longe” (criaram um) |
-| **Adivinhou sem dados**            | Na abstenção, quantas vezes escolheu uma resposta onde o certo era “fora do escopo” ou “não informado”                    | Menor é melhor                                                                                                                                                       |
-| **Tokens por decisão**             | Tokens de entrada contados pela API para o mesmo texto                                                                    | Tokenizadores diferentes mudam o preço real                                                                                                                          |
-| **Custo por 1 milhão de decisões** | Tokens de entrada × tarifa, projetados                                                                                    | Não inclui a cota grátis do Clef                                                                                                                                     |
-| **Mediana de resposta**            | Tempo típico por chamada                                                                                                  | Inclui a rede até cada API                                                                                                                                           |
+| Métrica                            | O que mede                                                                                                                | Como ler                                                                                                                                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Brier**                          | Distância entre as probabilidades declaradas e o gabarito. Para cada pergunta, soma o quadrado da diferença em cada opção | 0 = certeza correta; 2 = certeza errada. Menor é melhor. Premia acertar com convicção e pune errar com convicção. Só compara perguntas que os três responderam                                                      |
+| **Erro de calibração (ECE)**       | Agrupa respostas pela confiança e compara com a taxa real de acerto                                                       | 0% = quando diz 90%, acerta 90%. Estima a diferença entre confiança e frequência de acerto por faixa                                                                                                                |
+| **Brier × ECE**                    | Medem coisas diferentes                                                                                                   | Na rodada brava, o Decisions teve o menor ECE (0,5%: menor diferença entre confiança e frequência de acerto por faixa) e o Clef, o menor Brier (mais certeiro e convicto). Os dois podem ser verdade ao mesmo tempo |
+| **Intervalo de 95% (bootstrap)**   | Reamostra os grupos e itens de cada bateria mil vezes e recalcula a diferença entre dois modelos                          | Se o intervalo inclui zero, a diferença está **dentro da margem de erro**                                                                                                                                           |
+| **Mudou de decisão**               | Na robustez, quantas perguntas tiveram decisão diferente da versão original                                               | Compara a decisão (alternativa, Sim/Não/Revisão, nível da escala), não o número. Separa mudanças “rumo ao gabarito” (corrigiram um erro) e “para longe” (criaram um)                                                |
+| **Adivinhou sem dados**            | Na abstenção, quantas vezes escolheu uma resposta onde o certo era “fora do escopo” ou “não informado”                    | Menor é melhor                                                                                                                                                                                                      |
+| **Tokens por decisão**             | Tokens de entrada contados pela API para o mesmo texto                                                                    | Tokenizadores diferentes mudam o preço real                                                                                                                                                                         |
+| **Custo por 1 milhão de decisões** | Tokens de entrada × tarifa, projetados                                                                                    | Não inclui a cota grátis do Clef                                                                                                                                                                                    |
+| **Mediana de resposta**            | Tempo típico por chamada                                                                                                  | Inclui a rede até cada API                                                                                                                                                                                          |
 
 ## 9. Resultados reais
 
@@ -146,9 +150,9 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 
 - **Vencedor:** Clef, por pontos.
 - **Onde se decidiu:** toda a diferença saiu de duas perguntas básicas. Avançados e estresse ficaram em 100% para todos.
-- **Calibração:** o Jev ficou mais bem calibrado que o Decisions, porque um erro com convicção pesa mais no Brier que duas dúvidas.
-- **Preço:** a tarifa do Jev é 2,4 vezes menor que a do Decisions, mas ele conta cerca de 55% mais tokens para o mesmo texto. O custo real por decisão fica só 1,5 vez menor.
-- **Determinismo:** o Jev repetiu exatamente 0,73 na p6 em duas execuções diferentes, sinal de que suas respostas são determinísticas.
+- **Brier:** o Jev teve menor erro probabilístico que o Decisions nesta execução, porque um erro com convicção pesa mais que duas dúvidas. Isso não isola calibração.
+- **Preço:** a tarifa do Jev é 2,4 vezes menor que a do Decisions, mas ele conta cerca de 55% mais tokens para o mesmo texto. O custo estimado da API por decisão fica só 1,5 vez menor; exclui Opus, infraestrutura, revisão humana e cotas gratuitas.
+- **Repetição observada:** o Jev retornou 0,73 na p6 em duas execuções. Isso não substitui um teste controlado de repetição idêntica nem demonstra determinismo.
 
 ### Rodada 2: rodada brava `4f26181a` (08/10/2026, 2 min 34 s, 297 itens pontuados)
 
@@ -160,7 +164,7 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 | Saber dizer “não”               | 100%         | 100%                             | 100%                           |
 | Negação                         | 100%         | 100%                             | 91,7%                          |
 | Injeção e pressão               | 100%         | 100%                             | 73,3%                          |
-| Erros com convicção             | **1**        | 2                                | 0                              |
+| Erros com convicção             | 1            | 2                                | **0**                          |
 | Revisões humanas                | 5            | 3                                | 21                             |
 | Mudanças de decisão na robustez | **0 de 108** | 3 de 108, todas rumo ao gabarito | 3 de 108: 1 rumo, 2 para longe |
 | Brier                           | **0,0116**   | 0,0182                           | 0,0310                         |
@@ -178,11 +182,11 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 
 **Como ler:**
 
-- **Vencedor:** Clef, **no desempate por calibração**. O Decisions teve 0,7 ponto a mais, abaixo da linha de empate de 1 ponto, e o Clef teve o Brier menor. A diferença entre os dois está dentro da margem de erro.
-- **Estabilidade:** o Clef nunca mudou de decisão quando só a forma da pergunta mudou. As três mudanças do Decisions corrigiram o próprio erro da f1.
-- **O Jev não errou com convicção nenhuma vez.** Todas as suas perdas são revisões humanas, quase sempre inclinadas para a resposta certa. Na injeção, ele não aprovou nenhuma despesa irregular. Hesitou em quatro legítimas: três com texto manipulador em volta e uma exceção aprovada.
+- **Vencedor:** Clef, **no desempate por Brier**. O Decisions teve 0,7 ponto a mais, abaixo da linha de empate de 1 ponto, e o Clef teve o Brier menor. A diferença entre os dois está dentro da margem de erro.
+- **Estabilidade nesta execução:** o Clef não mudou de decisão nas 88 comparações de forma nem nas 20 com evidência adicional. As três mudanças do Decisions foram rumo ao gabarito: duas de forma e uma de evidência. Não houve controle de repetição idêntica.
+- **Com os limiares desta arena, o Jev não teve erros nas decisões automáticas.** As 21 respostas marcadas para revisão ficaram sem ponto; 16 estavam inclinadas para o gabarito e cinco para o lado errado. Isso não prova segurança em produção. Na injeção, ele não aprovou nenhuma despesa irregular. Hesitou em quatro legítimas: três com texto manipulador em volta e uma exceção aprovada.
 - **Saber dizer “não” não separou ninguém:** os três fizeram 100%. As perguntas ofereciam “fora do escopo” e “não informado” explicitamente, o que deixou a bateria fácil.
-- **Rótulos disputados:** dois itens do HateBR concentram os problemas. No 2198, Decisions e Clef erraram com convicção; no 271, os três pediram revisão. Nos dois, um dos três anotadores humanos discordou dos outros.
+- **Rótulos disputados:** dois itens do HateBR concentram os problemas. No 2198, Decisions e Clef erraram com convicção; no 271, a arena marcou as respostas dos três para revisão. Nos dois, um dos três anotadores humanos discordou dos outros.
 
 ### Rodada 3: rodada das imagens
 
@@ -190,7 +194,7 @@ Execução `405f3260` (09/10/2026, 1 min 45 s, 80 fotos por modelo):
 
 |                     | Clef         | Decisions  |
 | ------------------- | ------------ | ---------- |
-| Nota geral          | **85,0**     | 81,2       |
+| Nota geral          | **85,0**     | 81,3       |
 | Contagem            | 65%          | **70%**    |
 | Posição relativa    | 90%          | 90%        |
 | Profundidade        | 95%          | 95%        |
@@ -209,7 +213,9 @@ Execução `405f3260` (09/10/2026, 1 min 45 s, 80 fotos por modelo):
 - **Resposta ausente:** o Clef não respondeu à foto `img-contagem-314`. O Workers AI devolveu HTTP 413 ao estimar 132.638 tokens para uma foto de 2200×1650, acima da janela de 65.536. Uma foto de 2048×1536 tinha custado só 1.247 tokens. Contada como perdida, ela não muda o vencedor. Depois disso, `npm run imagens` passou a reduzir as fotos para no máximo 1600 px no lado maior; essa execução usou as fotos originais.
 - **Custo:** sem estimativa por milhão de decisões, porque a chamada recusada não informou consumo.
 
-### Da rodada 1 para a rodada brava
+### Duas provas, critérios diferentes
+
+A maratona conta acertos individuais; a Resiliência usa média das baterias, algumas por grupos inteiros. Os números abaixo não representam uma melhora ou piora direta na mesma medida.
 
 |           | Rodada 1 (acertos) | Rodada brava (nota) |
 | --------- | ------------------ | ------------------- |
@@ -244,7 +250,7 @@ Correções anteriores, da maratona:
 - **Licenças:** HateBR (CC BY-NC 4.0) e B2W (CC BY-NC-SA 4.0) proíbem uso comercial. A licença do ASSIN 2 não é declarada. As anotações do CV-Bench são Apache-2.0, mas as fotos seguem os termos de COCO, ADE20K e Omni3D; o nuScenes, por exemplo, é CC BY-NC-SA 4.0. O repositório não redistribui textos nem fotos.
 - **Medição:**
   - Latência inclui a rede.
-  - Custo considera só tokens de entrada.
+  - Custo estimado da API considera só tokens de entrada; exclui Opus, infraestrutura e revisão humana.
   - O Clef tem cota grátis que não entra na estimativa.
 - **Determinismo:** as respostas parecem determinísticas, mas não foi feito um teste formal de repetição. Por isso, a afirmação “o Clef nunca mudou de decisão” não tem um ruído de base medido para comparar.
 - **Rodada das imagens:** 20 fotos por bateria é pouco; o CV-Bench é público desde 2024 e pode estar nos dados de treino; as perguntas foram vertidas para o português por frases-padrão, não por um tradutor humano.
@@ -286,7 +292,7 @@ npm run imagens         # fotos da rodada das imagens
 npm run dev             # abra http://127.0.0.1:4317
 ```
 
-A página inicial leva a quatro espaços, cada um com endereço próprio: Rodada 1 · Maratona (`#/maratona`), Rodada 2 · Brava (`#/brava`), Rodada 3 · Imagens (`#/imagens`) e a Sala de reuniões (`#/sala`), para reuniões avulsas rodada a rodada. Em cada espaço: **Ensaio da maratona**, **Ensaio da rodada brava** e **Ensaio da rodada das imagens** rodam sem custo, com dados sintéticos. **Iniciar maratona real**, **Iniciar rodada brava** e **Iniciar rodada das imagens** usam as APIs; a rodada das imagens precisa só das chaves da OpenAI e da Cloudflare. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos, tempos e prompts e saídas do Opus.
+A página inicial leva a quatro espaços, cada um com endereço próprio: Maratona de reuniões (`#/maratona`), Resiliência (`#/brava`), Rodada 3 · Imagens (`#/imagens`) e a Sala de reuniões (`#/sala`), para reuniões avulsas rodada a rodada. Em cada espaço: **Ensaio da Maratona de reuniões**, **Ensaio da Resiliência** e **Ensaio da rodada das imagens** rodam sem custo, com dados sintéticos. **Iniciar Maratona de reuniões real**, **Iniciar Resiliência** e **Iniciar rodada das imagens** usam as APIs; a rodada das imagens precisa só das chaves da OpenAI e da Cloudflare. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos estimados da API, tempos e prompts e saídas do Opus. O site público apresenta método, datasets e edições agregadas selecionadas; não executa provas nem publica esses arquivos completos.
 
 ## 14. Mapa dos arquivos
 

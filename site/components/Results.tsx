@@ -38,7 +38,7 @@ function PublishedResult({ result }: { result: PublicResult }) {
           {winner ? (
             <>
               <strong>{winner.name}</strong> lidera{' '}
-              {result.reason === 'calibration' ? 'pelo desempate de calibração' : 'pela pontuação'}.
+              {result.reason === 'calibration' ? 'pelo desempate por Brier' : 'pela pontuação'}.
             </>
           ) : result.winner === 'tie' ? (
             'Empate pelos critérios desta edição.'
@@ -120,12 +120,12 @@ function PublishedResult({ result }: { result: PublicResult }) {
             <div key={s.provider}>
               <h4>{models[s.provider].name}</h4>
               <p>
-                {s.correct} acertos em {s.total} itens; {s.incorrect} erros, {s.uncertain} revisões
-                e {s.unavailable} sem resposta.
+                {s.correct} acertos em {s.total} itens; {s.incorrect} erros, {s.uncertain} respostas
+                marcadas para revisão e {s.unavailable} sem resposta.
               </p>
               <p>
-                ECE: {s.ece === null ? 'não calculado nesta prova' : percent(s.ece)}. Um milhão de
-                decisões: {money(s.costPerMillion)}
+                ECE: {s.ece === null ? 'não calculado nesta prova' : percent(s.ece)}. Custo estimado
+                da API por milhão de decisões: {money(s.costPerMillion)}
                 {s.unknownCosts ? ` (${s.unknownCosts} custos ausentes)` : ''}.
               </p>
               <p className="model-versions">Versão registrada: {s.models.join(', ')}</p>

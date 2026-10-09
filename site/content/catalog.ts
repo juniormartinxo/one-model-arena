@@ -16,7 +16,7 @@ export const tests = [
     batteries: ['Básicos', 'Avançados', 'Estresse'],
     providers: ['jev', 'decisions', 'clef'],
     scoring:
-      'Acertos pelo gabarito. Empates são desempatados pela calibração (Brier), com diferença mínima de 0,005.',
+      'Acertos pelo gabarito. Empates são desempatados pelo menor Brier, com diferença mínima de 0,005.',
   },
   {
     id: 'brava',

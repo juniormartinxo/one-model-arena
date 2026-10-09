@@ -114,8 +114,8 @@ export function decisionText(
     return 'Sem vencedor: houve respostas indisponíveis que poderiam mudar a liderança.';
   if (decision.reason === 'tie')
     return leaders.length === table.length
-      ? `Empate: todos fizeram ${best} de ${total} pontos pelo gabarito, com calibração equivalente.`
-      : `${leaderNames} empataram na liderança com ${best} de ${total} pontos, com calibração equivalente.`;
+      ? `Empate: todos fizeram ${best} de ${total} pontos pelo gabarito, com Brier dentro da faixa de empate.`
+      : `${leaderNames} empataram na liderança com ${best} de ${total} pontos, com Brier dentro da faixa de empate.`;
   const winner = providerNames[decision.winner as Provider];
   if (decision.reason === 'calibration')
     return `${leaderNames} empataram com ${best} de ${total} pontos; ${winner} venceu no desempate, com probabilidades mais próximas do gabarito.`;
@@ -123,8 +123,8 @@ export function decisionText(
 }
 const reasonSubtitles: Record<DecisionReason, string> = {
   points: 'Mais pontos pelo gabarito.',
-  calibration: 'Empate em pontos, desempate pela calibração.',
-  tie: 'Mesmos pontos e calibração equivalente.',
+  calibration: 'Empate em pontos, desempate pelo Brier.',
+  tie: 'Mesmos pontos e Brier dentro da faixa de empate.',
   unavailable: 'Respostas ausentes poderiam mudar a liderança.',
 };
 export function verdictSummary(verdict: Verdict): string {

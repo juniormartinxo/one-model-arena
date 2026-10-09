@@ -157,7 +157,7 @@ describe('marathon report', () => {
     const budget = report.recommendations.find((r) => r.kind === 'budget')!;
     expect(budget.providers).toEqual(['jev']);
     expect(budget.text).toMatch(
-      /^Jev custa [\d,]+× menos por decisão que (Decisions|Clef) e acertou 1 decisão a menos \(16 contra 17 de 18\)\.$/,
+      /^Jev tem custo estimado da API [\d,]+× menor por decisão que (Decisions|Clef) e acertou 1 decisão a menos \(16 contra 17 de 18\)\.$/,
     );
     expect(report.recommendations.find((r) => r.kind === 'speed')!.text).toBe(
       'Clef teve a menor mediana de resposta: 0,41 s por decisão, incluindo a rede.',

@@ -106,8 +106,8 @@ export function Method() {
                   </div>
                 </div>
                 <p className="example-note">
-                  Perguntas de sim/não usam limiares de confiança. Uma resposta entre 20% e 80% é
-                  registrada como revisão humana.
+                  Perguntas de sim/não usam limiares de confiança. A arena marca respostas entre 20%
+                  e 80% para revisão humana; o modelo não solicita essa revisão.
                 </p>
               </>
             ) : (
@@ -140,9 +140,8 @@ export function Method() {
         <div className="calibration-explainer">
           <div>
             <h3>
-              Acertar com convicção.
-              <br />
-              Errar com consciência.
+              Probabilidades e gabarito.
+              <br />O Brier mede a distância.
             </h3>
             <p>
               O Brier compara a confiança declarada com o gabarito. Menor é melhor. Neste exemplo

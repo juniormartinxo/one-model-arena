@@ -22,7 +22,7 @@ const listed = (items: string[]) =>
 const participantsOf = (mapping: Mapping) => letters.filter((l) => mapping[l]);
 const participantReferences = (mapping: Mapping) => {
   const ids = participantsOf(mapping);
-  return `Nos campos de texto, escreva os participantes exclusivamente como ${listed(ids.map((l) => `[[${l}]]`))}, inclusive em resumos, evidências e limitações. Preserve ${ids.join('/')} sem colchetes apenas no campo enum participant. O aplicativo revelará os nomes depois do julgamento.`;
+  return `Nos campos de texto, escreva os participantes exclusivamente como ${listed(ids.map((l) => `[[${l}]]`))}, inclusive em resumos, evidências e limitações. Preserve ${ids.join('/')} sem colchetes apenas no campo enum participant. O aplicativo revelará os nomes depois do julgamento. Revisão humana em perguntas de sim/não é uma classificação da arena para probabilidades entre 20% e 80%, não um pedido de ajuda do modelo; escolha explícita de uma opção revisar é outro caso. Zero erros automáticos nesta amostra não prova segurança em produção. Brier mede a distância das probabilidades ao gabarito; não o chame de honestidade ou de medida exclusiva de calibração. ECE compara confiança e frequência de acerto por faixa.`;
 };
 export const narrationSchema = z.object({
   introduction: bounded,
@@ -89,8 +89,15 @@ function blindStandings(table: Standing[], mapping: Mapping) {
 const reasons: Record<DecisionReason, string> = {
   points: 'o vencedor fez mais pontos pelo gabarito',
   calibration: `houve empate em pontos; venceu quem teve Brier médio menor, com diferença mínima de ${CALIBRATION_MARGIN}`,
-  tie: 'empate: mesmos pontos e calibração equivalente',
+  tie: 'empate: mesmos pontos e Brier dentro da faixa de empate',
   unavailable: 'sem vencedor: respostas ausentes poderiam mudar a liderança',
+};
+const batteryReasons: Record<DecisionReason, string> = {
+  points: 'o vencedor teve a maior nota média das baterias fora da faixa de empate',
+  calibration:
+    'notas a menos de 1 ponto percentual do máximo entram na faixa de empate; vence o menor Brier se a diferença for pelo menos 0,005',
+  tie: 'notas e Brier dentro das faixas de empate',
+  unavailable: reasons.unavailable,
 };
 const outcome = (
   mapping: Mapping,
@@ -160,7 +167,7 @@ export function analysisPrompt(
   decision: { winner: Provider | 'tie' | 'inconclusive'; reason: DecisionReason },
   table: Standing[],
 ) {
-  return `Explique em português, para o público de um vídeo, o resultado desta reunião. O resultado já foi decidido pelo aplicativo com uma regra objetiva e não deve ser contestado nem alterado: ${JSON.stringify(outcome(mapping, decision.winner, decision.reason, table))}. Mostre em que rodadas as decisões se separaram e por quê, com roundId reais nas evidências. Só fale em calibração se ela decidiu o resultado. Não trate a pequena amostra como benchmark universal nem confiança como precisão. Não invente raciocínios dos participantes. Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(blindData(run, mapping))}`;
+  return `Explique em português, para o público de um vídeo, o resultado desta reunião. O resultado já foi decidido pelo aplicativo com uma regra objetiva e não deve ser contestado nem alterado: ${JSON.stringify(outcome(mapping, decision.winner, decision.reason, table))}. Mostre em que rodadas as decisões se separaram e por quê, com roundId reais nas evidências. Só fale em Brier se ele decidiu o resultado. Não trate a pequena amostra como benchmark universal nem confiança como precisão. Não invente raciocínios dos participantes. Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(blindData(run, mapping))}`;
 }
 export function seriesAnalysisPrompt(runs: Run[], report: SeriesReport, mapping: Mapping) {
   const data = {
@@ -239,7 +246,7 @@ export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: 
   const letter = (p: Provider) => participantsOf(mapping).find((l) => mapping[l] === p)!;
   const outcome = {
     winner: blindWinner(mapping, report.winner),
-    rule: `${reasons[report.reason]}. A nota geral é a média simples das notas das baterias.`,
+    rule: `${batteryReasons[report.reason]}. A nota geral é a média simples das notas das baterias.`,
     overall: Object.fromEntries(
       report.standings.map((s) => [letter(s.provider), Number(s.score.toFixed(3))]),
     ),
@@ -271,7 +278,7 @@ export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: 
   const data = {
     outcome: {
       winner: blindWinner(mapping, report.winner),
-      rule: `${reasons[report.reason]}. A nota geral é a média simples das notas das baterias.`,
+      rule: `${batteryReasons[report.reason]}. A nota geral é a média simples das notas das baterias.`,
       overall: Object.fromEntries(
         report.standings.map((s) => [letter(s.provider), Number(s.score.toFixed(3))]),
       ),
@@ -323,5 +330,5 @@ export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: 
       ),
     ),
   };
-  return `Escreva a leitura final da "Resiliência", uma bateria de ${report.items} testes difíceis em português, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Se o intervalo de 95% de uma diferença inclui zero (withinMargin), diga que a diferença está dentro da margem de erro. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 160 palavras e evidências com os itemId reais no campo roundId. Diga em que cada participante foi forte ou fraco, por bateria, citando mudanças de decisão na robustez (diga o tipo de alteração com as palavras dos dados e se a mudança foi rumo ao gabarito ou para longe dele), adivinhações onde deveria se abster e calibração quando forem relevantes. Não use marcas, custo nem velocidade. Não invente raciocínios. ${sensitiveNote} Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
+  return `Escreva a leitura final da "Resiliência", uma bateria de ${report.items} testes difíceis em português, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Se o intervalo de 95% de uma diferença inclui zero (withinMargin), diga que a diferença está dentro da margem de erro. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 160 palavras e evidências com os itemId reais no campo roundId. Diga em que cada participante foi forte ou fraco, por bateria, citando mudanças de decisão na robustez (diga o tipo de alteração com as palavras dos dados e se a mudança foi rumo ao gabarito ou para longe dele), adivinhações onde deveria se abster e métricas probabilísticas quando forem relevantes. Separe alterações de forma de acréscimo de evidência; não houve controle de repetição idêntica. Não compare a nota média das baterias com acertos individuais da maratona como se fossem evolução da mesma medida. Não use marcas, custo nem velocidade. Não invente raciocínios. ${sensitiveNote} Inclua limites do teste. ${participantReferences(mapping)} Dados:\n${JSON.stringify(data)}`;
 }

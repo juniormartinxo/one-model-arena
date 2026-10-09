@@ -18,6 +18,10 @@ npm run preview:public
 
 Abra http://127.0.0.1:4321. O conteúdo inicial de `site/content/edition.json` indica que a edição está em preparação. Não há resultados fictícios nem aproveitamento automático do histórico.
 
+## Antes das novas rodadas
+
+Siga o [protocolo da nova bateria](protocolo-nova-bateria.md): preserve os registros anteriores, fixe a versão do código e das amostras e registre como as execuções serão selecionadas. O roteiro mantém resultados pendentes até a leitura dos novos boletins.
+
 ## Preparar uma edição depois das novas rodadas
 
 1. Execute e conclua as provas reais no estúdio. Os nomes exibidos são **Maratona de reuniões**, **Resiliência** e **Imagens**; identificadores internos permanecem estáveis por compatibilidade com o histórico.

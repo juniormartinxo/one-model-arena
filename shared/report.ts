@@ -137,8 +137,8 @@ function recommend(report: Omit<SeriesReport, 'recommendations'>): Recommendatio
       top.length === 1
         ? `${names(top)} acertou ${hits} de ${n} decisões, mais que qualquer outro.`
         : leader
-          ? `${names(top)} empataram com ${hits} de ${n} acertos; ${providerNames[leader]} desempatou com probabilidades mais bem calibradas.`
-          : `${names(top)} empataram com ${hits} de ${n} acertos, sem diferença relevante de calibração.`,
+          ? `${names(top)} empataram com ${hits} de ${n} acertos; ${providerNames[leader]} desempatou com o menor Brier, que mede a distância das probabilidades ao gabarito.`
+          : `${names(top)} empataram com ${hits} de ${n} acertos, sem diferença de Brier suficiente para desempatar.`,
   });
   if (report.cheapest.length === 1) {
     const cheap = report.cheapest[0];
@@ -157,8 +157,8 @@ function recommend(report: Omit<SeriesReport, 'recommendations'>): Recommendatio
       title: 'Quando o volume é alto',
       providers: [cheap],
       text: top.includes(cheap)
-        ? `${providerNames[cheap]} teve o menor custo por decisão e também está entre os que mais acertaram.`
-        : `${providerNames[cheap]} custa ${decimal(ratio)}× menos por decisão que ${providerNames[reference]} e acertou ${gap} ${gap === 1 ? 'decisão' : 'decisões'} a menos (${byProvider[cheap].correct} contra ${byProvider[reference].correct} de ${n}).${tokenNote}`,
+        ? `${providerNames[cheap]} teve o menor custo estimado da API por decisão e também está entre os que mais acertaram.`
+        : `${providerNames[cheap]} tem custo estimado da API ${decimal(ratio)}× menor por decisão que ${providerNames[reference]} e acertou ${gap} ${gap === 1 ? 'decisão' : 'decisões'} a menos (${byProvider[cheap].correct} contra ${byProvider[reference].correct} de ${n}).${tokenNote}`,
     });
   }
   const fast = report.fastest;

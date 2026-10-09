@@ -336,9 +336,9 @@ export function buildBravaReport(
       const tokens = (p: Provider) => Math.round(by[p].inputTokens / by[p].total);
       highlights.push({
         kind: 'budget',
-        title: 'Custo por decisão',
+        title: 'Custo estimado da API',
         providers: [cheap],
-        text: `${providerNames[cheap]} teve o menor custo por decisão, ${tokens(cheap)} tokens de entrada em média, com nota geral de ${pct(by[cheap].score)}.`,
+        text: `${providerNames[cheap]} teve o menor custo estimado da API por decisão, ${tokens(cheap)} tokens de entrada em média, com nota geral de ${pct(by[cheap].score)}.`,
       });
     }
     if (fastest.length)
