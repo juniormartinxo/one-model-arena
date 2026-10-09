@@ -32,6 +32,8 @@ test('runs the rehearsal rodada das imagens with two models and ends on its own 
   const report = page.getByRole('dialog', { name: 'Ensaio da rodada das imagens concluído' });
   await expect(report).toBeVisible({ timeout: 150_000 });
   await expect(report.locator('.podium-card')).toHaveCount(2);
+  // A finished round marks every battery done, the last one included.
+  await expect(live.locator('.brava-steps li.done')).toHaveCount(4);
   await expect(report.getByText('Acertos').first()).toBeVisible();
   await expect(report.getByText('Mudou de resposta quando só a forma mudou')).toHaveCount(0);
   await report.getByRole('button', { name: 'Ver detalhes' }).click();

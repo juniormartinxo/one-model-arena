@@ -185,7 +185,28 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 
 ### Rodada 3: rodada das imagens
 
-Ainda não executada com as APIs reais. O ensaio sintético só confere a tela.
+Execução `405f3260` (09/10/2026, 1 min 45 s, 80 fotos por modelo):
+
+|                     | Clef         | Decisions  |
+| ------------------- | ------------ | ---------- |
+| Nota geral          | **85,0**     | 81,2       |
+| Contagem            | 65%          | **70%**    |
+| Posição relativa    | 90%          | 90%        |
+| Profundidade        | 95%          | 95%        |
+| Distância real      | **90%**      | 70%        |
+| Acertos             | **68 de 80** | 65 de 80   |
+| Sem resposta        | 1            | 0          |
+| Brier               | **0,191**    | 0,227      |
+| ECE                 | 6,1%         | 5,9%       |
+| Tokens por decisão  | cerca de 760 | 866        |
+| Mediana de resposta | 0,66 s       | **0,46 s** |
+
+**Como ler:**
+
+- **Vencedor:** Clef, por pontos. A diferença está **dentro da margem de erro**: o intervalo de 95% vai de −5 a +12,5 pontos.
+- **Onde se decidiu:** na distância real. Posição relativa e profundidade empataram.
+- **Resposta ausente:** o Clef não respondeu à foto `img-contagem-314`. O Workers AI devolveu HTTP 413 ao estimar 132.638 tokens para uma foto de 2200×1650, acima da janela de 65.536. Uma foto de 2048×1536 tinha custado só 1.247 tokens. Contada como perdida, ela não muda o vencedor. Depois disso, `npm run imagens` passou a reduzir as fotos para no máximo 1600 px no lado maior; essa execução usou as fotos originais.
+- **Custo:** sem estimativa por milhão de decisões, porque a chamada recusada não informou consumo.
 
 ### Da rodada 1 para a rodada brava
 
