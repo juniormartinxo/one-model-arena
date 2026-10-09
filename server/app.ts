@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { scenarios } from './scenarios';
 import type { Engine } from './engine';
 import type { SeriesSnapshot } from '../shared/types';
+import { buildSeriesReport } from '../shared/report';
 export async function buildApp(engine: Engine) {
   const app = Fastify({ logger: false, bodyLimit: 16384 });
   app.addHook('onRequest', async (req, reply) => {
@@ -100,6 +101,12 @@ export async function buildApp(engine: Engine) {
     const series = engine.store.getSeries(id);
     if (!series) return undefined;
     const current = series.runIds.at(-1);
+    // The report is derived from the saved meetings, so it follows the current report rules.
+    if (series.phase === 'complete' && series.report)
+      series.report = buildSeriesReport(
+        series.runIds.map((runId) => engine.store.get(runId)!),
+        series.providers,
+      );
     return { series, run: current ? (engine.store.get(current) ?? null) : null };
   };
   app.get('/api/series', () => engine.store.listSeries());

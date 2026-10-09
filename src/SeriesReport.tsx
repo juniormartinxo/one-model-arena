@@ -237,6 +237,10 @@ export function SeriesReportView({
                   </dd>
                 </div>
                 <div>
+                  <dt>Tokens por decisão</dt>
+                  <dd>{s.total && !demo ? Math.round(s.inputTokens / s.total) : '—'}</dd>
+                </div>
+                <div>
                   <dt>Mediana de resposta</dt>
                   <dd>{s.medianMs === null ? '—' : seconds(s.medianMs)}</dd>
                 </div>
@@ -248,7 +252,7 @@ export function SeriesReportView({
                   <dt>Divergências</dt>
                   <dd>{s.incorrect}</dd>
                 </div>
-                <div>
+                <div className="podium-wide">
                   <dt>Calibração (Brier)</dt>
                   <dd>
                     {s.brier === null
@@ -271,11 +275,18 @@ export function SeriesReportView({
             {report.recommendations.map((r) => {
               const Icon = recommendationIcons[r.kind];
               return (
-                <article key={r.kind} className={`recommendation ink-${r.providers[0]}`}>
+                <article
+                  key={r.kind}
+                  className={`recommendation ${r.providers.length === 1 ? `ink-${r.providers[0]}` : 'is-tie'}`}
+                >
                   <Icon size={20} />
                   <div>
                     <h4>{r.title}</h4>
-                    <strong>{r.providers.map((p) => providerNames[p]).join(' e ')}</strong>
+                    <strong>
+                      {r.providers.length === report.participants.length && r.providers.length > 1
+                        ? 'Empate'
+                        : r.providers.map((p) => providerNames[p]).join(' e ')}
+                    </strong>
                     <p>{r.text}</p>
                   </div>
                 </article>

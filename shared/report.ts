@@ -146,24 +146,36 @@ function recommend(report: Omit<SeriesReport, 'recommendations'>): Recommendatio
     const perDecision = (p: Provider) => byProvider[p].costUsd / byProvider[p].total;
     const ratio = perDecision(reference) / perDecision(cheap);
     const gap = byProvider[reference].correct - byProvider[cheap].correct;
+    // Tokenizers differ, so the price per token alone misstates the price per decision.
+    const tokens = (p: Provider) => Math.round(byProvider[p].inputTokens / byProvider[p].total);
+    const tokenNote =
+      Math.abs(tokens(cheap) - tokens(reference)) / tokens(reference) >= 0.1
+        ? ` Para o mesmo texto, ${providerNames[cheap]} contou ${tokens(cheap)} tokens por decisão, contra ${tokens(reference)} de ${providerNames[reference]}.`
+        : '';
     out.push({
       kind: 'budget',
       title: 'Quando o volume é alto',
       providers: [cheap],
       text: top.includes(cheap)
         ? `${providerNames[cheap]} teve o menor custo por decisão e também está entre os que mais acertaram.`
-        : `${providerNames[cheap]} custa ${decimal(ratio)}× menos por decisão que ${providerNames[reference]} e acertou ${gap} ${gap === 1 ? 'decisão' : 'decisões'} a menos (${byProvider[cheap].correct} contra ${byProvider[reference].correct} de ${n}).`,
+        : `${providerNames[cheap]} custa ${decimal(ratio)}× menos por decisão que ${providerNames[reference]} e acertou ${gap} ${gap === 1 ? 'decisão' : 'decisões'} a menos (${byProvider[cheap].correct} contra ${byProvider[reference].correct} de ${n}).${tokenNote}`,
     });
   }
-  if (report.fastest.length === 1) {
-    const fast = report.fastest[0];
+  const fast = report.fastest;
+  const time = (p: Provider) =>
+    `${(byProvider[p].medianMs! / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} s`;
+  if (fast.length)
     out.push({
       kind: 'speed',
       title: 'Quando a resposta precisa ser imediata',
-      providers: [fast],
-      text: `${providerNames[fast]} teve a menor mediana de resposta: ${decimal(byProvider[fast].medianMs! / 1000, 2)} s por decisão, incluindo a rede.`,
+      providers: fast,
+      text:
+        fast.length === 1
+          ? `${providerNames[fast[0]]} teve a menor mediana de resposta: ${time(fast[0])} por decisão, incluindo a rede.`
+          : fast.length === report.participants.length
+            ? `Todos responderam em tempos equivalentes, com medianas a menos de ${LATENCY_MARGIN_MS} ms umas das outras: ${list(fast.map((p) => `${providerNames[p]} ${time(p)}`))}.`
+            : `${names(fast)} empataram com a menor mediana de resposta, a menos de ${LATENCY_MARGIN_MS} ms um do outro: ${list(fast.map((p) => `${providerNames[p]} ${time(p)}`))} por decisão, incluindo a rede.`,
     });
-  }
   return out;
 }
 

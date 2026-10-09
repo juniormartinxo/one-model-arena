@@ -163,6 +163,30 @@ describe('marathon report', () => {
       'Clef teve a menor mediana de resposta: 0,41 s por decisão, incluindo a rede.',
     );
   });
+  it('reports a shared speed lead and the token count behind the price per decision', () => {
+    const tied = { ...prices, jev: { cost: 0.0000126, ms: 400 } };
+    const series = [
+      liveRun('loja', { jev: [1] }, tied),
+      liveRun('produto', { jev: [5], clef: [2] }, tied),
+      liveRun('dossie-estresse', { decisions: [0] }, tied),
+    ];
+    for (const run of series) for (const round of run.rounds) round.results.jev!.inputTokens = 450;
+    const report = buildSeriesReport(series, providers);
+    expect(report.fastest).toEqual(['jev', 'clef']);
+    const speed = report.recommendations.find((r) => r.kind === 'speed')!;
+    expect(speed.providers).toEqual(['jev', 'clef']);
+    expect(speed.text).toBe(
+      'Jev e Clef empataram com a menor mediana de resposta, a menos de 50 ms um do outro: Jev 0,40 s e Clef 0,41 s por decisão, incluindo a rede.',
+    );
+    expect(report.recommendations.find((r) => r.kind === 'budget')!.text).toMatch(
+      /Para o mesmo texto, Jev contou 450 tokens por decisão, contra 300 de (Decisions|Clef)\.$/,
+    );
+    for (const run of series)
+      for (const round of run.rounds) round.results.decisions!.durationMs = 420;
+    expect(
+      buildSeriesReport(series, providers).recommendations.find((r) => r.kind === 'speed')!.text,
+    ).toMatch(/^Todos responderam em tempos equivalentes/);
+  });
   it('withholds cost and speed claims when usage is unknown or the data is synthetic', () => {
     const partial = runs();
     partial[0].rounds[0].results.clef!.costUsd = null;
