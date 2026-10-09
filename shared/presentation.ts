@@ -1,5 +1,6 @@
 import type {
   Answer,
+  BravaKind,
   DecisionReason,
   Mapping,
   Participant,
@@ -21,6 +22,24 @@ export const providerVendors: Record<Provider, string> = {
   clef: 'Cloudflare',
 };
 
+// How each kind of second-stage round is named on screen.
+export const roundNames: Record<
+  BravaKind,
+  { title: string; name: string; rehearsal: string; plural: string }
+> = {
+  brava: {
+    title: 'Rodada brava',
+    name: 'rodada brava',
+    rehearsal: 'Ensaio da rodada brava',
+    plural: 'Rodadas bravas',
+  },
+  visual: {
+    title: 'Rodada das imagens',
+    name: 'rodada das imagens',
+    rehearsal: 'Ensaio da rodada das imagens',
+    plural: 'Rodadas das imagens',
+  },
+};
 const number = (value: number) => value.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 // The decision a viewer reads: the option, Sim/Não by the 80/20 rule, or the weighted level.
 export function answerLabel(question: Question, answer?: Answer): string | null {

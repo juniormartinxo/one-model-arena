@@ -2341,6 +2341,10 @@ details[open] > summary {
   padding: 0;
   list-style: none;
 }
+.divergence-list.is-visual ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
 .divergence-list ul li {
   display: grid;
   align-content: start;
@@ -2516,6 +2520,30 @@ details[open] > summary {
 }
 .brava-kicker {
   color: var(--danger);
+}
+.visual-setup {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(157 176 255 / 10%), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(239 195 141 / 8%), transparent 55%), var(--surface);
+}
+.visual-setup .brava-kicker {
+  color: var(--ink);
+}
+/* Rodada das imagens: the photo sent with the question, letterboxed so boxes are never cropped. */
+.brava-photo {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #000;
+  object-fit: contain;
+}
+.brava-photo.is-thumb {
+  width: auto;
+  max-width: 100%;
+  max-height: 180px;
 }
 .brava-live {
   display: grid;

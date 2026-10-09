@@ -118,6 +118,7 @@ export class Store {
         const b = this.getBrava(String(row.id))!;
         return {
           id: b.id,
+          kind: b.kind ?? 'brava',
           mode: b.mode,
           createdAt: b.createdAt,
           phase: b.phase,

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Brava, BravaView, Participant, Provider, Run } from '../../shared/types';
+import type { Brava, BravaKind, BravaView, Participant, Provider, Run } from '../../shared/types';
 import { providers } from '../../shared/types';
 import { buildBravaReport, compact } from '../../shared/brava-report';
 import { config, tariff } from '../config';
@@ -15,6 +15,7 @@ import {
   seriesAnalysisSchema,
 } from '../judging';
 import { asRequest, buildCatalog, demoAnswer } from './catalog';
+import { buildVisualCatalog, imageDataUrl, imageFiles, visualProviders } from '../visual/catalog';
 import type { Engine } from '../engine';
 
 const finished = (phase: Brava['phase']) => ['complete', 'cancelled', 'failed'].includes(phase);
@@ -63,12 +64,22 @@ export class BravaRunner {
     else this.pending.set(brava.id, setTimeout(emit, wait));
   }
 
-  async start(mode: Run['mode']): Promise<Brava> {
+  async start(mode: Run['mode'], kind: BravaKind = 'brava'): Promise<Brava> {
+    const name = kind === 'visual' ? 'a rodada das imagens' : 'a rodada brava';
     if (this.engine.store.hasActive())
-      throw new Error('Conclua ou encerre a execução ativa antes de iniciar a rodada brava.');
-    const catalog = buildCatalog(config.DATA_DIR);
+      throw new Error(`Conclua ou encerre a execução ativa antes de iniciar ${name}.`);
+    const participants = kind === 'visual' ? visualProviders : providers;
+    let catalog;
+    if (kind === 'visual') {
+      const visual = buildVisualCatalog(config.DATA_DIR);
+      if (mode === 'live' && visual.missing)
+        throw new Error(
+          `Faltam ${visual.missing} fotos do CV-Bench. Rode npm run imagens e tente de novo.`,
+        );
+      catalog = { ...visual, skipped: [] };
+    } else catalog = buildCatalog(config.DATA_DIR);
     if (mode === 'live') {
-      await this.engine.preflight('live');
+      await this.engine.preflight('live', participants);
       if (catalog.skipped.length)
         throw new Error(
           'A bateria de português real precisa da amostra dos datasets. Rode npm run datasets e tente de novo.',
@@ -77,11 +88,12 @@ export class BravaRunner {
     if (this.engine.store.hasActive()) throw new Error('Já existe uma execução ativa.');
     const brava: Brava = {
       id: randomUUID(),
+      kind,
       mode,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       phase: 'preparing',
-      providers: [...providers],
+      providers: [...participants],
       catalogHash: catalog.hash,
       batteries: catalog.batteries,
       items: catalog.items,
@@ -138,12 +150,14 @@ export class BravaRunner {
 
   private async run(brava: Brava, signal: AbortSignal) {
     const live = brava.mode === 'live';
+    const visual = brava.kind === 'visual';
     const pace = live ? 0 : Math.min(60, config.AUTOPLAY_DELAY_MS / 50);
+    const photos = visual ? imageFiles(config.DATA_DIR) : new Map<string, string>();
     try {
       brava.introduction = live
         ? (await this.opus(brava, 'moderator', bravaIntroPrompt(brava), bravaIntroSchema, signal))
             .introduction
-        : 'Ensaio da rodada brava: respostas sintéticas, sem chamadas de IA, só para conferir a tela.';
+        : `Ensaio da ${visual ? 'rodada das imagens' : 'rodada brava'}: respostas sintéticas, sem chamadas de IA, só para conferir a tela.`;
       await this.sleep(brava, config.AUTOPLAY_DELAY_MS, signal);
       for (const [index, battery] of brava.batteries.entries()) {
         brava.currentBattery = index;
@@ -158,8 +172,16 @@ export class BravaRunner {
               for (let t = mine.shift(); t; t = mine.shift()) {
                 const item = brava.items.find((i) => i.id === t.id)!;
                 const { scenario, round } = asRequest(item);
+                // Each photo is read when its question is sent, not kept in memory for the round.
                 const result = live
-                  ? await evaluate(t.p, scenario, round, signal)
+                  ? await evaluate(
+                      t.p,
+                      scenario,
+                      round,
+                      signal,
+                      fetch,
+                      item.image ? [imageDataUrl(photos.get(item.image.file)!)] : [],
+                    )
                   : demoAnswer(t.p, item);
                 if (pace) await new Promise((r) => setTimeout(r, pace));
                 signal.throwIfAborted();
@@ -215,7 +237,7 @@ export class BravaRunner {
       }
       brava.phase = 'reporting';
       this.persist(brava, true);
-      const series = this.engine.store.latestSeries(brava.mode);
+      const series = visual ? undefined : this.engine.store.latestSeries(brava.mode);
       const round1 = series?.report && {
         seriesId: series.id,
         decisions: series.report.decisions,
@@ -249,7 +271,10 @@ export class BravaRunner {
       if (signal.aborted) return;
       brava.phase = 'failed';
       delete brava.nextAt;
-      brava.error = e instanceof Error ? e.message : 'Falha inesperada na rodada brava.';
+      brava.error =
+        e instanceof Error
+          ? e.message
+          : `Falha inesperada na ${visual ? 'rodada das imagens' : 'rodada brava'}.`;
       this.persist(brava, true);
     } finally {
       if (!signal.aborted) {

@@ -1,6 +1,6 @@
 import Fastify, { type FastifyReply } from 'fastify';
 import fastifyStatic from '@fastify/static';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { scenarios } from './scenarios';
@@ -8,6 +8,9 @@ import type { Engine } from './engine';
 import type { SeriesSnapshot } from '../shared/types';
 import { buildSeriesReport } from '../shared/report';
 import { view } from './brava/runner';
+import { config } from './config';
+import { imageFiles } from './visual/catalog';
+import { typeOfExtension } from './visual/sample';
 export async function buildApp(engine: Engine) {
   const app = Fastify({ logger: false, bodyLimit: 16384 });
   app.addHook('onRequest', async (req, reply) => {
@@ -153,10 +156,20 @@ export async function buildApp(engine: Engine) {
   app.get('/api/bravas', () => engine.store.listBravas());
   app.post('/api/bravas', async (req) => {
     const body = z
-      .object({ mode: z.enum(['demo', 'live']) })
+      .object({ mode: z.enum(['demo', 'live']), kind: z.enum(['brava', 'visual']).optional() })
       .strict()
       .parse(req.body);
-    return view(await engine.brava.start(body.mode));
+    return view(await engine.brava.start(body.mode, body.kind));
+  });
+  // Photos of the rodada 3, shown next to the answers. Only files of the local sample are served.
+  app.get('/api/images/:file', async (req, reply) => {
+    const { file } = z.object({ file: z.string().regex(/^cvbench-\d+$/) }).parse(req.params);
+    const path = imageFiles(config.DATA_DIR).get(file);
+    if (!path) return reply.code(404).send({ error: 'Foto não baixada. Rode npm run imagens.' });
+    return reply
+      .header('Content-Type', typeOfExtension[path.split('.').pop()!])
+      .header('Cache-Control', 'max-age=86400')
+      .send(readFileSync(path));
   });
   app.get('/api/bravas/:id', async (req, reply) => {
     const brava = engine.brava.get(idSchema.parse(req.params).id);
@@ -176,7 +189,10 @@ export async function buildApp(engine: Engine) {
     const brava = engine.store.getBrava(id);
     if (!brava) return reply.code(404).send({ error: 'Rodada brava não encontrada.' });
     return reply
-      .header('Content-Disposition', `attachment; filename="rodada-brava-${id}.json"`)
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${brava.kind === 'visual' ? 'rodada-imagens' : 'rodada-brava'}-${id}.json"`,
+      )
       .send({ formatVersion: 1, brava });
   });
   app.get('/api/bravas/:id/events', async (req, reply) => {

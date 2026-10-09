@@ -203,7 +203,12 @@ const bravaItem = (brava: Brava, item: BravaItem, mapping: Mapping) => ({
 });
 const sensitiveNote =
   'Alguns textos são comentários reais de redes sociais e podem conter ofensas: nunca reproduza esses trechos; descreva-os em termos gerais.';
+// Opus never sees the photos: it reads the question, the options, the reference and the answers.
+const visualNote =
+  'Você não vê as fotos: use só a pergunta, as alternativas, o gabarito e as respostas, sem descrever o conteúdo das imagens além do que a pergunta diz.';
 export function bravaIntroPrompt(brava: Brava) {
+  if (brava.kind === 'visual')
+    return `Escreva uma abertura curta, de até 70 palavras, em português, para a "rodada das imagens" de um vídeo: a terceira rodada, em que modelos de decisão estruturada olham fotos reais e escolhem entre alternativas. Só ${brava.providers.length} participantes leem imagens. Explique em linguagem simples o que será testado, sem prometer vencedor e sem citar marcas. Baterias: ${JSON.stringify(brava.batteries.map((b) => ({ title: b.title, description: b.description, items: b.itemIds.length })))}`;
   return `Escreva uma abertura curta, de até 70 palavras, em português, para a "rodada brava" de um vídeo: uma segunda bateria de testes, mais difícil, para modelos de decisão estruturada. Explique em linguagem simples o que será testado, sem prometer vencedor e sem citar marcas. Baterias: ${JSON.stringify(brava.batteries.map((b) => ({ title: b.title, description: b.description, items: b.itemIds.length })))}`;
 }
 export function batteryCommentPrompt(
@@ -221,7 +226,8 @@ export function batteryCommentPrompt(
     )
     .slice(0, 14)
     .map((i) => bravaItem(brava, i, mapping));
-  return `Comente em até 100 palavras, em português, para o público de um vídeo, o resultado da bateria "${battery.title}". O que ela testa: ${battery.description} As notas já foram calculadas pelo aplicativo (fração de ${battery.unit === 'grupo' ? 'grupos inteiros acertados' : 'itens acertados'}) e não mudam: ${JSON.stringify(scores)}. Use os erros listados para explicar onde cada participante tropeçou, citando o tipo de armadilha. Se ninguém errou, diga isso. Não invente raciocínios dos modelos nem use marcas, custo ou velocidade. ${sensitiveNote} ${participantReferences(mapping)} Itens com algum erro: ${JSON.stringify(items)}`;
+  const visual = brava.kind === 'visual';
+  return `Comente em até 100 palavras, em português, para o público de um vídeo, o resultado da bateria "${battery.title}". O que ela testa: ${battery.description} As notas já foram calculadas pelo aplicativo (fração de ${battery.unit === 'grupo' ? 'grupos inteiros acertados' : 'itens acertados'}) e não mudam: ${JSON.stringify(scores)}. Use os erros listados para explicar onde cada participante tropeçou, citando ${visual ? 'o tipo de pergunta' : 'o tipo de armadilha'}. Se ninguém errou, diga isso. ${visual ? 'Compare as notas com o acerto do chute descrito na bateria. ' : ''}Não invente raciocínios dos modelos nem use marcas, custo ou velocidade. ${visual ? visualNote : sensitiveNote} ${participantReferences(mapping)} Itens com algum erro: ${JSON.stringify(items)}`;
 }
 const perturbationNames = {
   ordem: 'mesmas alternativas em ordem invertida',
@@ -231,6 +237,37 @@ const perturbationNames = {
 } as const;
 export function bravaAnalysisPrompt(brava: Brava, report: BravaReport, mapping: Mapping) {
   const letter = (p: Provider) => participantsOf(mapping).find((l) => mapping[l] === p)!;
+  const outcome = {
+    winner: blindWinner(mapping, report.winner),
+    rule: `${reasons[report.reason]}. A nota geral é a média simples das notas das baterias.`,
+    overall: Object.fromEntries(
+      report.standings.map((s) => [letter(s.provider), Number(s.score.toFixed(3))]),
+    ),
+    margins: report.margins.map((m) => ({
+      vs: letter(m.vs),
+      interval95: [Number(m.low.toFixed(3)), Number(m.high.toFixed(3))],
+      withinMargin: m.within,
+    })),
+  };
+  const batteries = report.batteries.map((b) => ({
+    title: b.title,
+    units: b.units,
+    scores: Object.fromEntries(
+      report.participants.map((p) => [letter(p), Number(b.scores[p].toFixed(3))]),
+    ),
+  }));
+  const calibration = Object.fromEntries(
+    report.standings.map((s) => [letter(s.provider), { meanBrier: s.brier, ece: s.ece }]),
+  );
+  const examples = report.divergences.slice(0, 20).map((d) =>
+    bravaItem(
+      brava,
+      brava.items.find((i) => i.id === d.itemId)!,
+      mapping,
+    ),
+  );
+  if (brava.kind === 'visual')
+    return `Escreva a leitura final da "rodada das imagens", ${report.items} perguntas sobre fotos reais do CV-Bench, para o público de um vídeo. O vencedor já foi decidido pelo aplicativo com regra objetiva e não deve ser contestado: veja outcome. Se o intervalo de 95% de uma diferença inclui zero (withinMargin), diga que a diferença está dentro da margem de erro. Dê uma manchete curta e verdadeira (headline, até 140 caracteres), um resumo de até 160 palavras e evidências com os itemId reais no campo roundId. Diga em que cada participante foi forte ou fraco, por bateria, comparando com o acerto do chute de cada bateria (descrito em batteryDescriptions), e fale de calibração quando for relevante. Não use marcas, custo nem velocidade. Não invente raciocínios. ${visualNote} Inclua limites do teste, como a amostra pequena e o dataset ser público desde 2024. ${participantReferences(mapping)} Dados:\n${JSON.stringify({ outcome, batteries, batteryDescriptions: Object.fromEntries(brava.batteries.map((b) => [b.title, b.description])), calibration, examples })}`;
   const data = {
     outcome: {
       winner: blindWinner(mapping, report.winner),

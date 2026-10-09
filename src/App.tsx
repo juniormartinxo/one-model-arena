@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   ArrowRight,
   AudioLines,
@@ -34,6 +34,7 @@ import type {
   Series,
   SeriesSnapshot,
   SeriesSummary,
+  BravaKind,
   BravaSummary,
   BravaView,
 } from '../shared/types';
@@ -46,7 +47,7 @@ import { HistorySummary } from './HistorySummary';
 import { SeriesProgress } from './Autopilot';
 import { SeriesReportDialog, SeriesReportView } from './SeriesReport';
 import { BravaLive, BravaReportDialog, BravaReportView } from './Brava';
-import { revealParticipants } from '../shared/presentation';
+import { revealParticipants, roundNames } from '../shared/presentation';
 const terminal = (run: Pick<Run, 'phase'>) =>
   ['complete', 'failed', 'cancelled'].includes(run.phase);
 const phaseNames: Record<Run['phase'], string> = {
@@ -304,9 +305,9 @@ export function App() {
       setRecording(true);
     });
   }
-  function startBrava(mode: Run['mode']) {
+  function startBrava(mode: Run['mode'], kind: BravaKind = 'brava') {
     void act(async () => {
-      const value = await api<BravaView>('/bravas', { mode });
+      const value = await api<BravaView>('/bravas', { mode, kind });
       clearRun();
       sessionStorage.setItem('brava', value.id);
       setBrava(value);
@@ -332,7 +333,7 @@ export function App() {
   function deleteBrava(item: BravaSummary) {
     if (
       !window.confirm(
-        'Excluir esta rodada brava e todas as respostas? Esta ação não pode ser desfeita.',
+        `Excluir esta ${roundNames[item.kind].name} e todas as respostas? Esta ação não pode ser desfeita.`,
       )
     )
       return;
@@ -454,7 +455,16 @@ export function App() {
       }))
     : [];
   const finalVisible = run?.phase === 'complete' && (!replay || cursor === run.rounds.length - 1);
-  const participants = run ? runProviders(run) : providers;
+  const participants = run ? runProviders(run) : (brava?.providers ?? providers);
+  // The rodada 3 needs only the keys of the two models that read images.
+  const visualReady =
+    !!health?.keys.decisions &&
+    !!health.keys.clef &&
+    health.claude.available &&
+    health.claude.authenticated === true;
+  const bravaGroups = (['visual', 'brava'] as const)
+    .map((kind) => ({ kind, items: bravaHistory.filter((h) => h.kind === kind) }))
+    .filter((g) => g.items.length);
   return (
     <div className={`app ${recording ? 'recording' : ''}`}>
       {run?.phase === 'complete' && run.verdict && (
@@ -547,7 +557,8 @@ export function App() {
                   ))}
                 </h1>
                 <p>
-                  {participants.length === 3 ? 'Três' : 'Duas'} decisões. Os mesmos fatos. Opus na
+                  {participants.length === 3 ? 'Três' : 'Duas'} decisões.{' '}
+                  {brava?.kind === 'visual' ? 'As mesmas fotos.' : 'Os mesmos fatos.'} Opus na
                   análise.
                 </p>
               </div>
@@ -572,12 +583,15 @@ export function App() {
               <>
                 <BravaLive brava={brava} busy={busy} onCancel={cancelBrava} />
                 {brava.report && brava.phase === 'complete' && (
-                  <section className="report-inline" aria-label="Boletim da rodada brava">
+                  <section
+                    className="report-inline"
+                    aria-label={`Boletim da ${roundNames[brava.kind ?? 'brava'].name}`}
+                  >
                     <div className="final-heading-row">
-                      <h2>Boletim da rodada brava</h2>
+                      <h2>Boletim da {roundNames[brava.kind ?? 'brava'].name}</h2>
                       <button className="primary-button" onClick={() => setBravaReportOpen(true)}>
                         <Maximize2 size={16} />
-                        Ver boletim da rodada brava
+                        Ver boletim da {roundNames[brava.kind ?? 'brava'].name}
                       </button>
                     </div>
                     <BravaReportView brava={brava} />
@@ -591,7 +605,7 @@ export function App() {
                       download
                     >
                       <Download size={16} />
-                      Exportar rodada brava
+                      Exportar {roundNames[brava.kind ?? 'brava'].name}
                     </a>
                     <button className="primary-button" onClick={clearRun}>
                       Voltar ao início
@@ -627,6 +641,37 @@ export function App() {
                 Respostas e comentários simulados. Nenhuma IA foi chamada e estes pontos não medem
                 os modelos.
               </p>
+            )}
+            {!run && !brava && (
+              <section className="marathon-setup brava-setup visual-setup">
+                <div>
+                  <span className="marathon-kicker brava-kicker">Rodada 3 · imagens</span>
+                  <h2>Rodada das imagens: Decisions × Clef em 80 fotos reais</h2>
+                  <p>
+                    Contagem, posição relativa, profundidade e distância real, com perguntas e
+                    gabaritos do CV‑Bench. Só entram os modelos cujas APIs leem imagens. Roda
+                    sozinha e termina num boletim próprio.
+                  </p>
+                </div>
+                <div className="setup-actions">
+                  <button
+                    className="primary-button"
+                    disabled={busy || !visualReady || hasActiveHistory}
+                    onClick={() => startBrava('live', 'visual')}
+                  >
+                    <Radio size={17} />
+                    Iniciar rodada das imagens
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={busy || hasActiveHistory}
+                    onClick={() => startBrava('demo', 'visual')}
+                  >
+                    <Play size={16} />
+                    Ensaio da rodada das imagens
+                  </button>
+                </div>
+              </section>
             )}
             {!run && !brava && (
               <section className="marathon-setup brava-setup">
@@ -1074,17 +1119,20 @@ export function App() {
                 </button>
               </div>
             </div>
-            {bravaHistory.length > 0 && (
-              <>
-                <h2 className="history-group">Rodadas bravas</h2>
+            {bravaGroups.map((group) => (
+              <Fragment key={group.kind}>
+                <h2 className="history-group">{roundNames[group.kind].plural}</h2>
                 <div className="history-list">
-                  {bravaHistory.map((h) => (
+                  {group.items.map((h) => (
                     <article key={h.id}>
                       <div className="history-description">
                         <span className={`history-mode ${h.mode}`}>
                           {h.mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
                         </span>
-                        <h2>Rodada brava · {h.items} testes</h2>
+                        <h2>
+                          {roundNames[h.kind].title} · {h.items}{' '}
+                          {h.kind === 'visual' ? 'fotos' : 'testes'}
+                        </h2>
                         <p>
                           {new Date(h.createdAt).toLocaleString('pt-BR')} ·{' '}
                           {h.phase === 'complete'
@@ -1112,7 +1160,7 @@ export function App() {
                           className="secondary-button danger-button"
                           disabled={busy || !['complete', 'failed', 'cancelled'].includes(h.phase)}
                           onClick={() => deleteBrava(h)}
-                          aria-label="Excluir rodada brava"
+                          aria-label={`Excluir ${roundNames[h.kind].name}`}
                         >
                           <Trash2 size={15} />
                           Excluir
@@ -1121,8 +1169,8 @@ export function App() {
                     </article>
                   ))}
                 </div>
-              </>
-            )}
+              </Fragment>
+            ))}
             {seriesHistory.length > 0 && (
               <>
                 <h2 className="history-group">Maratonas</h2>
@@ -1318,6 +1366,24 @@ export function App() {
               a mesma resposta. Cada mudança é separada entre as que corrigiram um erro e as que
               criaram um. Itens considerados ambíguos depois de uma rodada são anulados: ficam no
               registro, saem da nota de todos os modelos e aparecem no boletim com o motivo.
+            </p>
+            <h2>A rodada das imagens</h2>
+            <p>
+              É a terceira rodada, com boletim próprio, e só para os modelos cujas APIs aceitam
+              imagens: Decisions e Clef. São 80 fotos reais do CV-Bench, 20 por bateria, sorteadas
+              com semente fixa. Contagem: quantos objetos de um tipo aparecem. Posição relativa: se
+              um objeto está à esquerda, à direita, acima ou abaixo de outro. Profundidade: qual de
+              dois objetos marcados está mais perto da câmera. Distância real: qual de dois objetos
+              está mais perto de um terceiro no mundo, não na foto. Os gabaritos são do dataset; as
+              perguntas foram vertidas para o português por frases-padrão, mantendo as alternativas.
+            </p>
+            <p>
+              A foto vai embutida na chamada, em base64, porque nenhuma das duas APIs aceita links.
+              O registro guarda só a impressão digital de cada foto, não os bytes. A pontuação é a
+              da rodada brava: nota de 0 a 100% por bateria, média simples, empate abaixo de 1 ponto
+              desempatado pelo Brier e margem de erro por bootstrap. No chute, a contagem acerta de
+              17% a 25% e as outras baterias, 50%. O Opus comenta às cegas e não vê as fotos: lê a
+              pergunta, as alternativas, o gabarito e as respostas.
             </p>
             <h2>O papel do Opus</h2>
             <p>

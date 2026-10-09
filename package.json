@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "datasets": "tsx scripts/fetch-datasets.ts"
+    "datasets": "tsx scripts/fetch-datasets.ts",
+    "imagens": "tsx scripts/fetch-images.ts"
   },
   "dependencies": {
     "@fastify/static": "^10.1.5",

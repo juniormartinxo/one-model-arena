@@ -1,0 +1,725 @@
+{
+  "seed": "rodada-3-imagens-1",
+  "items": [
+    {
+      "idx": 21,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many blinds are in the image?",
+      "choices": ["0", "1", "2", "3"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 33,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many pictures are in the image?",
+      "choices": ["1", "2", "0", "3"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 72,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many persons are in the image?",
+      "choices": ["4", "5", "0", "6", "3", "2"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 101,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many vans are in the image?",
+      "choices": ["0", "5", "2", "6", "3", "4"],
+      "answer": "(F)"
+    },
+    {
+      "idx": 151,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many windows are in the image?",
+      "choices": ["3", "4", "2", "5", "0", "1"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 165,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many plants are in the image?",
+      "choices": ["0", "3", "1", "2"],
+      "answer": "(C)"
+    },
+    {
+      "idx": 175,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many clocks are in the image?",
+      "choices": ["1", "0", "2", "3"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 245,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many skys are in the image?",
+      "choices": ["0", "3", "2", "1"],
+      "answer": "(D)"
+    },
+    {
+      "idx": 314,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many pictures are in the image?",
+      "choices": ["0", "3", "1", "2", "4"],
+      "answer": "(D)"
+    },
+    {
+      "idx": 338,
+      "task": "Count",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "How many night tables are in the image?",
+      "choices": ["3", "0", "1", "2"],
+      "answer": "(C)"
+    },
+    {
+      "idx": 635,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many boats are in the image?",
+      "choices": ["8", "6", "0", "10", "9", "7"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 650,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many persons are in the image?",
+      "choices": ["3", "2", "4", "6", "5", "0"],
+      "answer": "(C)"
+    },
+    {
+      "idx": 733,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many birds are in the image?",
+      "choices": ["4", "5", "0", "6", "2", "3"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 750,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many clocks are in the image?",
+      "choices": ["0", "3", "4", "2", "1"],
+      "answer": "(D)"
+    },
+    {
+      "idx": 842,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many persons are in the image?",
+      "choices": ["2", "1", "0", "3"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 903,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many bears are in the image?",
+      "choices": ["3", "1", "0", "4", "2"],
+      "answer": "(E)"
+    },
+    {
+      "idx": 939,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many horses are in the image?",
+      "choices": ["1", "0", "3", "2"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 951,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many motorcycles are in the image?",
+      "choices": ["2", "4", "3", "1", "0"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 996,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many elephants are in the image?",
+      "choices": ["3", "1", "0", "4", "2"],
+      "answer": "(E)"
+    },
+    {
+      "idx": 1019,
+      "task": "Count",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "How many trains are in the image?",
+      "choices": ["3", "2", "1", "0"],
+      "answer": "(C)"
+    },
+    {
+      "idx": 366,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the bed (annotated by the red box) and the table lamp in the image provided, where is the bed (annotated by the red box) located with respect to the table lamp?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 380,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the door and the sink in the image provided, where is the door located with respect to the sink?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 421,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the tree (annotated by the red box) and the wheelbarrow in the image provided, where is the tree (annotated by the red box) located with respect to the wheelbarrow?",
+      "choices": ["above", "below"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 441,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the wall (annotated by the red box) and the mirror in the image provided, where is the wall (annotated by the red box) located with respect to the mirror?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 460,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the music system and the speaker in the image provided, where is the music system located with respect to the speaker?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 492,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the tree (annotated by the red box) and the trees in the image provided, where is the tree (annotated by the red box) located with respect to the trees?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 569,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the buildings (annotated by the red box) and the boat in the image provided, where is the buildings (annotated by the red box) located with respect to the boat?",
+      "choices": ["left", "right"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 623,
+      "task": "Relation",
+      "source": "ADE20K",
+      "sourceDataset": "ADE20K Validation Set",
+      "question": "Considering the relative positions of the night table (annotated by the red box) and the cell phone in the image provided, where is the night table (annotated by the red box) located with respect to the cell phone?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1079,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the car (annotated by the red box) and the bird in the image provided, where is the car (annotated by the red box) located with respect to the bird?",
+      "choices": ["above", "below"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1085,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the handbag and the bottle in the image provided, where is the handbag located with respect to the bottle?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1129,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the person (annotated by the red box) and the backpack in the image provided, where is the person (annotated by the red box) located with respect to the backpack?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1131,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the train (annotated by the red box) and the traffic light in the image provided, where is the train (annotated by the red box) located with respect to the traffic light?",
+      "choices": ["left", "right"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1185,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the car (annotated by the red box) and the stop sign in the image provided, where is the car (annotated by the red box) located with respect to the stop sign?",
+      "choices": ["above", "below"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1242,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the bench and the clock in the image provided, where is the bench located with respect to the clock?",
+      "choices": ["above", "below"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1247,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the chair (annotated by the red box) and the fire hydrant in the image provided, where is the chair (annotated by the red box) located with respect to the fire hydrant?",
+      "choices": ["left", "right"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1256,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the tennis racket and the sports ball in the image provided, where is the tennis racket located with respect to the sports ball?",
+      "choices": ["above", "below"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1308,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the book (annotated by the red box) and the cat in the image provided, where is the book (annotated by the red box) located with respect to the cat?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1326,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the pizza and the fork in the image provided, where is the pizza located with respect to the fork?",
+      "choices": ["left", "right"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1434,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the person (annotated by the red box) and the dining table in the image provided, where is the person (annotated by the red box) located with respect to the dining table?",
+      "choices": ["above", "below"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1436,
+      "task": "Relation",
+      "source": "COCO",
+      "sourceDataset": "COCO 2017 Validation Set",
+      "question": "Considering the relative positions of the person and the train in the image provided, where is the person located with respect to the train?",
+      "choices": ["left", "right"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1458,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Which object is closer to the camera taking this photo, the shelves (highlighted by a red box) or the table (highlighted by a blue box)?",
+      "choices": ["shelves", "table"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1484,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Which object is closer to the camera taking this photo, the bookcase (highlighted by a red box) or the table (highlighted by a blue box)?",
+      "choices": ["bookcase", "table"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1488,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Which object is closer to the camera taking this photo, the shelves (highlighted by a red box) or the pillow (highlighted by a blue box)?",
+      "choices": ["shelves", "pillow"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1580,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Which object is closer to the camera taking this photo, the door (highlighted by a red box) or the chair (highlighted by a blue box)?",
+      "choices": ["door", "chair"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1582,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Which object is closer to the camera taking this photo, the books (highlighted by a red box) or the desk (highlighted by a blue box)?",
+      "choices": ["books", "desk"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1590,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Which object is closer to the camera taking this photo, the bookcase (highlighted by a red box) or the chair (highlighted by a blue box)?",
+      "choices": ["bookcase", "chair"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1664,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the pillow (highlighted by a red box) or the drawers (highlighted by a blue box)?",
+      "choices": ["pillow", "drawers"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1667,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the remote (highlighted by a red box) or the bin (highlighted by a blue box)?",
+      "choices": ["remote", "bin"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1680,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the curtain (highlighted by a red box) or the box (highlighted by a blue box)?",
+      "choices": ["curtain", "box"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1712,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the printer (highlighted by a red box) or the pillow (highlighted by a blue box)?",
+      "choices": ["printer", "pillow"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1714,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the lamp (highlighted by a red box) or the chair (highlighted by a blue box)?",
+      "choices": ["lamp", "chair"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1740,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the tissues (highlighted by a red box) or the chair (highlighted by a blue box)?",
+      "choices": ["tissues", "chair"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1757,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the lamp (highlighted by a red box) or the night stand (highlighted by a blue box)?",
+      "choices": ["lamp", "night stand"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 1783,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the tray (highlighted by a red box) or the box (highlighted by a blue box)?",
+      "choices": ["tray", "box"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1792,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Which object is closer to the camera taking this photo, the bag (highlighted by a red box) or the bottle (highlighted by a blue box)?",
+      "choices": ["bag", "bottle"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1861,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Which object is closer to the camera taking this photo, the pedestrian (highlighted by a red box) or the barrier (highlighted by a blue box)?",
+      "choices": ["pedestrian", "barrier"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1863,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Which object is closer to the camera taking this photo, the barrier (highlighted by a red box) or the trailer (highlighted by a blue box)?",
+      "choices": ["barrier", "trailer"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1873,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Which object is closer to the camera taking this photo, the pedestrian (highlighted by a red box) or the car (highlighted by a blue box)?",
+      "choices": ["pedestrian", "car"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1923,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Which object is closer to the camera taking this photo, the car (highlighted by a red box) or the bus (highlighted by a blue box)?",
+      "choices": ["car", "bus"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 1938,
+      "task": "Depth",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Which object is closer to the camera taking this photo, the traffic cone (highlighted by a red box) or the truck (highlighted by a blue box)?",
+      "choices": ["traffic cone", "truck"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2058,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the books (highlighted by a red box), the bookcase (highlighted by a blue box) or the table (highlighted by a green box)?",
+      "choices": ["bookcase", "table"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2097,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the books (highlighted by a red box), the door (highlighted by a blue box) or the lamp (highlighted by a green box)?",
+      "choices": ["door", "lamp"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2123,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the table (highlighted by a red box), the television (highlighted by a blue box) or the sofa (highlighted by a green box)?",
+      "choices": ["television", "sofa"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2175,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the books (highlighted by a red box), the table (highlighted by a blue box) or the desk (highlighted by a green box)?",
+      "choices": ["table", "desk"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2184,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the books (highlighted by a red box), the bookcase (highlighted by a blue box) or the table (highlighted by a green box)?",
+      "choices": ["bookcase", "table"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2209,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the lamp (highlighted by a red box), the table (highlighted by a blue box) or the blinds (highlighted by a green box)?",
+      "choices": ["table", "blinds"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2218,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the lamp (highlighted by a red box), the table (highlighted by a blue box) or the books (highlighted by a green box)?",
+      "choices": ["table", "books"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2221,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_Hypersim",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the lamp (highlighted by a red box), the sofa (highlighted by a blue box) or the television (highlighted by a green box)?",
+      "choices": ["sofa", "television"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2245,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the night stand (highlighted by a red box), the dresser (highlighted by a blue box) or the lamp (highlighted by a green box)?",
+      "choices": ["dresser", "lamp"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2246,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the bottle (highlighted by a red box), the box (highlighted by a blue box) or the cup (highlighted by a green box)?",
+      "choices": ["box", "cup"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2336,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the drawers (highlighted by a red box), the night stand (highlighted by a blue box) or the lamp (highlighted by a green box)?",
+      "choices": ["night stand", "lamp"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2371,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the keyboard (highlighted by a red box), the television (highlighted by a blue box) or the mouse (highlighted by a green box)?",
+      "choices": ["television", "mouse"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2386,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the monitor (highlighted by a red box), the mouse (highlighted by a blue box) or the chair (highlighted by a green box)?",
+      "choices": ["mouse", "chair"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2404,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_SUNRGBD",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the printer (highlighted by a red box), the sofa (highlighted by a blue box) or the table (highlighted by a green box)?",
+      "choices": ["sofa", "table"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2460,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the pedestrian (highlighted by a red box), the truck (highlighted by a blue box) or the car (highlighted by a green box)?",
+      "choices": ["truck", "car"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2465,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the truck (highlighted by a red box), the car (highlighted by a blue box) or the bus (highlighted by a green box)?",
+      "choices": ["car", "bus"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2477,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the motorcycle (highlighted by a red box), the car (highlighted by a blue box) or the bus (highlighted by a green box)?",
+      "choices": ["car", "bus"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2546,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the car (highlighted by a red box), the truck (highlighted by a blue box) or the pedestrian (highlighted by a green box)?",
+      "choices": ["truck", "pedestrian"],
+      "answer": "(A)"
+    },
+    {
+      "idx": 2572,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the motorcycle (highlighted by a red box), the bus (highlighted by a blue box) or the car (highlighted by a green box)?",
+      "choices": ["bus", "car"],
+      "answer": "(B)"
+    },
+    {
+      "idx": 2637,
+      "task": "Distance",
+      "source": "Omni3D",
+      "sourceDataset": "Omni3D_nuScenes",
+      "question": "Estimate the real-world distances between objects in this image. Which object is closer to the traffic cone (highlighted by a red box), the motorcycle (highlighted by a blue box) or the bus (highlighted by a green box)?",
+      "choices": ["motorcycle", "bus"],
+      "answer": "(A)"
+    }
+  ]
+}

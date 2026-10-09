@@ -28,6 +28,7 @@ Os três modelos de decisão recebem **o mesmo texto e as mesmas alternativas**,
 5. **Maratona automática:** os seis cenários em sequência, sem cliques, com boletim final.
 6. **Rodada brava:** segunda rodada, mais difícil, com 298 testes e boletim próprio.
 7. **Correções pós-execução:** métrica de mudança de resposta, item ambíguo anulado, recálculo do boletim ao abrir.
+8. **Rodada das imagens:** terceira rodada, só com Decisions e Clef, os dois que leem imagens, em 80 fotos do CV-Bench.
 
 ## 4. Rodada 1: a maratona
 
@@ -70,7 +71,30 @@ Os itens de abstenção, negação e injeção estão em `server/brava/authored.
 
 **Opus na rodada brava:** uma abertura, um comentário por bateria e a leitura final. São 7 chamadas, todas às cegas.
 
-## 6. Como os pontos são calculados
+## 6. Rodada 3: a rodada das imagens
+
+**Por que existe:** Decisions e Clef aceitam imagens, e o Jev não. A rodada 3 compara só os dois em decisões sobre fotos reais.
+
+| Bateria          | Itens | O que exige                                                                     | Acerto no chute |
+| ---------------- | ----- | ------------------------------------------------------------------------------- | --------------- |
+| Contagem         | 20    | Contar objetos de um tipo na foto                                               | 17% a 25%       |
+| Posição relativa | 20    | Dizer se um objeto está à esquerda, à direita, acima ou abaixo de outro         | 50%             |
+| Profundidade     | 20    | Dizer qual de dois objetos marcados está mais perto da câmera                   | 50%             |
+| Distância real   | 20    | Dizer qual de dois objetos está mais perto de um terceiro no mundo, não na foto | 50%             |
+
+**De onde veio:** CV-Bench (Tong et al., NeurIPS 2024), um benchmark de visão com fotos de ADE20K, COCO e Omni3D e caixas coloridas já desenhadas. As 80 perguntas foram sorteadas com semente fixa, 20 por tarefa, e ficam em `server/visual/cvbench-sample.json`. As fotos são baixadas por `npm run imagens` para `data/datasets/imagens/`, fora do Git.
+
+**Em português:** as perguntas do dataset seguem quatro frases-padrão em inglês. O catálogo as verte com um dicionário dos objetos citados, mantendo as alternativas e a letra do gabarito. Exemplo: “Qual objeto está mais perto da câmera que tirou a foto: o pedestre (caixa vermelha) ou a barreira (caixa azul)?”.
+
+**Como a foto vai:** embutida na chamada em base64. No Decisions, como `input_image` ao lado do texto; no Clef, no campo `images`. O registro guarda só o tamanho e o sha256 de cada foto.
+
+**Como pontua:** igual à rodada brava (seção 7): nota de cada bateria, média simples, empate abaixo de 1 ponto desempatado pelo Brier e margem por bootstrap.
+
+**Opus:** abre, comenta cada bateria e escreve a leitura final, às cegas. Não vê as fotos: lê a pergunta, as alternativas, o gabarito e as respostas. São 6 chamadas.
+
+**Onde está:** `server/visual/` (amostra, tradução e catálogo) e `scripts/fetch-images.ts`. A execução e o boletim reaproveitam `server/brava/runner.ts` e `shared/brava-report.ts`.
+
+## 7. Como os pontos são calculados
 
 ### Rodada 1
 
@@ -84,12 +108,12 @@ Os itens de abstenção, negação e injeção estão em `server/brava/authored.
 - **Nota de cada bateria**, de 0 a 100%: grupos inteiros na robustez e na negação, itens nas demais.
 - **Nota geral = média simples das baterias**, para que a robustez, com 144 itens, não pese mais que a injeção, com 16.
 - **Empate:** diferenças menores que 1 ponto, desempatadas pelo Brier.
-- **Margem de erro:** intervalo de 95% por bootstrap pareado (seção 7).
-- **Itens anulados:** ficam no registro e saem da nota de todos (seção 9).
+- **Margem de erro:** intervalo de 95% por bootstrap pareado (seção 8).
+- **Itens anulados:** ficam no registro e saem da nota de todos (seção 10).
 
 A regra foi fixada **antes** das execuções e está nas páginas Método e README.
 
-## 7. Glossário das métricas
+## 8. Glossário das métricas
 
 | Métrica                            | O que mede                                                                                                                | Como ler                                                                                                                                                             |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,7 +127,7 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 | **Custo por 1 milhão de decisões** | Tokens de entrada × tarifa, projetados                                                                                    | Não inclui a cota grátis do Clef                                                                                                                                     |
 | **Mediana de resposta**            | Tempo típico por chamada                                                                                                  | Inclui a rede até cada API                                                                                                                                           |
 
-## 8. Resultados reais
+## 9. Resultados reais
 
 ### Rodada 1: maratona `c70f2fd8` (08/10/2026, 13 minutos)
 
@@ -159,6 +183,10 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 - **Saber dizer “não” não separou ninguém:** os três fizeram 100%. As perguntas ofereciam “fora do escopo” e “não informado” explicitamente, o que deixou a bateria fácil.
 - **Rótulos disputados:** dois itens do HateBR concentram os problemas. No 2198, Decisions e Clef erraram com convicção; no 271, os três pediram revisão. Nos dois, um dos três anotadores humanos discordou dos outros.
 
+### Rodada 3: rodada das imagens
+
+Ainda não executada com as APIs reais. O ensaio sintético só confere a tela.
+
 ### Da rodada 1 para a rodada brava
 
 |           | Rodada 1 (acertos) | Rodada brava (nota) |
@@ -167,7 +195,7 @@ A regra foi fixada **antes** das execuções e está nas páginas Método e READ
 | Decisions | 97,2%              | 98,1                |
 | Jev       | 94,4%              | 87,1                |
 
-## 9. Correções feitas depois de rodar, e por quê
+## 10. Correções feitas depois de rodar, e por quê
 
 1. **Mudança de resposta comparava números, não decisões.**
    - **O problema:** numa pergunta de escala, 1,98 e 1,97 contavam como “mudou de resposta”. Das 21 mudanças registradas, 15 eram isso.
@@ -184,7 +212,7 @@ Correções anteriores, da maratona:
 - **Custo:** a recomendação de custo passou a explicar a diferença de tokens.
 - **Clef:** o token da Cloudflare deixou de ser herdado pelo subprocesso do CLI.
 
-## 10. Limites
+## 11. Limites
 
 - **Recorte:** testes em português, num recorte de tarefas. Não é um ranking universal.
 - **Gabaritos:**
@@ -197,9 +225,10 @@ Correções anteriores, da maratona:
   - Custo considera só tokens de entrada.
   - O Clef tem cota grátis que não entra na estimativa.
 - **Determinismo:** as respostas parecem determinísticas, mas não foi feito um teste formal de repetição. Por isso, a afirmação “o Clef nunca mudou de decisão” não tem um ruído de base medido para comparar.
+- **Rodada das imagens:** 20 fotos por bateria é pouco; o CV-Bench é público desde 2024 e pode estar nos dados de treino; as perguntas foram vertidas para o português por frases-padrão, não por um tradutor humano.
 - **Amostra:** 36 perguntas na rodada 1 não sustentam conclusões estatísticas. A rodada brava, com margem por bootstrap, sustenta só a separação contra o Jev.
 
-## 11. Como reproduzir
+## 12. Como reproduzir
 
 ```sh
 git clone git@github.com:juniormartinxo/one-model-arena.git
@@ -208,12 +237,13 @@ npm install
 cp .env.example .env    # preencha as chaves dos três provedores
 claude auth login
 npm run datasets        # amostra de português real
+npm run imagens         # fotos da rodada das imagens
 npm run dev             # abra http://127.0.0.1:4317
 ```
 
-Na Arena: **Ensaio da maratona** e **Ensaio da rodada brava** rodam sem custo, com dados sintéticos. **Iniciar maratona real** e **Iniciar rodada brava** usam as APIs. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos, tempos e prompts e saídas do Opus.
+Na Arena: **Ensaio da maratona**, **Ensaio da rodada brava** e **Ensaio da rodada das imagens** rodam sem custo, com dados sintéticos. **Iniciar maratona real**, **Iniciar rodada brava** e **Iniciar rodada das imagens** usam as APIs; a rodada das imagens precisa só das chaves da OpenAI e da Cloudflare. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos, tempos e prompts e saídas do Opus.
 
-## 12. Mapa dos arquivos
+## 13. Mapa dos arquivos
 
 | Caminho                                               | O que tem                                                            |
 | ----------------------------------------------------- | -------------------------------------------------------------------- |
@@ -223,6 +253,8 @@ Na Arena: **Ensaio da maratona** e **Ensaio da rodada brava** rodam sem custo, c
 | `server/judging.ts`                                   | Prompts do Opus e anonimização A/B/C                                 |
 | `server/claude.ts`                                    | Subprocesso isolado do Claude CLI                                    |
 | `server/brava/`                                       | Rodada brava: itens escritos, catálogo, datasets e execução          |
+| `server/visual/`                                      | Rodada das imagens: amostra do CV-Bench, tradução e catálogo         |
+| `scripts/fetch-images.ts`                             | Download das fotos do CV-Bench                                       |
 | `scripts/fetch-datasets.ts`                           | Download e amostragem dos datasets                                   |
 | `shared/scoring.ts`                                   | Pontuação por pergunta e Brier                                       |
 | `shared/report.ts`                                    | Regra de vencedor e boletim da maratona                              |

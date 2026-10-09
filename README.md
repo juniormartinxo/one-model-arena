@@ -10,6 +10,7 @@ Estúdio local para comparar, em português, três modelos de decisão estrutura
 4. Na Arena, clique em **Ensaio da maratona** para conferir o fluxo sem custo. Depois, **Iniciar maratona real**.
 5. A tela entra em modo gravação e avança sozinha. Ao final, exporte a maratona em JSON: ela inclui cenários congelados com hash, payloads, respostas originais, prompts e saídas do Opus.
 6. Para a **rodada brava**, rode antes `npm run datasets` (baixa a amostra de português real das fontes oficiais) e use **Ensaio da rodada brava** e **Iniciar rodada brava**. Ela tem boletim próprio, separado da maratona.
+7. Para a **rodada das imagens** (rodada 3, só Decisions e Clef), rode antes `npm run imagens` (baixa as 80 fotos do CV-Bench) e use **Ensaio da rodada das imagens** e **Iniciar rodada das imagens**. Ela não precisa da chave da TypeSafe.
 
 Os cenários e gabaritos estão em `server/scenarios.ts` e `server/advanced-scenarios.ts`. Para testar seus próprios casos, edite esses arquivos: o hash muda e identifica o roteiro usado.
 
@@ -107,6 +108,23 @@ Os itens de abstenção, negação e injeção estão em `server/brava/authored.
 
 HateBR e B2W não permitem uso comercial: confira se o seu uso se enquadra. Os comentários do HateBR podem conter ofensas e discurso de ódio; a interface nunca os exibe, mas eles vão para os modelos, para o Opus e para o JSON exportado. Por serem públicos e antigos, esses textos podem estar nos dados de treino dos modelos.
 
+## Rodada das imagens
+
+A rodada 3 testa decisões sobre fotos. Só participam Decisions e Clef, os dois modelos cujas APIs aceitam imagens; o Jev fica de fora. São 80 fotos reais do [CV-Bench](https://huggingface.co/datasets/nyu-visionx/CV-Bench) em quatro baterias de 20, com o mesmo piloto automático, a mesma pontuação e o mesmo boletim da rodada brava, e o Opus abrindo, comentando cada bateria e escrevendo a leitura final (6 chamadas do CLI).
+
+| Bateria          | O que pergunta                                                                 | Alternativas | Acerto no chute |
+| ---------------- | ------------------------------------------------------------------------------ | ------------ | --------------- |
+| Contagem         | Quantos objetos de um tipo aparecem na foto                                    | 4 a 6        | 17% a 25%       |
+| Posição relativa | Se um objeto está à esquerda, à direita, acima ou abaixo de outro              | 2            | 50%             |
+| Profundidade     | Qual de dois objetos marcados por caixas coloridas está mais perto da câmera   | 2            | 50%             |
+| Distância real   | Qual de dois objetos está mais perto de um terceiro no mundo real, não na foto | 2            | 50%             |
+
+Os gabaritos são os do dataset. As perguntas do CV-Bench seguem quatro frases-padrão em inglês; `server/visual/catalog.ts` as verte para o português com um dicionário dos objetos citados, mantendo as alternativas e a letra da resposta certa. As caixas vermelha, azul e verde já vêm desenhadas nas fotos.
+
+A foto vai embutida em cada chamada como data URL em base64, porque nenhuma das duas APIs aceita links: no Decisions, como uma parte `input_image` ao lado do texto; no Clef, no campo `images`, a extensão do contrato do Jev. O registro e a exportação guardam só o tamanho e o sha256 de cada foto, não os bytes. O Opus não vê as fotos: comenta a partir da pergunta, das alternativas, do gabarito e das respostas.
+
+`npm run imagens` baixa as fotos do servidor de datasets do Hugging Face para `data/datasets/imagens/`, que não vai para o Git. A amostra (20 por tarefa, semente fixa) fica em `server/visual/cvbench-sample.json`, com as perguntas e os gabaritos; `npm run imagens -- --resample` sorteia de novo e muda o hash do catálogo. As anotações do CV-Bench são Apache-2.0; as fotos vêm de ADE20K, COCO e Omni3D, com termos próprios, e por isso não são redistribuídas. O CV-Bench é público desde 2024 e pode estar nos dados de treino dos modelos. Citação: Tong et al. (2024), _Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs_, NeurIPS 2024.
+
 ## Clef
 
 O Clef roda no Cloudflare Workers AI e usa o mesmo contrato de perguntas do Jev (`state`, `noul`, `choice`, `score`). A diferença é o envelope `{ result, success, errors }` da Cloudflare, que o adaptador remove antes de validar. Configure no `.env`:
@@ -151,6 +169,7 @@ O Opus recebe os pontos já calculados e apenas a regra do tipo de pergunta da r
 
 ## Consumo, tempos e falhas
 
+- Rodada das imagens: 80 chamadas no Decisions e 80 no Clef, cada uma com uma foto, e 6 do CLI. Quantos tokens cada foto custa depende de cada API; o boletim mostra os tokens de entrada contados por elas.
 - Rodada brava: 298 chamadas por provedor (até `BRAVA_CONCURRENCY` simultâneas, padrão 3) e 7 do CLI. No Clef, cerca de 150 mil tokens de entrada (uns 3.300 neurons), dentro da cota gratuita diária.
 - Até **6 chamadas Jev + 6 Decisions + 6 Clef + 8 CLI** por reunião real. CLI: 1 abertura + 6 comentários + 1 explicação. Na maratona: 36 por provedor e até 49 do CLI (6 × 8 + 1 leitura final). Sem retentativas automáticas do aplicativo.
 - Referência de 08/10/2026: Jev US$ 0,042, Decisions US$ 0,10 e Clef US$ 0,24 (Clef-flash US$ 0,09) por milhão de tokens de entrada. No Clef, os 10.000 neurons diários gratuitos da Cloudflare não são descontados da estimativa. A estimativa considera texto padrão; adicionais regionais, outras faixas de preço e mudanças futuras não são detectados automaticamente. O arquivo exportado guarda as tarifas usadas.
@@ -181,6 +200,8 @@ server/providers.ts   adaptadores das APIs nativas
 server/claude.ts      subprocesso isolado do Claude CLI
 server/judging.ts     prompts e anonimização
 server/engine.ts      coordenação e cancelamento
+server/brava/         rodada brava: itens escritos, catálogo, datasets e execução
+server/visual/        rodada das imagens: amostra do CV-Bench, tradução e catálogo
 server/store.ts       SQLite e histórico de eventos
 tests/                contratos, ciclo da reunião e navegador
 ```
@@ -200,5 +221,6 @@ Os testes usam fixtures explícitas: verificam os contratos, preservação de us
 
 - [OpenAI Decisions](https://developers.openai.com/api/docs/guides/decisions) e [referência HTTP](https://developers.openai.com/api/reference/resources/decisions/methods/create).
 - [Jev API](https://docs.typesafe.ai/api), [modelos e preços](https://docs.typesafe.ai/models), [limitações](https://docs.typesafe.ai/model-jaggedness/jev-1.13).
-- [Clef no Workers AI](https://developers.cloudflare.com/workers-ai/models/clef/), [preços do Workers AI](https://developers.cloudflare.com/workers-ai/platform/pricing/) e [card do modelo](https://huggingface.co/Cloudflare/clef).
+- [Clef no Workers AI](https://developers.cloudflare.com/workers-ai/models/clef/) (inclui o campo `images` no [schema de entrada](https://developers.cloudflare.com/workers-ai/models/clef/schema-input.json)), [preços do Workers AI](https://developers.cloudflare.com/workers-ai/platform/pricing/) e [card do modelo](https://huggingface.co/Cloudflare/clef).
+- [CV-Bench](https://huggingface.co/datasets/nyu-visionx/CV-Bench), usado na rodada das imagens.
 - [Claude CLI não interativo](https://code.claude.com/docs/en/headless) e [flags](https://code.claude.com/docs/en/cli-reference).

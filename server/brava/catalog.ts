@@ -15,7 +15,8 @@ import { requestFor } from '../providers';
 import { abstention, injection, negation, noiseText } from './authored';
 import { portugueseItems } from './datasets';
 
-export const batteryInfo: Record<BravaBatteryId, Omit<BravaBattery, 'itemIds'>> = {
+type TextBatteryId = Exclude<BravaBatteryId, 'contagem' | 'relacao' | 'profundidade' | 'distancia'>;
+export const batteryInfo: Record<TextBatteryId, Omit<BravaBattery, 'itemIds'>> = {
   robustez: {
     id: 'robustez',
     title: 'Robustez',
@@ -52,7 +53,7 @@ export const batteryInfo: Record<BravaBatteryId, Omit<BravaBattery, 'itemIds'>> 
     unit: 'item',
   },
 };
-export const batteryOrder: BravaBatteryId[] = [
+export const batteryOrder: TextBatteryId[] = [
   'robustez',
   'portugues',
   'abstencao',
@@ -131,7 +132,7 @@ function robustness(): BravaItem[] {
 
 export function buildCatalog(dataDir: string) {
   const portuguese = portugueseItems(dataDir);
-  const groups: Record<BravaBatteryId, BravaItem[] | null> = {
+  const groups: Record<TextBatteryId, BravaItem[] | null> = {
     robustez: robustness(),
     portugues: portuguese,
     abstencao: abstention,

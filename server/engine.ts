@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import type { Run, Health, RoundResult, Series, Verdict } from '../shared/types';
+import type { Run, Health, Provider, RoundResult, Series, Verdict } from '../shared/types';
 import { providers, runProviders } from '../shared/types';
 import { config, tariff } from './config';
 import { Store } from './store';
@@ -23,6 +23,11 @@ import { demoResult } from './demo';
 import { decisionText, providerNames } from '../shared/presentation';
 import { buildSeriesReport, decide, standings } from '../shared/report';
 import { BravaRunner } from './brava/runner';
+const keyNames: Record<Provider, string> = {
+  decisions: 'OpenAI',
+  jev: 'TypeSafe',
+  clef: 'Cloudflare',
+};
 const finished = (phase: Run['phase']) => ['complete', 'cancelled', 'failed'].includes(phase);
 export class Engine {
   events = new EventEmitter();
@@ -83,16 +88,18 @@ export class Engine {
     clearTimeout(this.timers.get(key));
     this.timers.delete(key);
   }
-  async preflight(mode: Run['mode']) {
+  // Only the keys of the providers taking part are required: the rodada 3 runs without Jev.
+  async preflight(mode: Run['mode'], participants: Provider[] = providers) {
     if (mode !== 'live') return;
     const health = await this.health();
     if (!health.claude.available || health.claude.authenticated !== true)
       throw new Error(
         health.claude.error ?? 'Verifique o login do Claude CLI no perfil configurado.',
       );
-    if (!health.ready)
+    const missing = participants.filter((p) => !health.keys[p]).map((p) => keyNames[p]);
+    if (missing.length)
       throw new Error(
-        'Configure as chaves de OpenAI, TypeSafe e Cloudflare no .env antes da execução real.',
+        `Configure as chaves de ${missing.join(', ').replace(/, ([^,]*)$/, ' e $1')} no .env antes da execução real.`,
       );
   }
   async create(

@@ -222,8 +222,19 @@ export type SeriesSummary = Pick<Series, 'id' | 'mode' | 'createdAt' | 'phase'> 
 };
 export type SeriesSnapshot = { series: Series; run: Run | null };
 
-// Rodada brava: batteries of harder items, scored per battery and averaged.
-export type BravaBatteryId = 'robustez' | 'portugues' | 'abstencao' | 'negacao' | 'injecao';
+// Rodada brava: batteries of harder items, scored per battery and averaged. The rodada 3
+// (kind 'visual') reuses the same machinery with photos and only the models that read images.
+export type BravaKind = 'brava' | 'visual';
+export type BravaBatteryId =
+  | 'robustez'
+  | 'portugues'
+  | 'abstencao'
+  | 'negacao'
+  | 'injecao'
+  | 'contagem'
+  | 'relacao'
+  | 'profundidade'
+  | 'distancia';
 export type Perturbation = 'original' | 'ordem' | 'ruido' | 'digitacao' | 'direcao';
 export type BravaItem = {
   id: string;
@@ -240,6 +251,8 @@ export type BravaItem = {
   source?: { dataset: string; id: string; license: string };
   // Real social-media text that may contain hate speech: never shown on screen.
   sensitive?: boolean;
+  // Photo sent with the question; the file lives in data/datasets/imagens, outside Git.
+  image?: { file: string };
 };
 export type BravaBattery = {
   id: BravaBatteryId;
@@ -323,6 +336,8 @@ export type BravaReport = {
 export type BravaComment = { text: string; mapping?: Mapping; error?: string };
 export type Brava = {
   id: string;
+  // Absent on rodadas bravas recorded before the rodada 3 existed.
+  kind?: BravaKind;
   mode: Run['mode'];
   createdAt: string;
   updatedAt: string;
@@ -357,6 +372,7 @@ export type BravaView = Omit<Brava, 'results'> & {
   results: Record<string, Partial<Record<Provider, CompactResult>>>;
 };
 export type BravaSummary = Pick<Brava, 'id' | 'mode' | 'createdAt' | 'phase'> & {
+  kind: BravaKind;
   items: number;
   winner: BravaReport['winner'] | null;
 };

@@ -25,7 +25,12 @@ import type {
   Perturbation,
   Provider,
 } from '../shared/types';
-import { providerNames, providerVendors, revealParticipants } from '../shared/presentation';
+import {
+  providerNames,
+  providerVendors,
+  revealParticipants,
+  roundNames,
+} from '../shared/presentation';
 import { useCountdown } from './Autopilot';
 import { BarRows, CountUp, Section, seconds, usd } from './SeriesReport';
 
@@ -81,6 +86,24 @@ function Tile({ result, flip, title }: { result?: CompactResult; flip: boolean; 
   );
 }
 
+// A rodada 3 photo, served from the local sample; a missing file leaves a note instead.
+export function Photo({ item, className }: { item: BravaItem; className?: string }) {
+  const [missing, setMissing] = useState(false);
+  if (!item.image) return null;
+  return missing ? (
+    <p className="brava-hidden">
+      <EyeOff size={14} /> Foto não baixada. Rode npm run imagens.
+    </p>
+  ) : (
+    <img
+      className={`brava-photo ${className ?? ''}`}
+      src={`/api/images/${item.image.file}`}
+      alt={`Foto da pergunta ${item.title}`}
+      onError={() => setMissing(true)}
+    />
+  );
+}
+
 function ItemCard({ brava, item }: { brava: BravaView; item: BravaItem }) {
   return (
     <article className="brava-highlight" aria-live="polite">
@@ -88,7 +111,9 @@ function ItemCard({ brava, item }: { brava: BravaView; item: BravaItem }) {
         {brava.batteries.find((b) => b.id === item.battery)?.title} · {item.title}
       </span>
       <h3>{item.question.text}</h3>
-      {item.sensitive ? (
+      {item.image ? (
+        <Photo item={item} />
+      ) : item.sensitive ? (
         <p className="brava-hidden">
           <EyeOff size={14} /> Comentário real do HateBR oculto: pode conter ofensas.
         </p>
@@ -147,6 +172,7 @@ export function BravaLive({
     ? pool[(pool.length - 1 - (tick % Math.min(pool.length, 6)) + pool.length) % pool.length]
     : null;
   const comment = brava.comments[battery.id];
+  const names = roundNames[brava.kind ?? 'brava'];
   const groups = useMemo(() => {
     const out: BravaItem[][] = [];
     for (const item of items) {
@@ -157,11 +183,11 @@ export function BravaLive({
     return out;
   }, [items]);
   return (
-    <section className="brava-live" aria-label="Rodada brava ao vivo">
+    <section className="brava-live" aria-label={`${names.title} ao vivo`}>
       <div className="brava-head">
         <div>
           <span className="series-label">
-            {brava.mode === 'demo' ? 'Ensaio da rodada brava' : 'Rodada brava'} · Bateria{' '}
+            {brava.mode === 'demo' ? names.rehearsal : names.title} · Bateria{' '}
             {brava.currentBattery + 1} de {brava.batteries.length}
           </span>
           <h2>{battery.title}</h2>
@@ -368,6 +394,8 @@ function Calibration({ report }: { report: BravaReport }) {
 export function BravaReportView({ brava }: { brava: BravaView }) {
   const report = brava.report!;
   const demo = brava.mode === 'demo';
+  const visual = brava.kind === 'visual';
+  const names = roundNames[brava.kind ?? 'brava'];
   const by = Object.fromEntries(report.standings.map((s) => [s.provider, s])) as Record<
     Provider,
     BravaReport['standings'][number]
@@ -377,12 +405,12 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
   const headline = analysis
     ? revealParticipants(analysis.headline, analysis.mapping)
     : demo
-      ? 'Ensaio da rodada brava concluído'
+      ? `${names.rehearsal} concluído`
       : winner
-        ? `${providerNames[winner]} vence a rodada brava`
+        ? `${providerNames[winner]} vence a ${names.name}`
         : report.winner === 'tie'
-          ? 'Empate na rodada brava'
-          : 'Rodada brava sem vencedor declarado';
+          ? `Empate na ${names.name}`
+          : `${names.title} sem vencedor declarado`;
   const reason = {
     points: 'Maior nota média nas baterias.',
     calibration: 'Notas empatadas; desempate pela calibração.',
@@ -399,8 +427,9 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
           {winner ? <Trophy size={40} strokeWidth={1.5} /> : <Scale size={40} strokeWidth={1.5} />}
         </div>
         <p className="report-kicker">
-          {demo ? 'Ensaio sintético · ' : ''}Rodada brava · {brava.batteries.length} baterias ·{' '}
-          {report.items} testes por modelo
+          {demo ? 'Ensaio sintético · ' : ''}
+          {names.title} · {brava.batteries.length} baterias · {report.items}{' '}
+          {visual ? 'fotos' : 'testes'} por modelo
         </p>
         <h2 id="brava-report-title">{headline}</h2>
         <p className="report-reason">
@@ -431,7 +460,7 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
                   <h3>{providerNames[p]}</h3>
                   <span>{providerVendors[p]}</span>
                 </div>
-                {winner === p && <Trophy size={22} aria-label="Vencedor da rodada brava" />}
+                {winner === p && <Trophy size={22} aria-label={`Vencedor da ${names.name}`} />}
               </header>
               <div className="podium-score">
                 <strong>
@@ -441,16 +470,33 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
               </div>
               <p className="podium-caption">nota média das baterias</p>
               <dl className="podium-metrics">
-                <div>
-                  <dt>Mudou de decisão</dt>
-                  <dd>{changesText(s)}</dd>
-                </div>
-                <div>
-                  <dt>Adivinhou sem dados</dt>
-                  <dd>
-                    {s.invented} de {s.abstentionItems}
-                  </dd>
-                </div>
+                {visual ? (
+                  <>
+                    <div>
+                      <dt>Acertos</dt>
+                      <dd>
+                        {s.correct} de {s.total}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Sem resposta</dt>
+                      <dd>{s.unavailable}</dd>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <dt>Mudou de decisão</dt>
+                      <dd>{changesText(s)}</dd>
+                    </div>
+                    <div>
+                      <dt>Adivinhou sem dados</dt>
+                      <dd>
+                        {s.invented} de {s.abstentionItems}
+                      </dd>
+                    </div>
+                  </>
+                )}
                 <div>
                   <dt>Calibração (Brier)</dt>
                   <dd>
@@ -509,7 +555,11 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
       <div className="report-charts">
         <Section
           title="Nota por bateria"
-          note="Robustez e negação contam grupos inteiros; as demais, itens."
+          note={
+            visual
+              ? 'Cada bateria conta fotos. No chute, a contagem acerta de 17% a 25%; as demais, 50%.'
+              : 'Robustez e negação contam grupos inteiros; as demais, itens.'
+          }
         >
           <div className="battery-grid">
             {report.batteries.map((b) => (
@@ -538,27 +588,31 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
           >
             <Calibration report={report} />
           </Section>
-          <Section
-            title="Mudou de resposta quando só a forma mudou"
-            note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão. Uma mudança pode corrigir um erro: entre parênteses, quantas foram para longe do gabarito."
-          >
-            <div className="battery-grid">
-              {(['ordem', 'ruido', 'digitacao', 'direcao'] as const).map((v) => (
-                <div key={v} className="battery">
-                  <h4>{variantNames[v]}</h4>
-                  <BarRows
-                    report={report}
-                    value={(p) => by[p].flipRate[v]}
-                    max={Math.max(0.1, ...report.standings.map((s) => s.flipRate[v] ?? 0))}
-                    label={(p) => `${pct(by[p].flipRate[v] ?? 0)} (${by[p].flips[v]?.away ?? 0} ↓)`}
-                    tip={(p) =>
-                      `${providerNames[p]} mudou de decisão em ${by[p].flips[v]?.changed ?? 0} de ${by[p].flips[v]?.compared ?? 0} perguntas (${variantNames[v]}): ${by[p].flips[v]?.toward ?? 0} rumo ao gabarito, ${by[p].flips[v]?.away ?? 0} para longe`
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </Section>
+          {!visual && (
+            <Section
+              title="Mudou de resposta quando só a forma mudou"
+              note="Percentual de perguntas da rodada 1 cuja decisão mudou em cada versão. Uma mudança pode corrigir um erro: entre parênteses, quantas foram para longe do gabarito."
+            >
+              <div className="battery-grid">
+                {(['ordem', 'ruido', 'digitacao', 'direcao'] as const).map((v) => (
+                  <div key={v} className="battery">
+                    <h4>{variantNames[v]}</h4>
+                    <BarRows
+                      report={report}
+                      value={(p) => by[p].flipRate[v]}
+                      max={Math.max(0.1, ...report.standings.map((s) => s.flipRate[v] ?? 0))}
+                      label={(p) =>
+                        `${pct(by[p].flipRate[v] ?? 0)} (${by[p].flips[v]?.away ?? 0} ↓)`
+                      }
+                      tip={(p) =>
+                        `${providerNames[p]} mudou de decisão em ${by[p].flips[v]?.changed ?? 0} de ${by[p].flips[v]?.compared ?? 0} perguntas (${variantNames[v]}): ${by[p].flips[v]?.toward ?? 0} rumo ao gabarito, ${by[p].flips[v]?.away ?? 0} para longe`
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
         </div>
       </div>
 
@@ -597,7 +651,7 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
         title="Onde eles erraram"
         note={`${report.divergences.length} de ${report.items} testes sem acerto unânime.`}
       >
-        <ol className="divergence-list">
+        <ol className={`divergence-list ${visual ? 'is-visual' : ''}`}>
           {divergences.map((d) => (
             <li key={d.itemId}>
               <div className="divergence-question">
@@ -605,7 +659,9 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
                   {brava.batteries.find((b) => b.id === d.battery)?.title} · {d.title}
                 </span>
                 <p>{d.question}</p>
-                {d.facts ? (
+                {visual ? (
+                  <Photo item={brava.items.find((i) => i.id === d.itemId)!} className="is-thumb" />
+                ) : d.facts ? (
                   <p className="divergence-facts">{d.facts}</p>
                 ) : (
                   <p className="brava-hidden">
@@ -691,14 +747,25 @@ export function BravaReportView({ brava }: { brava: BravaView }) {
 
       <p className="report-caveat">
         <ShieldCheck size={15} />
-        <span>
-          Robustez reaproveita as perguntas da rodada 1; abstenção, negação e injeção foram escritas
-          antes de consultar os modelos; português real usa rótulos humanos de ASSIN 2, HateBR (CC
-          BY-NC 4.0) e B2W-Reviews01 (CC BY-NC-SA 4.0), que podem estar nos dados de treino. Nota
-          geral: média simples das baterias; empate abaixo de 1 ponto é desempatado pelo Brier.
-          Margem: intervalo de 95% por bootstrap. Custo só por tokens de entrada; latência inclui
-          rede.
-        </span>
+        {visual ? (
+          <span>
+            Fotos e gabaritos do CV-Bench (anotações Apache-2.0; fotos de ADE20K, COCO e Omni3D),
+            público desde 2024 e possivelmente presente nos dados de treino. Perguntas vertidas para
+            o português por frases-padrão, mantendo as alternativas do dataset. Só participam os
+            modelos cujas APIs aceitam imagens. Nota geral: média simples das baterias; empate
+            abaixo de 1 ponto é desempatado pelo Brier. Margem: intervalo de 95% por bootstrap.
+            Custo só por tokens de entrada; latência inclui rede e o envio da foto.
+          </span>
+        ) : (
+          <span>
+            Robustez reaproveita as perguntas da rodada 1; abstenção, negação e injeção foram
+            escritas antes de consultar os modelos; português real usa rótulos humanos de ASSIN 2,
+            HateBR (CC BY-NC 4.0) e B2W-Reviews01 (CC BY-NC-SA 4.0), que podem estar nos dados de
+            treino. Nota geral: média simples das baterias; empate abaixo de 1 ponto é desempatado
+            pelo Brier. Margem: intervalo de 95% por bootstrap. Custo só por tokens de entrada;
+            latência inclui rede.
+          </span>
+        )}
       </p>
     </div>
   );
@@ -738,7 +805,7 @@ export function BravaReportDialog({
       <footer className="verdict-modal-footer">
         <a className="secondary-button" href={`/api/bravas/${brava.id}/export`} download>
           <Download size={16} />
-          Exportar rodada brava
+          Exportar {roundNames[brava.kind ?? 'brava'].name}
         </a>
         <button className="primary-button" onClick={onDismiss}>
           Ver detalhes
