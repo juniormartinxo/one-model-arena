@@ -23,7 +23,7 @@ it('invokes an isolated CLI without a shell, tools, shared sessions or decision-
     { mode: 0o700 },
   );
   config.CLAUDE_BIN = script;
-  config.CLAUDE_ARGS = ['seu-perfil'];
+  config.CLAUDE_ARGS = ['perfil-teste'];
   config.DATA_DIR = dir;
   try {
     const schema = z.object({
@@ -39,7 +39,7 @@ it('invokes an isolated CLI without a shell, tools, shared sessions or decision-
       new AbortController().signal,
     );
     expect(value.args).toContain('--no-session-persistence');
-    expect(value.args[0]).toBe('seu-perfil');
+    expect(value.args[0]).toBe('perfil-teste');
     expect(value.args).toContain('--safe-mode');
     expect(value.args).not.toContain('--bare');
     expect(value.args).not.toContain('--continue');
@@ -72,14 +72,14 @@ it.each([
       script,
       `#!/usr/bin/env node
 const args=process.argv.slice(2);
-if(args[0]!=='seu-perfil')process.exit(2);
+if(args[0]!=='perfil-teste')process.exit(2);
 if(args[1]==='--version'){console.log('fixture');process.exit(0);}
 if(JSON.stringify(args.slice(1))!==JSON.stringify(['auth','status','--json']))process.exit(2);
 console.log(JSON.stringify(${JSON.stringify(response)}));process.exit(${code});`,
       { mode: 0o700 },
     );
     config.CLAUDE_BIN = script;
-    config.CLAUDE_ARGS = ['seu-perfil'];
+    config.CLAUDE_ARGS = ['perfil-teste'];
     try {
       const status = await cliStatus();
       expect(status).toMatchObject({ available: true, version: 'fixture', authenticated });
