@@ -24,10 +24,18 @@
   --font-heading: 'Manrope Variable', sans-serif;
   --radius: 14px;
   color-scheme: dark;
-  scrollbar-color: #4c535a #191c1f;
 }
 * {
   box-sizing: border-box;
+}
+/* Ghost scrollbars: no track, and the thumb shows only while the pointer is on the bar. */
+:root,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-hot {
+  scrollbar-color: rgb(233 234 233 / 30%) transparent;
 }
 body {
   margin: 0;
@@ -1410,40 +1418,80 @@ details[open] > summary {
 .recording .reference-detail {
   display: none;
 }
+/* Recording: full screen, with the whole stage inside the screen. */
+.brava-main {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
 .recording main {
-  padding-top: 24px;
-  max-width: 1500px;
+  min-height: 0;
+  max-width: 1680px;
+  padding: 18px 40px 14px;
+}
+.recording .space-kicker,
+.recording .arena-heading p {
+  display: none;
 }
 .recording .arena-heading {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
-.recording .question-section h2 {
+.recording .arena-heading h1 {
   font-size: 30px;
 }
-.recording .opus-copy {
-  font-size: 17px;
+.recording .series-progress {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+}
+.recording .session-bar {
+  padding: 9px 0;
+}
+.recording .demo-disclosure {
+  padding-top: 8px;
+}
+.recording .question-section {
+  padding: 12px 0 14px;
+}
+.recording .question-meta {
+  margin-bottom: 8px;
+}
+.recording .question-section h2 {
+  font-size: 28px;
+}
+.recording .facts,
+.recording .moderator-transition {
+  margin-top: 8px;
 }
 .recording .facts {
+  font-size: 16px;
+}
+.recording .competitor-heading {
+  padding: 14px 22px;
+}
+.recording .answer-area {
+  min-height: 0;
+  padding: 14px 22px;
+}
+.recording .answer-empty {
+  min-height: 190px;
+}
+.recording .competitor-metrics {
+  padding: 10px 22px;
+}
+.recording .opus-panel {
+  margin-top: 12px;
+  padding: 14px 22px;
+}
+.recording .opus-copy {
+  margin: 8px 0 10px;
   font-size: 17px;
+}
+.recording .run-controls {
+  margin-top: 12px;
 }
 .recording .probability > div:first-child {
   font-size: 14px;
-}
-.recording .question-section {
-  padding: 18px 0;
-}
-.recording .answer-area {
-  min-height: 230px;
-  padding-top: 18px;
-  padding-bottom: 18px;
-}
-.recording .opus-panel {
-  margin-top: 16px;
-  padding-top: 16px;
-  padding-bottom: 16px;
-}
-.recording .run-controls {
-  margin-top: 16px;
 }
 @media (min-width: 1600px) {
   main {
@@ -1782,7 +1830,7 @@ details[open] > summary {
     font-size: 16px;
   }
   .recording main {
-    padding-top: 18px;
+    padding: 16px 18px 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2933,4 +2981,319 @@ details[open] > summary {
 }
 .annulled-list span {
   color: var(--muted);
+}
+
+/* Spaces: the lobby, the tabs between rounds and the records of each space. */
+.lobby .arena-heading {
+  margin-bottom: 26px;
+}
+.live-notice {
+  background: rgb(131 222 211 / 8%);
+  color: var(--jev);
+}
+.live-notice .text-button {
+  margin-left: auto;
+}
+.lobby-label {
+  margin: 34px 0 14px;
+  color: var(--muted);
+  font: 650 12px var(--font-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.lobby-rounds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.space-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100%;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: inherit;
+  text-decoration: none;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(131 222 211 / 9%), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(157 176 255 / 9%), transparent 55%), var(--surface);
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.space-card:hover {
+  border-color: #6b747b;
+  transform: translateY(-2px);
+}
+.space-card.brava {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(241 170 163 / 10%), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(239 195 141 / 8%), transparent 55%), var(--surface);
+}
+.space-card.visual {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(157 176 255 / 10%), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(239 195 141 / 8%), transparent 55%), var(--surface);
+}
+.space-card.room {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgb(200 185 233 / 9%), transparent 55%), var(--surface);
+}
+.space-card h3 {
+  margin: 0;
+  font: 650 24px var(--font-heading);
+  letter-spacing: -0.025em;
+}
+.space-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.space-facts {
+  color: #c6cbd0;
+  font-size: 12px;
+}
+.space-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.space-footer > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.space-live {
+  color: var(--jev);
+}
+.space-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.space-card:hover .space-enter svg {
+  transform: translateX(3px);
+}
+.space-enter svg {
+  transition: transform 160ms ease;
+}
+.lobby-room .space-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 30px;
+}
+.lobby-room .space-card > :not(.space-footer) {
+  grid-column: 1;
+}
+.lobby-room .space-footer {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0;
+  padding: 0 0 0 30px;
+  border-top: 0;
+  border-left: 1px solid var(--line);
+}
+.space-kicker {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: var(--jev);
+  font: 650 11px var(--font-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.space-card .space-kicker {
+  margin-bottom: 0;
+}
+.space-kicker.brava {
+  color: var(--danger);
+}
+.space-kicker.visual {
+  color: var(--clef);
+}
+.space-kicker.room {
+  color: var(--opus);
+}
+.round-tabs {
+  display: flex;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 28px;
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.round-tabs a {
+  padding: 8px 14px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.round-tabs a:hover {
+  color: var(--ink);
+}
+.round-tabs a[aria-current='page'] {
+  background: var(--surface-high);
+  color: var(--ink);
+}
+.marathon-setup .setup-hint {
+  grid-column: 1/-1;
+  margin: 0;
+  font-size: 12px;
+}
+.space-records {
+  margin-top: 40px;
+}
+.space-records-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.space-records-head h2 {
+  color: var(--muted);
+  font: 650 12px var(--font-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.space-records-head .text-button {
+  font-size: 12px;
+}
+.space-empty {
+  padding: 22px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.nav-short {
+  display: none;
+}
+.recording .round-tabs,
+.recording .space-records {
+  display: none;
+}
+@media (max-width: 1020px) {
+  .lobby-rounds {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  nav {
+    gap: 14px;
+  }
+  .nav-link svg {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-link {
+    white-space: nowrap;
+  }
+  .nav-full {
+    display: none;
+  }
+  .nav-short {
+    display: inline;
+  }
+  .space-card {
+    padding: 20px 18px;
+  }
+  .lobby-room .space-card {
+    display: flex;
+  }
+  .lobby-room .space-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding: 16px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .space-card,
+  .space-enter svg {
+    transition: none;
+  }
+  .space-card:hover {
+    transform: none;
+  }
+}
+
+/* Second and third rounds: one screen, the photo takes whatever height is left. */
+.recording main:has(> .brava-live.is-running) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+.recording .brava-live.is-running {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.recording .brava-live.is-running .brava-head h2 {
+  font-size: 32px;
+}
+.recording .brava-live.is-running .brava-board {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+.recording .brava-live.is-running .brava-main {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, auto);
+}
+.recording .brava-live.is-running .brava-comment {
+  min-height: 0;
+  overflow-y: auto;
+}
+.recording .brava-live.is-running .brava-main,
+.recording .brava-live.is-running .brava-highlight {
+  max-height: 100%;
+}
+.recording .brava-live.is-running .brava-highlight {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Only a card with a photo takes the full height: the photo grows into it. */
+.recording .brava-live.is-running .brava-highlight:has(> .brava-photo) {
+  height: 100%;
+}
+.recording .brava-live.is-running .brava-highlight .brava-photo {
+  flex: 1 1 0;
+  min-height: 140px;
+  max-height: none;
+}
+.recording .brava-live.is-running .brava-facts {
+  -webkit-line-clamp: 10;
 }

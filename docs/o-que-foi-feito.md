@@ -241,23 +241,23 @@ npm run imagens         # fotos da rodada das imagens
 npm run dev             # abra http://127.0.0.1:4317
 ```
 
-Na Arena: **Ensaio da maratona**, **Ensaio da rodada brava** e **Ensaio da rodada das imagens** rodam sem custo, com dados sintéticos. **Iniciar maratona real**, **Iniciar rodada brava** e **Iniciar rodada das imagens** usam as APIs; a rodada das imagens precisa só das chaves da OpenAI e da Cloudflare. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos, tempos e prompts e saídas do Opus.
+A página inicial leva a quatro espaços, cada um com endereço próprio: Rodada 1 · Maratona (`#/maratona`), Rodada 2 · Brava (`#/brava`), Rodada 3 · Imagens (`#/imagens`) e a Sala de reuniões (`#/sala`), para reuniões avulsas rodada a rodada. Em cada espaço: **Ensaio da maratona**, **Ensaio da rodada brava** e **Ensaio da rodada das imagens** rodam sem custo, com dados sintéticos. **Iniciar maratona real**, **Iniciar rodada brava** e **Iniciar rodada das imagens** usam as APIs; a rodada das imagens precisa só das chaves da OpenAI e da Cloudflare. Cada execução exporta um JSON com cenários, payloads, respostas originais, custos, tempos e prompts e saídas do Opus.
 
 ## 13. Mapa dos arquivos
 
-| Caminho                                               | O que tem                                                            |
-| ----------------------------------------------------- | -------------------------------------------------------------------- |
-| `server/scenarios.ts`, `server/advanced-scenarios.ts` | Cenários e gabaritos da rodada 1                                     |
-| `server/providers.ts`                                 | Adaptadores das três APIs                                            |
-| `server/engine.ts`                                    | Reuniões, piloto automático e maratona                               |
-| `server/judging.ts`                                   | Prompts do Opus e anonimização A/B/C                                 |
-| `server/claude.ts`                                    | Subprocesso isolado do Claude CLI                                    |
-| `server/brava/`                                       | Rodada brava: itens escritos, catálogo, datasets e execução          |
-| `server/visual/`                                      | Rodada das imagens: amostra do CV-Bench, tradução e catálogo         |
-| `scripts/fetch-images.ts`                             | Download das fotos do CV-Bench                                       |
-| `scripts/fetch-datasets.ts`                           | Download e amostragem dos datasets                                   |
-| `shared/scoring.ts`                                   | Pontuação por pergunta e Brier                                       |
-| `shared/report.ts`                                    | Regra de vencedor e boletim da maratona                              |
-| `shared/brava-report.ts`                              | Notas, margem, calibração, mudanças e itens anulados da rodada brava |
-| `src/`                                                | Interface: Arena, boletins, histórico, Método e Conexões             |
-| `tests/`                                              | Testes unitários e de navegador                                      |
+| Caminho                                               | O que tem                                                                            |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `server/scenarios.ts`, `server/advanced-scenarios.ts` | Cenários e gabaritos da rodada 1                                                     |
+| `server/providers.ts`                                 | Adaptadores das três APIs                                                            |
+| `server/engine.ts`                                    | Reuniões, piloto automático e maratona                                               |
+| `server/judging.ts`                                   | Prompts do Opus e anonimização A/B/C                                                 |
+| `server/claude.ts`                                    | Subprocesso isolado do Claude CLI                                                    |
+| `server/brava/`                                       | Rodada brava: itens escritos, catálogo, datasets e execução                          |
+| `server/visual/`                                      | Rodada das imagens: amostra do CV-Bench, tradução e catálogo                         |
+| `scripts/fetch-images.ts`                             | Download das fotos do CV-Bench                                                       |
+| `scripts/fetch-datasets.ts`                           | Download e amostragem dos datasets                                                   |
+| `shared/scoring.ts`                                   | Pontuação por pergunta e Brier                                                       |
+| `shared/report.ts`                                    | Regra de vencedor e boletim da maratona                                              |
+| `shared/brava-report.ts`                              | Notas, margem, calibração, mudanças e itens anulados da rodada brava                 |
+| `src/`                                                | Interface: início, rodadas, sala de reuniões, boletins, histórico, Método e Conexões |
+| `tests/`                                              | Testes unitários e de navegador                                                      |

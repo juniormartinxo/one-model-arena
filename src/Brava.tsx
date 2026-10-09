@@ -183,7 +183,10 @@ export function BravaLive({
     return out;
   }, [items]);
   return (
-    <section className="brava-live" aria-label={`${names.title} ao vivo`}>
+    <section
+      className={`brava-live ${running ? 'is-running' : ''}`}
+      aria-label={`${names.title} ao vivo`}
+    >
       <div className="brava-head">
         <div>
           <span className="series-label">
@@ -221,15 +224,15 @@ export function BravaLive({
           const done = b.itemIds.filter((id) =>
             brava.providers.every((p) => brava.results[id]?.[p]),
           ).length;
+          // A finished round keeps pointing at its last battery, which is done too.
+          const finished = i < brava.currentBattery || brava.phase === 'complete';
           return (
             <li
               key={b.id}
-              className={
-                i < brava.currentBattery ? 'done' : i === brava.currentBattery ? 'current' : 'next'
-              }
+              className={finished ? 'done' : i === brava.currentBattery ? 'current' : 'next'}
             >
               <span className="series-step-title">
-                {i < brava.currentBattery && <Check size={12} />}
+                {finished && <Check size={12} />}
                 {b.title}
               </span>
               <span className="series-step-track">
@@ -246,75 +249,80 @@ export function BravaLive({
         </p>
       )}
       <div className="brava-board">
-        <div className="brava-grid" style={{ '--tiles': items.length } as CSSProperties}>
-          {brava.providers.map((p) => {
-            const results = items.map((i) => brava.results[i.id]?.[p]);
-            const correct = results.filter((r) => r?.status === 'correct').length;
-            const done = results.filter(Boolean).length;
-            return (
-              <div key={p} className={`brava-row ink-${p}`}>
-                <div className="brava-row-name">
-                  <strong>{providerNames[p]}</strong>
-                  <span>
-                    <CountUp value={correct} format={(v) => String(Math.round(v))} /> / {done}
-                  </span>
-                </div>
-                <div className="brava-tiles">
-                  {groups.map((group, g) => (
-                    <span key={g} className="brava-group">
-                      {group.map((item) => (
-                        <Tile
-                          key={item.id}
-                          result={brava.results[item.id]?.[p]}
-                          flip={flipped(brava, item, p)}
-                          title={`${providerNames[p]} · ${item.title}: ${brava.results[item.id]?.[p]?.label ?? 'aguardando'}`}
-                        />
-                      ))}
+        <div className="brava-main">
+          <div className="brava-grid" style={{ '--tiles': items.length } as CSSProperties}>
+            {brava.providers.map((p) => {
+              const results = items.map((i) => brava.results[i.id]?.[p]);
+              const correct = results.filter((r) => r?.status === 'correct').length;
+              const done = results.filter(Boolean).length;
+              return (
+                <div key={p} className={`brava-row ink-${p}`}>
+                  <div className="brava-row-name">
+                    <strong>{providerNames[p]}</strong>
+                    <span>
+                      <CountUp value={correct} format={(v) => String(Math.round(v))} /> / {done}
                     </span>
-                  ))}
+                  </div>
+                  <div className="brava-tiles">
+                    {groups.map((group, g) => (
+                      <span key={g} className="brava-group">
+                        {group.map((item) => (
+                          <Tile
+                            key={item.id}
+                            result={brava.results[item.id]?.[p]}
+                            flip={flipped(brava, item, p)}
+                            title={`${providerNames[p]} · ${item.title}: ${brava.results[item.id]?.[p]?.label ?? 'aguardando'}`}
+                          />
+                        ))}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <ul className="brava-legend" aria-label="Legenda">
+              <li>
+                <span className="brava-tile is-correct" /> acertou
+              </li>
+              <li>
+                <span className="brava-tile is-incorrect" /> errou
+              </li>
+              <li>
+                <span className="brava-tile is-uncertain" /> pediu revisão
+              </li>
+              <li>
+                <span className="brava-tile is-pending" /> aguardando
+              </li>
+              {battery.id === 'robustez' && (
+                <li>
+                  <span className="brava-tile is-correct is-flip" /> mudou de resposta
+                </li>
+              )}
+            </ul>
+          </div>
+          {comment && (
+            <section
+              className="opus-panel has-feedback brava-comment"
+              aria-label="Comentário do Opus"
+            >
+              <div className="opus-heading">
+                <span className="opus-symbol">
+                  <AudioLines size={21} />
+                </span>
+                <div>
+                  <h2>{brava.mode === 'demo' ? 'Comentário de exemplo' : 'Opus 5.5'}</h2>
+                  <span>Avaliador cego · bateria {battery.title}</span>
                 </div>
               </div>
-            );
-          })}
-          <ul className="brava-legend" aria-label="Legenda">
-            <li>
-              <span className="brava-tile is-correct" /> acertou
-            </li>
-            <li>
-              <span className="brava-tile is-incorrect" /> errou
-            </li>
-            <li>
-              <span className="brava-tile is-uncertain" /> pediu revisão
-            </li>
-            <li>
-              <span className="brava-tile is-pending" /> aguardando
-            </li>
-            {battery.id === 'robustez' && (
-              <li>
-                <span className="brava-tile is-correct is-flip" /> mudou de resposta
-              </li>
-            )}
-          </ul>
+              <div className="opus-copy">
+                <p>{revealParticipants(comment.text, comment.mapping)}</p>
+                {comment.error && <p className="error-copy">{comment.error}</p>}
+              </div>
+            </section>
+          )}
         </div>
         {featured && <ItemCard brava={brava} item={featured} />}
       </div>
-      {comment && (
-        <section className="opus-panel has-feedback brava-comment" aria-label="Comentário do Opus">
-          <div className="opus-heading">
-            <span className="opus-symbol">
-              <AudioLines size={21} />
-            </span>
-            <div>
-              <h2>{brava.mode === 'demo' ? 'Comentário de exemplo' : 'Opus 5.5'}</h2>
-              <span>Avaliador cego · bateria {battery.title}</span>
-            </div>
-          </div>
-          <div className="opus-copy">
-            <p>{revealParticipants(comment.text, comment.mapping)}</p>
-            {comment.error && <p className="error-copy">{comment.error}</p>}
-          </div>
-        </section>
-      )}
       {brava.skipped?.map((s) => (
         <p key={s.battery} className="notice">
           {s.reason}

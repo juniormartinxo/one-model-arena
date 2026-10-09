@@ -8,7 +8,9 @@ test('offers the original and advanced scenarios and can run the dossier control
     if (!['complete', 'failed', 'cancelled'].includes(run.phase))
       await request.post(`/api/runs/${run.id}/cancel`);
   await page.goto('/');
-  const select = page.getByLabel('Reunião avulsa, rodada a rodada');
+  await page.getByRole('button', { name: 'Sala de reuniões', exact: true }).click();
+  await expect(page).toHaveURL(/#\/sala$/);
+  const select = page.getByLabel('Cenário da reunião');
   await expect(select.locator('option')).toHaveCount(6);
   for (const [id, title] of [
     ['loja', 'Crise na loja online'],
@@ -47,7 +49,7 @@ test('six-round meeting, commentary, recording view, evidence export and free re
   for (const run of list)
     if (!['complete', 'failed', 'cancelled'].includes(run.phase))
       await request.post(`/api/runs/${run.id}/cancel`);
-  await page.goto('/');
+  await page.goto('/#/sala');
   await page.getByRole('button', { name: 'Iniciar ensaio', exact: true }).click();
   await expect(page.getByText('ENSAIO SINTÉTICO', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Começar primeira rodada' }).click();
@@ -195,7 +197,5 @@ test('deletes history with confirmation, clears replay state and preserves activ
   await expect(page.getByRole('button', { name: 'Limpar histórico', exact: true })).toBeEnabled();
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Limpar histórico', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'A primeira reunião começa na arena' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Nada gravado ainda' })).toBeVisible();
 });

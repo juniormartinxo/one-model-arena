@@ -1,4 +1,12 @@
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import {
   ArrowRight,
   AudioLines,
@@ -10,6 +18,7 @@ import {
   Columns2,
   Download,
   History,
+  Layers,
   LoaderCircle,
   Maximize2,
   Minimize2,
@@ -23,11 +32,11 @@ import {
   Trophy,
   Trash2,
   TriangleAlert,
+  Users,
   X,
 } from 'lucide-react';
 import type {
   Health,
-  Provider,
   Run,
   RunSummary,
   Scenario,
@@ -45,9 +54,24 @@ import { Competitor, names, money } from './Competitor';
 import { FinalVerdict, VerdictDialog } from './FinalResult';
 import { HistorySummary } from './HistorySummary';
 import { SeriesProgress } from './Autopilot';
+import { enterFullscreen, exitFullscreen, useFitToScreen } from './recording';
 import { SeriesReportDialog, SeriesReportView } from './SeriesReport';
 import { BravaLive, BravaReportDialog, BravaReportView } from './Brava';
 import { revealParticipants, roundNames } from '../shared/presentation';
+import {
+  hrefOf,
+  isSpace,
+  Lobby,
+  phaseLabel,
+  RoundTabs,
+  rounds,
+  spaces,
+  SpaceTitle,
+  viewFromHash,
+  winnerName,
+  type Space,
+  type View,
+} from './Spaces';
 const terminal = (run: Pick<Run, 'phase'>) =>
   ['complete', 'failed', 'cancelled'].includes(run.phase);
 const phaseNames: Record<Run['phase'], string> = {
@@ -60,18 +84,39 @@ const phaseNames: Record<Run['phase'], string> = {
   cancelled: 'Reunião encerrada',
   failed: 'Execução interrompida',
 };
-const winnerName = (winner: string) =>
-  winner === 'tie'
-    ? 'Empate'
-    : winner === 'inconclusive'
-      ? 'Inconclusivo'
-      : names[winner as Provider];
 export function App() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]),
     [health, setHealth] = useState<Health | null>(null),
     [history, setHistory] = useState<RunSummary[]>([]);
   const [scenarioId, setScenarioId] = useState('loja'),
-    [view, setView] = useState<'arena' | 'history' | 'method' | 'settings'>('arena');
+    [view, setViewState] = useState<View>(() => viewFromHash(location.hash)),
+    [lastRound, setLastRound] = useState<Space>('maratona');
+  // Every space has its own address, so reloads and the back button keep the place.
+  const setView = useCallback((next: View) => {
+    setViewState(next);
+    if (location.hash !== hrefOf(next) && !(next === 'home' && !location.hash))
+      window.history.pushState(null, '', hrefOf(next));
+  }, []);
+  useEffect(() => {
+    const follow = () => setViewState(viewFromHash(location.hash));
+    window.addEventListener('popstate', follow);
+    window.addEventListener('hashchange', follow);
+    return () => {
+      window.removeEventListener('popstate', follow);
+      window.removeEventListener('hashchange', follow);
+    };
+  }, []);
+  useEffect(() => {
+    if ((rounds as readonly string[]).includes(view)) setLastRound(view as Space);
+    window.scrollTo(0, 0);
+  }, [view]);
+  // A session restored after a reload opens in its own space, unless the address names another.
+  const follow = useCallback(
+    (space: Space) => {
+      if (!location.hash || location.hash === '#/') setView(space);
+    },
+    [setView],
+  );
   const [run, setRun] = useState<Run | null>(null),
     [cursor, setCursor] = useState(0),
     [replay, setReplay] = useState(false),
@@ -90,6 +135,20 @@ export function App() {
   const seriesRunning = series?.phase === 'running';
   const bravaRunning = !!brava && !['complete', 'cancelled', 'failed'].includes(brava.phase);
   const historyRequest = useRef(0);
+  const stageRef = useRef<HTMLElement>(null);
+  const zoom = useFitToScreen(stageRef, recording);
+  const record = useCallback((on: boolean) => {
+    setRecording(on);
+    if (on) enterFullscreen();
+    else exitFullscreen();
+  }, []);
+  useEffect(() => {
+    const follow = () => {
+      if (!document.fullscreenElement) setRecording(false);
+    };
+    document.addEventListener('fullscreenchange', follow);
+    return () => document.removeEventListener('fullscreenchange', follow);
+  }, []);
   const refreshHistory = useCallback(async () => {
     const request = ++historyRequest.current;
     const [items, marathons, bravas] = await Promise.all([
@@ -139,6 +198,7 @@ export function App() {
         .then((value) => {
           presentedResults.current.add(value.id);
           setBrava(value);
+          follow(value.kind === 'visual' ? 'imagens' : 'brava');
         })
         .catch(() => sessionStorage.removeItem('brava'));
       return;
@@ -151,6 +211,7 @@ export function App() {
           presentedResults.current.add(snapshot.series.id);
           if (snapshot.run) presentedResults.current.add(snapshot.run.id);
           showSeries(snapshot);
+          follow('maratona');
         })
         .catch(() => sessionStorage.removeItem('series'));
       return;
@@ -163,9 +224,10 @@ export function App() {
           setScenarioId(r.scenario.id);
           setCursor(Math.max(0, r.rounds.length - 1));
           setReplay(terminal(r));
+          follow(r.seriesId ? 'maratona' : 'sala');
         })
         .catch(() => sessionStorage.removeItem('meeting'));
-  }, [refresh, showSeries]);
+  }, [refresh, showSeries, follow]);
   useEffect(() => {
     if (!series || series.phase !== 'running') return;
     const source = new EventSource(`/api/series/${series.id}/events`);
@@ -264,11 +326,11 @@ export function App() {
   }, [playing, run]);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) setRecording(false);
+      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) record(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [record]);
   async function act(task: () => Promise<void>) {
     setBusy(true);
     setError('');
@@ -284,12 +346,11 @@ export function App() {
     setVerdictOpen(false);
     void act(async () => {
       const value = await api<Run>('/runs', { scenarioId, mode });
+      // A finished session from another space leaves the screen.
+      clearRun();
       setRun(value);
       sessionStorage.setItem('meeting', value.id);
-      setCursor(0);
-      setReplay(false);
-      setPlaying(false);
-      setView('arena');
+      setView('sala');
     });
   }
   function startSeries(mode: Run['mode']) {
@@ -297,12 +358,11 @@ export function App() {
     setReportOpen(false);
     void act(async () => {
       const snapshot = await api<SeriesSnapshot>('/series', { mode });
-      sessionStorage.removeItem('meeting');
+      clearRun();
       sessionStorage.setItem('series', snapshot.series.id);
       showSeries(snapshot);
-      setPlaying(false);
-      setView('arena');
-      setRecording(true);
+      setView('maratona');
+      record(true);
     });
   }
   function startBrava(mode: Run['mode'], kind: BravaKind = 'brava') {
@@ -311,8 +371,8 @@ export function App() {
       clearRun();
       sessionStorage.setItem('brava', value.id);
       setBrava(value);
-      setView('arena');
-      setRecording(true);
+      setView(kind === 'visual' ? 'imagens' : 'brava');
+      record(true);
     });
   }
   function cancelBrava() {
@@ -326,7 +386,7 @@ export function App() {
       presentedResults.current.add(id);
       sessionStorage.setItem('brava', id);
       setBrava(value);
-      setView('arena');
+      setView(value.kind === 'visual' ? 'imagens' : 'brava');
       setBravaReportOpen(value.phase === 'complete');
     });
   }
@@ -359,7 +419,7 @@ export function App() {
       if (snapshot.run) presentedResults.current.add(snapshot.run.id);
       showSeries(snapshot);
       setPlaying(false);
-      setView('arena');
+      setView('maratona');
       setReportOpen(snapshot.series.phase === 'complete');
     });
   }
@@ -400,13 +460,16 @@ export function App() {
       if (!value.seriesId || value.seriesId !== series?.id) {
         setSeries(null);
         sessionStorage.removeItem('series');
+        setBrava(null);
+        setBravaReportOpen(false);
+        sessionStorage.removeItem('brava');
         sessionStorage.setItem('meeting', id);
       }
       setScenarioId(value.scenario.id);
       setReplay(terminal(value));
       setCursor(0);
       setPlaying(false);
-      setView('arena');
+      setView(value.seriesId ? 'maratona' : 'sala');
     });
   }
   function clearRun() {
@@ -434,10 +497,24 @@ export function App() {
       await refreshHistory();
     });
   }
-  const scenario = run?.scenario ?? scenarios.find((s) => s.id === scenarioId);
-  const round = scenario?.rounds[cursor];
-  const result = run?.rounds[cursor];
-  const visibleRun = run && replay ? { ...run, rounds: run.rounds.slice(0, cursor + 1) } : run;
+  const sessionSpace: Space | null = brava
+    ? brava.kind === 'visual'
+      ? 'imagens'
+      : 'brava'
+    : series || run?.seriesId
+      ? 'maratona'
+      : run
+        ? 'sala'
+        : null;
+  const space = isSpace(view) ? view : null;
+  // The loaded session shows only in its own space; any other space shows its own setup.
+  const here = !!space && space === sessionSpace;
+  const shown = here ? run : null;
+  const at = shown ? cursor : 0;
+  const scenario = shown?.scenario ?? scenarios.find((s) => s.id === scenarioId);
+  const round = scenario?.rounds[at];
+  const result = shown?.rounds[at];
+  const visibleRun = shown && replay ? { ...shown, rounds: shown.rounds.slice(0, at + 1) } : shown;
   const active = !!run && !terminal(run);
   const waiting = run && ['preparing', 'evaluating', 'commenting', 'judging'].includes(run.phase);
   const latest = run ? cursor >= run.rounds.length - 1 : true;
@@ -447,7 +524,15 @@ export function App() {
     seriesHistory.some((s) => s.phase === 'running') ||
     bravaHistory.some((b) => !['complete', 'failed', 'cancelled'].includes(b.phase)) ||
     !!seriesRunning ||
-    bravaRunning;
+    bravaRunning ||
+    active;
+  // Where the running session can be followed: its space when loaded, otherwise the history.
+  const live: Space | 'history' | null =
+    sessionSpace && (seriesRunning || bravaRunning || active)
+      ? sessionSpace
+      : hasActiveHistory
+        ? 'history'
+        : null;
   const meetings = series
     ? series.runIds.map((id, i) => ({
         id,
@@ -455,22 +540,659 @@ export function App() {
       }))
     : [];
   const finalVisible = run?.phase === 'complete' && (!replay || cursor === run.rounds.length - 1);
-  const participants = run ? runProviders(run) : (brava?.providers ?? providers);
+  const participants = here
+    ? run
+      ? runProviders(run)
+      : (brava?.providers ?? providers)
+    : spaces[space ?? 'sala'].providers;
   // The rodada 3 needs only the keys of the two models that read images.
   const visualReady =
     !!health?.keys.decisions &&
     !!health.keys.clef &&
     health.claude.available &&
     health.claude.authenticated === true;
-  const bravaGroups = (['visual', 'brava'] as const)
+  const bravaGroups = (['brava', 'visual'] as const)
     .map((kind) => ({ kind, items: bravaHistory.filter((h) => h.kind === kind) }))
     .filter((g) => g.items.length);
+  const modeTag = (mode: Run['mode']) => (
+    <span className={`history-mode ${mode}`}>
+      {mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
+    </span>
+  );
+  const bravaRow = (h: BravaSummary) => (
+    <article key={h.id}>
+      <div className="history-description">
+        {modeTag(h.mode)}
+        <h2>
+          {roundNames[h.kind].title} · {h.items} {h.kind === 'visual' ? 'fotos' : 'testes'}
+        </h2>
+        <p>
+          {new Date(h.createdAt).toLocaleString('pt-BR')} · {phaseLabel(h.phase)}
+          {h.phase === 'complete' && h.mode === 'live'
+            ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
+            : ''}
+        </p>
+      </div>
+      <div className="history-actions">
+        <button className="secondary-button" disabled={busy} onClick={() => openBrava(h.id)}>
+          <Play size={15} />
+          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir rodada'}
+        </button>
+        <button
+          className="secondary-button danger-button"
+          disabled={busy || !['complete', 'failed', 'cancelled'].includes(h.phase)}
+          onClick={() => deleteBrava(h)}
+          aria-label={`Excluir ${roundNames[h.kind].name}`}
+        >
+          <Trash2 size={15} />
+          Excluir
+        </button>
+      </div>
+    </article>
+  );
+  const seriesRow = (h: SeriesSummary) => (
+    <article key={h.id}>
+      <div className="history-description">
+        {modeTag(h.mode)}
+        <h2>Maratona · {h.totalMeetings} reuniões</h2>
+        <p>
+          {new Date(h.createdAt).toLocaleString('pt-BR')} · {phaseLabel(h.phase)}
+          {h.phase === 'complete' && h.mode === 'live'
+            ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
+            : ''}
+          {h.cheapest.length === 1 ? ` · Mais barato: ${names[h.cheapest[0]]}` : ''}
+        </p>
+      </div>
+      <div className="history-actions">
+        <button className="secondary-button" disabled={busy} onClick={() => openSeries(h.id)}>
+          <Play size={15} />
+          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir maratona'}
+        </button>
+        <button
+          className="secondary-button danger-button"
+          disabled={busy || h.phase === 'running'}
+          onClick={() => deleteSeries(h)}
+          aria-label="Excluir maratona"
+        >
+          <Trash2 size={15} />
+          Excluir
+        </button>
+      </div>
+    </article>
+  );
+  const runRow = (h: RunSummary) => (
+    <article key={h.id}>
+      <div className="history-description">
+        {modeTag(h.mode)}
+        <h2>{h.title}</h2>
+        <p>
+          {new Date(h.createdAt).toLocaleString('pt-BR')} · {h.completedRounds} rodadas ·{' '}
+          {phaseNames[h.phase]}
+        </p>
+      </div>
+      <div className="history-actions">
+        <button className="secondary-button" disabled={busy} onClick={() => openRun(h.id)}>
+          <Play size={15} />
+          {['complete', 'failed', 'cancelled'].includes(h.phase)
+            ? 'Abrir replay'
+            : 'Retomar reunião'}
+        </button>
+        <button
+          className="secondary-button danger-button"
+          disabled={busy || !terminal(h)}
+          onClick={() => deleteHistory(h)}
+          aria-label={`Excluir reunião: ${h.title}`}
+          title={
+            terminal(h) ? 'Excluir reunião e seus registros' : 'Encerre a reunião antes de excluir'
+          }
+        >
+          <Trash2 size={15} />
+          Excluir
+        </button>
+      </div>
+      {h.costs && <HistorySummary run={h} />}
+    </article>
+  );
+  const records: Record<Space, ReactNode[]> = {
+    maratona: seriesHistory.slice(0, 3).map(seriesRow),
+    brava: bravaHistory
+      .filter((b) => b.kind === 'brava')
+      .slice(0, 3)
+      .map(bravaRow),
+    imagens: bravaHistory
+      .filter((b) => b.kind === 'visual')
+      .slice(0, 3)
+      .map(bravaRow),
+    sala: history.slice(0, 3).map(runRow),
+  };
+  const setupHint = (ready: boolean, readyText: string) => (
+    <p className="setup-hint">
+      {live ? (
+        <>
+          {live === 'history'
+            ? 'Há uma sessão em andamento.'
+            : `${spaces[live].title}: sessão em andamento.`}{' '}
+          <button className="text-button" onClick={() => setView(live)}>
+            {live === 'history' ? 'Retome pelo histórico.' : 'Acompanhar.'}
+          </button>
+        </>
+      ) : ready ? (
+        readyText
+      ) : (
+        <>
+          O ensaio funciona sem chaves.{' '}
+          <button className="text-button" onClick={() => setView('settings')}>
+            Configurar as conexões
+          </button>{' '}
+          para usar os modelos reais.
+        </>
+      )}
+    </p>
+  );
+  const roundSetups = {
+    maratona: {
+      headline: 'Maratona: 6 reuniões, 36 decisões por modelo',
+      description:
+        'Os seis cenários rodam em sequência, sem cliques, com o Opus comentando cada rodada. No fim, um boletim com acertos, calibração, custo e velocidade.',
+      tone: '',
+      liveLabel: 'Iniciar maratona real',
+      demoLabel: 'Ensaio da maratona',
+      ready: !!health?.ready,
+      demoReady: scenarios.length > 0,
+      onLive: () => startSeries('live'),
+      onDemo: () => startSeries('demo'),
+      readyText: 'Execução real usa Jev, Decisions, Clef e seu Claude CLI.',
+    },
+    brava: {
+      headline: 'Rodada brava: quase 300 testes por modelo',
+      description:
+        'Robustez, português real com rótulo humano, saber dizer “não sei”, negação e injeção. Roda sozinha e termina num boletim próprio, separado da maratona.',
+      tone: 'brava-setup',
+      liveLabel: 'Iniciar rodada brava',
+      demoLabel: 'Ensaio da rodada brava',
+      ready: !!health?.ready,
+      demoReady: true,
+      onLive: () => startBrava('live'),
+      onDemo: () => startBrava('demo'),
+      readyText: 'Execução real usa Jev, Decisions, Clef e seu Claude CLI.',
+    },
+    imagens: {
+      headline: 'Rodada das imagens: Decisions × Clef em 80 fotos reais',
+      description:
+        'Contagem, posição relativa, profundidade e distância real, com perguntas e gabaritos do CV‑Bench. Só entram os modelos cujas APIs leem imagens. Roda sozinha e termina num boletim próprio.',
+      tone: 'brava-setup visual-setup',
+      liveLabel: 'Iniciar rodada das imagens',
+      demoLabel: 'Ensaio da rodada das imagens',
+      ready: visualReady,
+      demoReady: true,
+      onLive: () => startBrava('live', 'visual'),
+      onDemo: () => startBrava('demo', 'visual'),
+      readyText: 'Execução real usa Decisions, Clef e seu Claude CLI.',
+    },
+  };
+  const sessionBar = (
+    <div className="session-bar">
+      <div className={`session-mode ${shown?.mode ?? 'standby'}`}>
+        <span className="status-dot" />
+        {shown
+          ? shown.mode === 'demo'
+            ? 'ENSAIO SINTÉTICO'
+            : 'EXECUÇÃO REAL'
+          : 'PRONTO PARA COMEÇAR'}
+        {shown && replay && <span className="replay-label">REPLAY</span>}
+      </div>
+      <span className="session-scenario">{scenario?.title ?? 'Carregando cenários…'}</span>
+      <span className="round-count">
+        {shown ? `Rodada ${at + 1} de ${scenario?.rounds.length}` : '6 rodadas · português'}
+      </span>
+    </div>
+  );
+  // The question, the competitors and the Opus panel: a live meeting or the preview of one.
+  const stage = round && (
+    <>
+      <section className="question-section">
+        <div className="question-meta">
+          <span>
+            {shown
+              ? `${String(at + 1).padStart(2, '0')} / ${String(scenario!.rounds.length).padStart(2, '0')}`
+              : 'PRÉVIA DA PRIMEIRA RODADA'}
+          </span>
+          <span>{round.title}</span>
+          <span className="question-type">
+            {round.question.type === 'choice'
+              ? 'Escolha'
+              : round.question.type === 'score'
+                ? 'Escala'
+                : 'Probabilidade'}
+          </span>
+        </div>
+        <h2>{round.question.text}</h2>
+        <p className="facts">{round.facts}</p>
+        {shown?.narration && (
+          <p className="moderator-transition">
+            <AudioLines size={15} />
+            <span>{shown.narration.rounds[at]?.transition}</span>
+          </p>
+        )}
+        <details className="context-detail">
+          <summary>Contexto e critérios da decisão</summary>
+          <p>{scenario!.context}</p>
+          {round.question.options?.map((o) => (
+            <p key={o.value}>
+              <strong>{o.label}:</strong> {o.description}
+            </p>
+          ))}
+          {round.question.levels?.map((l, i) => (
+            <p key={l.label}>
+              <strong>
+                {i} · {l.label}:
+              </strong>{' '}
+              {l.description}
+            </p>
+          ))}
+          {round.question.type === 'predicate' && (
+            <p>Sim a partir de 80%; não até 20%; entre esses limites, revisão humana.</p>
+          )}
+        </details>
+      </section>
+      <div
+        className={`competition-grid ${participants.length > 2 ? 'stack-narrow' : ''}`}
+        style={{ '--competitors': participants.length } as CSSProperties}
+      >
+        {participants.map((p) => (
+          <Competitor
+            key={p}
+            provider={p}
+            run={visibleRun}
+            result={result?.results[p]}
+            question={round.question}
+            pending={shown?.phase === 'evaluating' && latest}
+          />
+        ))}
+        {participants.length === 2 && (
+          <div className="center-vs" aria-hidden="true">
+            VS
+          </div>
+        )}
+      </div>
+      <section
+        className={`opus-panel ${result?.feedback ? 'has-feedback' : ''}`}
+        aria-label="Comentário do Opus"
+      >
+        <div className="opus-heading">
+          <span className="opus-symbol">
+            <AudioLines size={21} />
+          </span>
+          <div>
+            <h2>{shown?.mode === 'demo' ? 'Comentário de exemplo' : 'Opus 5.5'}</h2>
+            <span>
+              {shown?.mode === 'demo'
+                ? 'Roteiro local · sem IA'
+                : 'Avaliador cego · via Claude CLI'}
+            </span>
+          </div>
+          {roundWinner && (
+            <span className={`round-verdict ${roundWinner}`}>
+              <Trophy size={14} />
+              {isProvider(roundWinner)
+                ? `Rodada para ${names[roundWinner]}`
+                : winnerName(roundWinner)}
+            </span>
+          )}
+        </div>
+        <div className="opus-copy" aria-live="polite">
+          {result?.feedback ? (
+            <>
+              <p>{revealParticipants(result.feedback.text, result.feedback.mapping)}</p>
+              {result.feedback.mapping && (
+                <small>Os nomes foram revelados após a avaliação cega do Opus.</small>
+              )}
+              {result.feedback.error && <p className="error-copy">{result.feedback.error}</p>}
+            </>
+          ) : shown?.phase === 'commenting' && latest ? (
+            <p className="working">
+              <LoaderCircle size={17} className="spin" />O Opus está comparando as decisões, sem ver
+              as marcas…
+            </p>
+          ) : (
+            <p>
+              {shown?.narration && shown.rounds.length === 0
+                ? shown.narration.introduction
+                : 'Depois de cada rodada, o Opus explica os acertos, as divergências e quem contribuiu mais para a decisão.'}
+            </p>
+          )}
+        </div>
+        <div className="opus-footnote">
+          <ShieldCheck size={13} />
+          Os pontos seguem o gabarito. O comentário é uma avaliação separada.
+        </div>
+      </section>
+      {result && participants.every((p) => result.results[p]) && (
+        <details className="reference-detail">
+          <summary>Conferir o gabarito e a pontuação desta rodada</summary>
+          <p>{round.question.rationale}</p>
+          <p>
+            Escolha exata: +1. Probabilidade: +1 ao acertar com ≥80% para sim ou ≤20% para não;
+            faixa intermediária é revisão. Escala: +1 se a distância do nível esperado for ≤0,4.
+            Demais casos: 0. Indisponibilidade não é erro semântico.
+          </p>
+        </details>
+      )}
+    </>
+  );
+  const recordsSection = (s: Space) => (
+    <section className="space-records" aria-label={`Registros: ${spaces[s].title}`}>
+      <div className="space-records-head">
+        <h2>Registros recentes</h2>
+        <button className="text-button" onClick={() => setView('history')}>
+          Ver o histórico completo
+        </button>
+      </div>
+      {records[s].length ? (
+        <div className="history-list">{records[s]}</div>
+      ) : (
+        <p className="space-empty">
+          Nenhum registro ainda. O ensaio não chama nenhuma IA e serve para conferir o roteiro.
+        </p>
+      )}
+    </section>
+  );
+  const setup = (s: Space) => {
+    if (s === 'sala')
+      return (
+        <>
+          {sessionBar}
+          <section className="setup">
+            <div>
+              <label htmlFor="scenario">Cenário da reunião</label>
+              <select
+                id="scenario"
+                value={scenarioId}
+                onChange={(e) => setScenarioId(e.target.value)}
+              >
+                {scenarios.map((sc) => (
+                  <option key={sc.id} value={sc.id}>
+                    {sc.title}
+                  </option>
+                ))}
+              </select>
+              <p>{scenario?.description}</p>
+            </div>
+            <div className="setup-actions">
+              <button
+                className="primary-button"
+                disabled={busy || !health?.ready || hasActiveHistory}
+                onClick={() => start('live')}
+              >
+                <Radio size={17} />
+                Iniciar reunião real
+              </button>
+              <button
+                className="secondary-button"
+                disabled={busy || !scenario || hasActiveHistory}
+                onClick={() => start('demo')}
+              >
+                <Play size={16} />
+                Iniciar ensaio
+              </button>
+            </div>
+            {setupHint(
+              !!health?.ready,
+              'Execução real usa Jev, Decisions, Clef e seu Claude CLI. Avance uma rodada de cada vez.',
+            )}
+          </section>
+          {stage}
+          {recordsSection('sala')}
+        </>
+      );
+    const r = roundSetups[s];
+    return (
+      <>
+        <section className={`marathon-setup ${r.tone}`}>
+          <div>
+            <h2>{r.headline}</h2>
+            <p>{r.description}</p>
+          </div>
+          <div className="setup-actions">
+            <button
+              className="primary-button"
+              disabled={busy || !r.ready || hasActiveHistory}
+              onClick={r.onLive}
+            >
+              <Radio size={17} />
+              {r.liveLabel}
+            </button>
+            <button
+              className="secondary-button"
+              disabled={busy || !r.demoReady || hasActiveHistory}
+              onClick={r.onDemo}
+            >
+              <Play size={16} />
+              {r.demoLabel}
+            </button>
+          </div>
+          {setupHint(r.ready, r.readyText)}
+        </section>
+        {recordsSection(s)}
+      </>
+    );
+  };
+  const session = (
+    <>
+      {series && (
+        <SeriesProgress
+          series={series}
+          run={run}
+          scenarios={scenarios}
+          busy={busy}
+          onCancel={cancelSeries}
+        />
+      )}
+      {brava && (
+        <>
+          <BravaLive brava={brava} busy={busy} onCancel={cancelBrava} />
+          {brava.report && brava.phase === 'complete' && (
+            <section
+              className="report-inline"
+              aria-label={`Boletim da ${roundNames[brava.kind ?? 'brava'].name}`}
+            >
+              <div className="final-heading-row">
+                <h2>Boletim da {roundNames[brava.kind ?? 'brava'].name}</h2>
+                <button className="primary-button" onClick={() => setBravaReportOpen(true)}>
+                  <Maximize2 size={16} />
+                  Ver boletim da {roundNames[brava.kind ?? 'brava'].name}
+                </button>
+              </div>
+              <BravaReportView brava={brava} />
+            </section>
+          )}
+          {!bravaRunning && (
+            <div className="end-actions">
+              <a className="secondary-button" href={`/api/bravas/${brava.id}/export`} download>
+                <Download size={16} />
+                Exportar {roundNames[brava.kind ?? 'brava'].name}
+              </a>
+              <button className="primary-button" onClick={clearRun}>
+                Nova {roundNames[brava.kind ?? 'brava'].name}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
+      )}
+      {!brava && sessionBar}
+      {run?.mode === 'demo' && (
+        <p className="demo-disclosure">
+          Respostas e comentários simulados. Nenhuma IA foi chamada e estes pontos não medem os
+          modelos.
+        </p>
+      )}
+      {!brava && stage}
+      {run && (
+        <div className="run-controls">
+          <div className="timeline" aria-label="Rodadas">
+            {run.scenario.rounds.map((r, i) => (
+              <button
+                key={r.id}
+                aria-label={`Ver rodada ${i + 1}: ${r.title}`}
+                aria-current={cursor === i ? 'step' : undefined}
+                className={`${i === cursor ? 'selected' : ''} ${run.rounds[i]?.feedback ? 'done' : ''}`}
+                disabled={i >= run.rounds.length && i !== 0}
+                onClick={() => {
+                  setCursor(i);
+                  setPlaying(false);
+                }}
+              >
+                {run.rounds[i]?.feedback ? <Check size={13} /> : i + 1}
+              </button>
+            ))}
+          </div>
+          <div className="control-actions">
+            {replay ? (
+              <>
+                <button
+                  className="icon-button"
+                  aria-label="Rodada anterior"
+                  disabled={cursor === 0}
+                  onClick={() => {
+                    setCursor(cursor - 1);
+                    setPlaying(false);
+                  }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    if (cursor === run.rounds.length - 1) setCursor(0);
+                    setPlaying(!playing);
+                  }}
+                >
+                  {playing ? <Pause size={15} /> : <Play size={15} />}{' '}
+                  {playing ? 'Pausar replay' : 'Reproduzir'}
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label="Próxima rodada do replay"
+                  disabled={cursor >= run.rounds.length - 1}
+                  onClick={() => {
+                    setCursor(cursor + 1);
+                    setPlaying(false);
+                  }}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </>
+            ) : active && run.autoplay ? (
+              <span className="autopilot-label">
+                <span className="status-dot" />
+                Piloto automático
+              </span>
+            ) : active ? (
+              <>
+                <button className="quiet-button" disabled={busy} onClick={cancel}>
+                  <Square size={13} />
+                  Encerrar
+                </button>
+                <button
+                  className="primary-button"
+                  disabled={busy || waiting || !connected}
+                  onClick={advance}
+                >
+                  {waiting ? <LoaderCircle size={17} className="spin" /> : <ArrowRight size={17} />}{' '}
+                  {run.phase === 'ready'
+                    ? run.rounds.length === 0
+                      ? 'Começar primeira rodada'
+                      : 'Próxima rodada'
+                    : phaseNames[run.phase]}
+                </button>
+              </>
+            ) : (
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setReplay(true);
+                  setCursor(0);
+                }}
+                disabled={run.rounds.length === 0}
+              >
+                <RotateCcw size={16} />
+                Rever reunião
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {run?.phase === 'cancelled' && (
+        <div className="notice" role="status">
+          Reunião encerrada. As respostas recebidas foram preservadas; a comparação ficou
+          incompleta.
+        </div>
+      )}
+      {run?.error && (
+        <div className="notice error" role="alert">
+          {run.error}
+        </div>
+      )}
+      {finalVisible && run.verdict && (
+        <FinalVerdict run={run} onReveal={() => setVerdictOpen(true)} />
+      )}
+      {series?.report && series.phase === 'complete' && (
+        <section className="report-inline" aria-label="Boletim da maratona">
+          <div className="final-heading-row">
+            <h2>Boletim da maratona</h2>
+            <button className="primary-button" onClick={() => setReportOpen(true)}>
+              <Maximize2 size={16} />
+              Ver boletim
+            </button>
+          </div>
+          <SeriesReportView series={series} meetings={meetings} onOpenMeeting={openRun} />
+        </section>
+      )}
+      {run && terminal(run) && (
+        <div className="end-actions">
+          <a className="secondary-button" href={`/api/runs/${run.id}/export`} download>
+            <Download size={16} />
+            Exportar evidências
+          </a>
+          {series && series.phase !== 'running' && (
+            <a className="secondary-button" href={`/api/series/${series.id}/export`} download>
+              <Download size={16} />
+              Exportar maratona
+            </a>
+          )}
+          <button className="primary-button" onClick={clearRun}>
+            {sessionSpace === 'maratona' ? 'Nova maratona' : 'Nova reunião'}
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      )}
+      {visibleRun && (
+        <div className="measurement-note">
+          {participants.map((p) => {
+            const m = metrics(visibleRun, p);
+            return (
+              <span key={p}>
+                <strong>{names[p]}:</strong> {m.correct} acertos · {m.incorrect} divergências ·{' '}
+                {m.uncertain} revisões · {m.unavailable} indisponíveis
+              </span>
+            );
+          })}
+          <span>
+            {run?.mode === 'demo'
+              ? 'Latência e custo de inferência não são medidos no ensaio.'
+              : 'Tempo de resposta inclui rede. Custo das APIs estimado pelos tokens reportados; “?” indica consumo desconhecido.'}
+          </span>
+        </div>
+      )}
+    </>
+  );
   return (
     <div className={`app ${recording ? 'recording' : ''}`}>
       {run?.phase === 'complete' && run.verdict && (
         <VerdictDialog
           run={run}
-          open={verdictOpen && view === 'arena'}
+          open={verdictOpen && here}
           replay={replay}
           onDismiss={closeVerdict}
           nextAt={seriesRunning ? series?.nextStartAt : undefined}
@@ -479,7 +1201,7 @@ export function App() {
       {brava?.report && (
         <BravaReportDialog
           brava={brava}
-          open={bravaReportOpen && view === 'arena'}
+          open={bravaReportOpen && here}
           onDismiss={() => setBravaReportOpen(false)}
         />
       )}
@@ -487,17 +1209,17 @@ export function App() {
         <SeriesReportDialog
           series={series}
           meetings={meetings}
-          open={reportOpen && view === 'arena'}
+          open={reportOpen && here}
           onDismiss={() => setReportOpen(false)}
         />
       )}
       <header className="site-header">
         <a
           className="brand"
-          href="#"
+          href={hrefOf('home')}
           onClick={(e) => {
             e.preventDefault();
-            setView('arena');
+            setView('home');
           }}
         >
           <Columns2 size={24} />
@@ -508,19 +1230,34 @@ export function App() {
         <nav aria-label="Navegação principal">
           {(
             [
-              { key: 'arena', label: 'Arena', Icon: Radio },
-              { key: 'history', label: 'Histórico', Icon: History },
-              { key: 'method', label: 'Método', Icon: BookOpen },
-              { key: 'settings', label: 'Conexões', Icon: Settings2 },
-            ] as const
+              { target: lastRound, label: 'Rodadas', Icon: Layers, on: rounds },
+              {
+                target: 'sala',
+                label: 'Sala de reuniões',
+                short: 'Sala',
+                Icon: Users,
+                on: ['sala'],
+              },
+              { target: 'history', label: 'Histórico', Icon: History, on: ['history'] },
+              { target: 'method', label: 'Método', Icon: BookOpen, on: ['method'] },
+              { target: 'settings', label: 'Conexões', Icon: Settings2, on: ['settings'] },
+            ] as {
+              target: View;
+              label: string;
+              short?: string;
+              Icon: typeof Layers;
+              on: readonly View[];
+            }[]
           ).map((item) => (
             <button
-              key={item.key}
-              className={view === item.key ? 'nav-link active' : 'nav-link'}
-              onClick={() => setView(item.key)}
+              key={item.label}
+              className={item.on.includes(view) ? 'nav-link active' : 'nav-link'}
+              aria-current={item.on.includes(view) ? 'page' : undefined}
+              onClick={() => setView(item.target)}
             >
               <item.Icon size={16} />
-              {item.label}
+              <span className={item.short ? 'nav-full' : undefined}>{item.label}</span>
+              {item.short && <span className="nav-short">{item.short}</span>}
             </button>
           ))}
         </nav>
@@ -529,7 +1266,7 @@ export function App() {
           Estúdio local
         </span>
       </header>
-      <main>
+      <main ref={stageRef} style={recording && zoom < 1 ? { zoom } : undefined}>
         {error && (
           <div className="notice error" role="alert">
             <TriangleAlert size={18} />
@@ -544,546 +1281,34 @@ export function App() {
             Reconectando ao servidor. Não inicie outra rodada até a conexão voltar.
           </div>
         )}
-        {view === 'arena' && (
+        {view === 'home' && (
+          <Lobby
+            history={history}
+            seriesHistory={seriesHistory}
+            bravaHistory={bravaHistory}
+            scenarioCount={scenarios.length}
+            live={live}
+            onGo={setView}
+          />
+        )}
+        {space && (
           <>
+            {space !== 'sala' && <RoundTabs current={space} onGo={setView} />}
             <div className="arena-heading">
               <div>
-                <h1>
-                  {participants.map((p, i) => (
-                    <span key={p}>
-                      {i > 0 && <span className="versus"> × </span>}
-                      {names[p]}
-                    </span>
-                  ))}
-                </h1>
+                <span className={`space-kicker ${spaces[space].tone}`}>{spaces[space].kicker}</span>
+                <SpaceTitle list={participants} />
                 <p>
                   {participants.length === 3 ? 'Três' : 'Duas'} decisões.{' '}
-                  {brava?.kind === 'visual' ? 'As mesmas fotos.' : 'Os mesmos fatos.'} Opus na
-                  análise.
+                  {space === 'imagens' ? 'As mesmas fotos.' : 'Os mesmos fatos.'} Opus na análise.
                 </p>
               </div>
-              <button
-                className="quiet-button recording-toggle"
-                onClick={() => setRecording(!recording)}
-              >
+              <button className="quiet-button recording-toggle" onClick={() => record(!recording)}>
                 {recording ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                 <span>{recording ? 'Sair da gravação' : 'Modo gravação'}</span>
               </button>
             </div>
-            {series && (
-              <SeriesProgress
-                series={series}
-                run={run}
-                scenarios={scenarios}
-                busy={busy}
-                onCancel={cancelSeries}
-              />
-            )}
-            {brava && (
-              <>
-                <BravaLive brava={brava} busy={busy} onCancel={cancelBrava} />
-                {brava.report && brava.phase === 'complete' && (
-                  <section
-                    className="report-inline"
-                    aria-label={`Boletim da ${roundNames[brava.kind ?? 'brava'].name}`}
-                  >
-                    <div className="final-heading-row">
-                      <h2>Boletim da {roundNames[brava.kind ?? 'brava'].name}</h2>
-                      <button className="primary-button" onClick={() => setBravaReportOpen(true)}>
-                        <Maximize2 size={16} />
-                        Ver boletim da {roundNames[brava.kind ?? 'brava'].name}
-                      </button>
-                    </div>
-                    <BravaReportView brava={brava} />
-                  </section>
-                )}
-                {!bravaRunning && (
-                  <div className="end-actions">
-                    <a
-                      className="secondary-button"
-                      href={`/api/bravas/${brava.id}/export`}
-                      download
-                    >
-                      <Download size={16} />
-                      Exportar {roundNames[brava.kind ?? 'brava'].name}
-                    </a>
-                    <button className="primary-button" onClick={clearRun}>
-                      Voltar ao início
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-            {!brava && (
-              <div className="session-bar">
-                <div className={`session-mode ${run?.mode ?? 'standby'}`}>
-                  <span className="status-dot" />
-                  {run
-                    ? run.mode === 'demo'
-                      ? 'ENSAIO SINTÉTICO'
-                      : 'EXECUÇÃO REAL'
-                    : 'PRONTO PARA COMEÇAR'}
-                  {replay && <span className="replay-label">REPLAY</span>}
-                </div>
-                <span className="session-scenario">
-                  {scenario?.title ?? 'Carregando cenários…'}
-                </span>
-                <span className="round-count">
-                  {run
-                    ? `Rodada ${cursor + 1} de ${scenario?.rounds.length}`
-                    : '6 rodadas · português'}
-                </span>
-              </div>
-            )}
-            {run?.mode === 'demo' && (
-              <p className="demo-disclosure">
-                Respostas e comentários simulados. Nenhuma IA foi chamada e estes pontos não medem
-                os modelos.
-              </p>
-            )}
-            {!run && !brava && (
-              <section className="marathon-setup brava-setup visual-setup">
-                <div>
-                  <span className="marathon-kicker brava-kicker">Rodada 3 · imagens</span>
-                  <h2>Rodada das imagens: Decisions × Clef em 80 fotos reais</h2>
-                  <p>
-                    Contagem, posição relativa, profundidade e distância real, com perguntas e
-                    gabaritos do CV‑Bench. Só entram os modelos cujas APIs leem imagens. Roda
-                    sozinha e termina num boletim próprio.
-                  </p>
-                </div>
-                <div className="setup-actions">
-                  <button
-                    className="primary-button"
-                    disabled={busy || !visualReady || hasActiveHistory}
-                    onClick={() => startBrava('live', 'visual')}
-                  >
-                    <Radio size={17} />
-                    Iniciar rodada das imagens
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={busy || hasActiveHistory}
-                    onClick={() => startBrava('demo', 'visual')}
-                  >
-                    <Play size={16} />
-                    Ensaio da rodada das imagens
-                  </button>
-                </div>
-              </section>
-            )}
-            {!run && !brava && (
-              <section className="marathon-setup brava-setup">
-                <div>
-                  <span className="marathon-kicker brava-kicker">Rodada 2 · mais difícil</span>
-                  <h2>Rodada brava: quase 300 testes por modelo</h2>
-                  <p>
-                    Robustez, português real com rótulo humano, saber dizer “não sei”, negação e
-                    injeção. Roda sozinha e termina num boletim próprio, separado da maratona.
-                  </p>
-                </div>
-                <div className="setup-actions">
-                  <button
-                    className="primary-button"
-                    disabled={busy || !health?.ready || hasActiveHistory}
-                    onClick={() => startBrava('live')}
-                  >
-                    <Radio size={17} />
-                    Iniciar rodada brava
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={busy || hasActiveHistory}
-                    onClick={() => startBrava('demo')}
-                  >
-                    <Play size={16} />
-                    Ensaio da rodada brava
-                  </button>
-                </div>
-              </section>
-            )}
-            {!run && !brava && (
-              <section className="marathon-setup">
-                <div>
-                  <span className="marathon-kicker">Piloto automático</span>
-                  <h2>Maratona: 6 reuniões, 36 decisões por modelo</h2>
-                  <p>
-                    Os seis cenários rodam em sequência, sem cliques, com o Opus comentando cada
-                    rodada. No fim, um boletim com acertos, calibração, custo e velocidade.
-                  </p>
-                </div>
-                <div className="setup-actions">
-                  <button
-                    className="primary-button"
-                    disabled={busy || !health?.ready || hasActiveHistory}
-                    onClick={() => startSeries('live')}
-                  >
-                    <Radio size={17} />
-                    Iniciar maratona real
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={busy || !scenarios.length || hasActiveHistory}
-                    onClick={() => startSeries('demo')}
-                  >
-                    <Play size={16} />
-                    Ensaio da maratona
-                  </button>
-                </div>
-              </section>
-            )}
-            {!run && !brava && (
-              <section className="setup">
-                <div>
-                  <label htmlFor="scenario">Reunião avulsa, rodada a rodada</label>
-                  <select
-                    id="scenario"
-                    value={scenarioId}
-                    onChange={(e) => setScenarioId(e.target.value)}
-                  >
-                    {scenarios.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title}
-                      </option>
-                    ))}
-                  </select>
-                  <p>{scenario?.description}</p>
-                </div>
-                <div className="setup-actions">
-                  <button
-                    className="primary-button"
-                    disabled={busy || !health?.ready || hasActiveHistory}
-                    onClick={() => start('live')}
-                  >
-                    <Radio size={17} />
-                    Iniciar reunião real
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={busy || !scenario || hasActiveHistory}
-                    onClick={() => start('demo')}
-                  >
-                    <Play size={16} />
-                    Iniciar ensaio
-                  </button>
-                </div>
-                <p className="setup-hint">
-                  {hasActiveHistory ? (
-                    <>
-                      <button className="text-button" onClick={() => setView('history')}>
-                        Retome a reunião ativa pelo histórico.
-                      </button>
-                    </>
-                  ) : health?.ready ? (
-                    'Execução real usa Jev, Decisions, Clef e seu Claude CLI. Avance uma rodada de cada vez.'
-                  ) : (
-                    <>
-                      O ensaio funciona sem chaves.{' '}
-                      <button className="text-button" onClick={() => setView('settings')}>
-                        Configurar as conexões
-                      </button>{' '}
-                      para usar os modelos reais.
-                    </>
-                  )}
-                </p>
-              </section>
-            )}
-            {round && !brava && (
-              <>
-                <section className="question-section">
-                  <div className="question-meta">
-                    <span>
-                      {run
-                        ? `${String(cursor + 1).padStart(2, '0')} / ${String(scenario!.rounds.length).padStart(2, '0')}`
-                        : 'PRÉVIA DA PRIMEIRA RODADA'}
-                    </span>
-                    <span>{round.title}</span>
-                    <span className="question-type">
-                      {round.question.type === 'choice'
-                        ? 'Escolha'
-                        : round.question.type === 'score'
-                          ? 'Escala'
-                          : 'Probabilidade'}
-                    </span>
-                  </div>
-                  <h2>{round.question.text}</h2>
-                  <p className="facts">{round.facts}</p>
-                  {run?.narration && (
-                    <p className="moderator-transition">
-                      <AudioLines size={15} />
-                      <span>{run.narration.rounds[cursor]?.transition}</span>
-                    </p>
-                  )}
-                  <details className="context-detail">
-                    <summary>Contexto e critérios da decisão</summary>
-                    <p>{scenario!.context}</p>
-                    {round.question.options?.map((o) => (
-                      <p key={o.value}>
-                        <strong>{o.label}:</strong> {o.description}
-                      </p>
-                    ))}
-                    {round.question.levels?.map((l, i) => (
-                      <p key={l.label}>
-                        <strong>
-                          {i} · {l.label}:
-                        </strong>{' '}
-                        {l.description}
-                      </p>
-                    ))}
-                    {round.question.type === 'predicate' && (
-                      <p>Sim a partir de 80%; não até 20%; entre esses limites, revisão humana.</p>
-                    )}
-                  </details>
-                </section>
-                <div
-                  className={`competition-grid ${participants.length > 2 ? 'stack-narrow' : ''}`}
-                  style={{ '--competitors': participants.length } as CSSProperties}
-                >
-                  {participants.map((p) => (
-                    <Competitor
-                      key={p}
-                      provider={p}
-                      run={visibleRun}
-                      result={result?.results[p]}
-                      question={round.question}
-                      pending={run?.phase === 'evaluating' && latest}
-                    />
-                  ))}
-                  {participants.length === 2 && (
-                    <div className="center-vs" aria-hidden="true">
-                      VS
-                    </div>
-                  )}
-                </div>
-                <section
-                  className={`opus-panel ${result?.feedback ? 'has-feedback' : ''}`}
-                  aria-label="Comentário do Opus"
-                >
-                  <div className="opus-heading">
-                    <span className="opus-symbol">
-                      <AudioLines size={21} />
-                    </span>
-                    <div>
-                      <h2>{run?.mode === 'demo' ? 'Comentário de exemplo' : 'Opus 5.5'}</h2>
-                      <span>
-                        {run?.mode === 'demo'
-                          ? 'Roteiro local · sem IA'
-                          : 'Avaliador cego · via Claude CLI'}
-                      </span>
-                    </div>
-                    {roundWinner && (
-                      <span className={`round-verdict ${roundWinner}`}>
-                        <Trophy size={14} />
-                        {isProvider(roundWinner)
-                          ? `Rodada para ${names[roundWinner]}`
-                          : winnerName(roundWinner)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="opus-copy" aria-live="polite">
-                    {result?.feedback ? (
-                      <>
-                        <p>{revealParticipants(result.feedback.text, result.feedback.mapping)}</p>
-                        {result.feedback.mapping && (
-                          <small>Os nomes foram revelados após a avaliação cega do Opus.</small>
-                        )}
-                        {result.feedback.error && (
-                          <p className="error-copy">{result.feedback.error}</p>
-                        )}
-                      </>
-                    ) : run?.phase === 'commenting' && latest ? (
-                      <p className="working">
-                        <LoaderCircle size={17} className="spin" />O Opus está comparando as
-                        decisões, sem ver as marcas…
-                      </p>
-                    ) : (
-                      <p>
-                        {run?.narration && run.rounds.length === 0
-                          ? run.narration.introduction
-                          : 'Depois de cada rodada, o Opus explica os acertos, as divergências e quem contribuiu mais para a decisão.'}
-                      </p>
-                    )}
-                  </div>
-                  <div className="opus-footnote">
-                    <ShieldCheck size={13} />
-                    Os pontos seguem o gabarito. O comentário é uma avaliação separada.
-                  </div>
-                </section>
-                {result && participants.every((p) => result.results[p]) && (
-                  <details className="reference-detail">
-                    <summary>Conferir o gabarito e a pontuação desta rodada</summary>
-                    <p>{round.question.rationale}</p>
-                    <p>
-                      Escolha exata: +1. Probabilidade: +1 ao acertar com ≥80% para sim ou ≤20% para
-                      não; faixa intermediária é revisão. Escala: +1 se a distância do nível
-                      esperado for ≤0,4. Demais casos: 0. Indisponibilidade não é erro semântico.
-                    </p>
-                  </details>
-                )}
-              </>
-            )}
-            {run && (
-              <div className="run-controls">
-                <div className="timeline" aria-label="Rodadas">
-                  {run.scenario.rounds.map((r, i) => (
-                    <button
-                      key={r.id}
-                      aria-label={`Ver rodada ${i + 1}: ${r.title}`}
-                      aria-current={cursor === i ? 'step' : undefined}
-                      className={`${i === cursor ? 'selected' : ''} ${run.rounds[i]?.feedback ? 'done' : ''}`}
-                      disabled={i >= run.rounds.length && i !== 0}
-                      onClick={() => {
-                        setCursor(i);
-                        setPlaying(false);
-                      }}
-                    >
-                      {run.rounds[i]?.feedback ? <Check size={13} /> : i + 1}
-                    </button>
-                  ))}
-                </div>
-                <div className="control-actions">
-                  {replay ? (
-                    <>
-                      <button
-                        className="icon-button"
-                        aria-label="Rodada anterior"
-                        disabled={cursor === 0}
-                        onClick={() => {
-                          setCursor(cursor - 1);
-                          setPlaying(false);
-                        }}
-                      >
-                        <ChevronLeft size={18} />
-                      </button>
-                      <button
-                        className="secondary-button"
-                        onClick={() => {
-                          if (cursor === run.rounds.length - 1) setCursor(0);
-                          setPlaying(!playing);
-                        }}
-                      >
-                        {playing ? <Pause size={15} /> : <Play size={15} />}{' '}
-                        {playing ? 'Pausar replay' : 'Reproduzir'}
-                      </button>
-                      <button
-                        className="icon-button"
-                        aria-label="Próxima rodada do replay"
-                        disabled={cursor >= run.rounds.length - 1}
-                        onClick={() => {
-                          setCursor(cursor + 1);
-                          setPlaying(false);
-                        }}
-                      >
-                        <ChevronRight size={18} />
-                      </button>
-                    </>
-                  ) : active && run.autoplay ? (
-                    <span className="autopilot-label">
-                      <span className="status-dot" />
-                      Piloto automático
-                    </span>
-                  ) : active ? (
-                    <>
-                      <button className="quiet-button" disabled={busy} onClick={cancel}>
-                        <Square size={13} />
-                        Encerrar
-                      </button>
-                      <button
-                        className="primary-button"
-                        disabled={busy || waiting || !connected}
-                        onClick={advance}
-                      >
-                        {waiting ? (
-                          <LoaderCircle size={17} className="spin" />
-                        ) : (
-                          <ArrowRight size={17} />
-                        )}{' '}
-                        {run.phase === 'ready'
-                          ? run.rounds.length === 0
-                            ? 'Começar primeira rodada'
-                            : 'Próxima rodada'
-                          : phaseNames[run.phase]}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="secondary-button"
-                      onClick={() => {
-                        setReplay(true);
-                        setCursor(0);
-                      }}
-                      disabled={run.rounds.length === 0}
-                    >
-                      <RotateCcw size={16} />
-                      Rever reunião
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-            {run?.phase === 'cancelled' && (
-              <div className="notice" role="status">
-                Reunião encerrada. As respostas recebidas foram preservadas; a comparação ficou
-                incompleta.
-              </div>
-            )}
-            {run?.error && (
-              <div className="notice error" role="alert">
-                {run.error}
-              </div>
-            )}
-            {finalVisible && run.verdict && (
-              <FinalVerdict run={run} onReveal={() => setVerdictOpen(true)} />
-            )}
-            {series?.report && series.phase === 'complete' && (
-              <section className="report-inline" aria-label="Boletim da maratona">
-                <div className="final-heading-row">
-                  <h2>Boletim da maratona</h2>
-                  <button className="primary-button" onClick={() => setReportOpen(true)}>
-                    <Maximize2 size={16} />
-                    Ver boletim
-                  </button>
-                </div>
-                <SeriesReportView series={series} meetings={meetings} onOpenMeeting={openRun} />
-              </section>
-            )}
-            {run && terminal(run) && (
-              <div className="end-actions">
-                <a className="secondary-button" href={`/api/runs/${run.id}/export`} download>
-                  <Download size={16} />
-                  Exportar evidências
-                </a>
-                {series && series.phase !== 'running' && (
-                  <a className="secondary-button" href={`/api/series/${series.id}/export`} download>
-                    <Download size={16} />
-                    Exportar maratona
-                  </a>
-                )}
-                <button className="primary-button" onClick={clearRun}>
-                  Nova reunião
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
-            {visibleRun && (
-              <div className="measurement-note">
-                {participants.map((p) => {
-                  const m = metrics(visibleRun, p);
-                  return (
-                    <span key={p}>
-                      <strong>{names[p]}:</strong> {m.correct} acertos · {m.incorrect} divergências
-                      · {m.uncertain} revisões · {m.unavailable} indisponíveis
-                    </span>
-                  );
-                })}
-                <span>
-                  {run?.mode === 'demo'
-                    ? 'Latência e custo de inferência não são medidos no ensaio.'
-                    : 'Tempo de resposta inclui rede. Custo das APIs estimado pelos tokens reportados; “?” indica consumo desconhecido.'}
-                </span>
-              </div>
-            )}
+            {here ? session : setup(space)}
           </>
         )}
         {view === 'history' && (
@@ -1119,160 +1344,33 @@ export function App() {
                 </button>
               </div>
             </div>
-            {bravaGroups.map((group) => (
-              <Fragment key={group.kind}>
-                <h2 className="history-group">{roundNames[group.kind].plural}</h2>
-                <div className="history-list">
-                  {group.items.map((h) => (
-                    <article key={h.id}>
-                      <div className="history-description">
-                        <span className={`history-mode ${h.mode}`}>
-                          {h.mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
-                        </span>
-                        <h2>
-                          {roundNames[h.kind].title} · {h.items}{' '}
-                          {h.kind === 'visual' ? 'fotos' : 'testes'}
-                        </h2>
-                        <p>
-                          {new Date(h.createdAt).toLocaleString('pt-BR')} ·{' '}
-                          {h.phase === 'complete'
-                            ? 'Concluída'
-                            : h.phase === 'cancelled'
-                              ? 'Encerrada'
-                              : h.phase === 'failed'
-                                ? 'Interrompida'
-                                : 'Em andamento'}
-                          {h.phase === 'complete' && h.mode === 'live'
-                            ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
-                            : ''}
-                        </p>
-                      </div>
-                      <div className="history-actions">
-                        <button
-                          className="secondary-button"
-                          disabled={busy}
-                          onClick={() => openBrava(h.id)}
-                        >
-                          <Play size={15} />
-                          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir rodada'}
-                        </button>
-                        <button
-                          className="secondary-button danger-button"
-                          disabled={busy || !['complete', 'failed', 'cancelled'].includes(h.phase)}
-                          onClick={() => deleteBrava(h)}
-                          aria-label={`Excluir ${roundNames[h.kind].name}`}
-                        >
-                          <Trash2 size={15} />
-                          Excluir
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </Fragment>
-            ))}
             {seriesHistory.length > 0 && (
               <>
                 <h2 className="history-group">Maratonas</h2>
-                <div className="history-list">
-                  {seriesHistory.map((h) => (
-                    <article key={h.id}>
-                      <div className="history-description">
-                        <span className={`history-mode ${h.mode}`}>
-                          {h.mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
-                        </span>
-                        <h2>Maratona · {h.totalMeetings} reuniões</h2>
-                        <p>
-                          {new Date(h.createdAt).toLocaleString('pt-BR')} ·{' '}
-                          {h.phase === 'complete'
-                            ? 'Concluída'
-                            : h.phase === 'running'
-                              ? 'Em andamento'
-                              : h.phase === 'cancelled'
-                                ? 'Encerrada'
-                                : 'Interrompida'}
-                          {h.phase === 'complete' && h.mode === 'live'
-                            ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
-                            : ''}
-                          {h.cheapest.length === 1 ? ` · Mais barato: ${names[h.cheapest[0]]}` : ''}
-                        </p>
-                      </div>
-                      <div className="history-actions">
-                        <button
-                          className="secondary-button"
-                          disabled={busy}
-                          onClick={() => openSeries(h.id)}
-                        >
-                          <Play size={15} />
-                          {h.phase === 'complete' ? 'Abrir boletim' : 'Abrir maratona'}
-                        </button>
-                        <button
-                          className="secondary-button danger-button"
-                          disabled={busy || h.phase === 'running'}
-                          onClick={() => deleteSeries(h)}
-                          aria-label="Excluir maratona"
-                        >
-                          <Trash2 size={15} />
-                          Excluir
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                {history.length > 0 && <h2 className="history-group">Reuniões avulsas</h2>}
+                <div className="history-list">{seriesHistory.map(seriesRow)}</div>
               </>
             )}
-            {history.length || seriesHistory.length || bravaHistory.length ? (
-              <div className="history-list">
-                {history.map((h) => (
-                  <article key={h.id}>
-                    <div className="history-description">
-                      <span className={`history-mode ${h.mode}`}>
-                        {h.mode === 'demo' ? 'Ensaio sintético' : 'Execução real'}
-                      </span>
-                      <h2>{h.title}</h2>
-                      <p>
-                        {new Date(h.createdAt).toLocaleString('pt-BR')} · {h.completedRounds}{' '}
-                        rodadas · {phaseNames[h.phase]}
-                      </p>
-                    </div>
-                    <div className="history-actions">
-                      <button
-                        className="secondary-button"
-                        disabled={busy}
-                        onClick={() => openRun(h.id)}
-                      >
-                        <Play size={15} />
-                        {['complete', 'failed', 'cancelled'].includes(h.phase)
-                          ? 'Abrir replay'
-                          : 'Retomar reunião'}
-                      </button>
-                      <button
-                        className="secondary-button danger-button"
-                        disabled={busy || !terminal(h)}
-                        onClick={() => deleteHistory(h)}
-                        aria-label={`Excluir reunião: ${h.title}`}
-                        title={
-                          terminal(h)
-                            ? 'Excluir reunião e seus registros'
-                            : 'Encerre a reunião antes de excluir'
-                        }
-                      >
-                        <Trash2 size={15} />
-                        Excluir
-                      </button>
-                    </div>
-                    {h.costs && <HistorySummary run={h} />}
-                  </article>
-                ))}
-              </div>
-            ) : (
+            {bravaGroups.map((group) => (
+              <Fragment key={group.kind}>
+                <h2 className="history-group">{roundNames[group.kind].plural}</h2>
+                <div className="history-list">{group.items.map(bravaRow)}</div>
+              </Fragment>
+            ))}
+            {history.length > 0 && (
+              <>
+                {(seriesHistory.length > 0 || bravaHistory.length > 0) && (
+                  <h2 className="history-group">Sala de reuniões</h2>
+                )}
+                <div className="history-list">{history.map(runRow)}</div>
+              </>
+            )}
+            {!history.length && !seriesHistory.length && !bravaHistory.length && (
               <div className="empty-page">
                 <History size={34} />
-                <h2>A primeira reunião começa na arena</h2>
-                <p>Execuções reais e ensaios serão identificados separadamente aqui.</p>
-                <button className="primary-button" onClick={() => setView('arena')}>
-                  Ir para a arena
+                <h2>Nada gravado ainda</h2>
+                <p>Execuções reais e ensaios das rodadas e da sala de reuniões aparecem aqui.</p>
+                <button className="primary-button" onClick={() => setView('home')}>
+                  Ir para o início
                   <ArrowRight size={16} />
                 </button>
               </div>

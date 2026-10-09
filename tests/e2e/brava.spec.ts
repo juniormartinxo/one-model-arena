@@ -21,7 +21,7 @@ test('runs the rehearsal rodada brava by itself and ends on its own report', asy
   test.setTimeout(180_000);
   await clearActive(request);
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto('/');
+  await page.goto('/#/brava');
   await page.getByRole('button', { name: 'Ensaio da rodada brava', exact: true }).click();
   await expect(page.locator('.app')).toHaveClass(/recording/);
   const live = page.getByRole('region', { name: 'Rodada brava ao vivo' });

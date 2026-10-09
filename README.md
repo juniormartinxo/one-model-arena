@@ -7,7 +7,7 @@ Estúdio local para comparar, em português, três modelos de decisão estrutura
 1. Instale Node.js 24.14+, clone o repositório e rode `npm install`.
 2. `cp .env.example .env` e preencha as credenciais dos três provedores (seções abaixo). Faça login no Claude Code (`claude auth login`).
 3. `npm run dev` e abra http://127.0.0.1:4317. Em **Conexões**, os quatro itens devem aparecer como detectados.
-4. Na Arena, clique em **Ensaio da maratona** para conferir o fluxo sem custo. Depois, **Iniciar maratona real**.
+4. No início, entre em **Rodada 1 · Maratona** e clique em **Ensaio da maratona** para conferir o fluxo sem custo. Depois, **Iniciar maratona real**. As rodadas 2 e 3 e a **Sala de reuniões** (reunião avulsa, rodada a rodada) têm cada uma o seu espaço.
 5. A tela entra em modo gravação e avança sozinha. Ao final, exporte a maratona em JSON: ela inclui cenários congelados com hash, payloads, respostas originais, prompts e saídas do Opus.
 6. Para a **rodada brava**, rode antes `npm run datasets` (baixa a amostra de português real das fontes oficiais) e use **Ensaio da rodada brava** e **Iniciar rodada brava**. Ela tem boletim próprio, separado da maratona.
 7. Para a **rodada das imagens** (rodada 3, só Decisions e Clef), rode antes `npm run imagens` (baixa as 80 fotos do CV-Bench) e use **Ensaio da rodada das imagens** e **Iniciar rodada das imagens**. Ela não precisa da chave da TypeSafe.

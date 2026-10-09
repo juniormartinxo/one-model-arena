@@ -4,6 +4,7 @@
 //   npm run imagens -- --resample   draw a new sample (changes the catalog hash)
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { config } from '../server/config';
 import {
   imageExtensions,
@@ -17,6 +18,10 @@ import {
 import { random, sample } from './sampling';
 
 const PER_TASK = 20;
+// Workers AI rejected a 2200×1650 photo with an estimate of 132 thousand tokens, far above Clef's
+// 65,536-token window, although its documented limit is 16 megapixels. Every photo is reduced to
+// this longest side, the same file for both models.
+const MAX_SIDE = 1600;
 const SEED = 'rodada-3-imagens-1';
 const TASKS: CvTask[] = ['Count', 'Relation', 'Depth', 'Distance'];
 const ROWS =
@@ -101,6 +106,20 @@ for (const item of chosen) {
   await wait(1000);
   process.stdout.write(`\rBaixando imagens… ${downloaded}`);
 }
+// Also applies to photos downloaded before the limit existed.
+let resized = 0;
+for (const file of readdirSync(dir)) {
+  const path = join(dir, file);
+  const { width = 0, height = 0, format } = await sharp(path).metadata();
+  if (Math.max(width, height) <= MAX_SIDE) continue;
+  // Same format as before, so the file name and its type stay valid.
+  const smaller = sharp(path).resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside' });
+  const bytes = await (format === 'jpeg' ? smaller.jpeg({ quality: 90 }) : smaller).toBuffer();
+  writeFileSync(path, bytes);
+  resized++;
+}
+if (resized)
+  console.log(`\n${resized} imagens reduzidas para no máximo ${MAX_SIDE} px no lado maior.`);
 console.log(
   `\n${chosen.length} imagens em ${join(config.DATA_DIR, 'datasets', 'imagens')} (fora do Git); ${downloaded} baixadas agora.`,
 );

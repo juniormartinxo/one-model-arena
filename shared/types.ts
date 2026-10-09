@@ -2,6 +2,8 @@ export type Provider = 'jev' | 'decisions' | 'clef';
 export const providers: Provider[] = ['jev', 'decisions', 'clef'];
 // Meetings recorded before Clef joined have no providers field and compared only these two.
 export const legacyProviders: Provider[] = ['jev', 'decisions'];
+// Rodada 3: only the two models whose APIs accept images take part.
+export const visualProviders: Provider[] = ['decisions', 'clef'];
 export const runProviders = (run: Pick<Run, 'providers'>): Provider[] =>
   run.providers ?? legacyProviders;
 export const isProvider = (value: unknown): value is Provider =>

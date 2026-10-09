@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { BravaBattery, BravaItem, Option, Provider, Question } from '../../shared/types';
+import type { BravaBattery, BravaItem, Option, Question } from '../../shared/types';
 import {
   cvbenchInfo,
   imagesDir,
@@ -12,8 +12,7 @@ import {
   type CvTask,
 } from './sample';
 
-// Rodada 3: only the two models whose APIs accept images take part.
-export const visualProviders: Provider[] = ['decisions', 'clef'];
+export { visualProviders } from '../../shared/types';
 
 type VisualBatteryId = Extract<
   BravaBattery['id'],
