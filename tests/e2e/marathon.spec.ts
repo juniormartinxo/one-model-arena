@@ -24,10 +24,18 @@ test('runs the whole rehearsal marathon without clicks and ends on the report', 
   await expect(page).toHaveURL(/#\/maratona$/);
   await page.getByRole('button', { name: 'Ensaio da Maratona de reuniões', exact: true }).click();
   await expect(page.locator('.app')).toHaveClass(/recording/);
+  await page.evaluate(() => document.fonts.ready);
+  const stageFrame = () =>
+    page.locator('main').evaluate((el) => {
+      const { x, width } = el.getBoundingClientRect();
+      return { x, width };
+    });
+  const initialFrame = await stageFrame();
   const progress = page.getByLabel('Progresso da Maratona de reuniões');
   await expect(progress).toContainText('Reunião 1 de 6');
   await expect(page.getByText('Piloto automático', { exact: true })).toBeVisible();
   await expect(page.locator('.opus-panel.has-feedback')).toBeVisible({ timeout: 30_000 });
+  expect(await stageFrame()).toEqual(initialFrame);
   // Recording mode: the whole stage stays inside a full HD screen, no scrolling.
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(
     true,
@@ -36,6 +44,7 @@ test('runs the whole rehearsal marathon without clicks and ends on the report', 
     page.getByRole('button', { name: /Próxima rodada|Começar primeira rodada/ }),
   ).toHaveCount(0);
   await expect(progress).toContainText('Reunião 2 de 6', { timeout: 30_000 });
+  expect(await stageFrame()).toEqual(initialFrame);
   await page.screenshot({ path: '.impeccable/review/marathon-running-fullhd.png' });
   const report = page.getByRole('dialog', { name: 'Ensaio da Maratona de reuniões concluído' });
   await expect(report).toBeVisible({ timeout: 90_000 });
@@ -46,6 +55,7 @@ test('runs the whole rehearsal marathon without clicks and ends on the report', 
   await expect(report.locator('.battery')).toHaveCount(3);
   await report.getByRole('button', { name: 'Ver detalhes' }).click();
   await expect(page.getByRole('region', { name: 'Boletim da Maratona de reuniões' })).toBeVisible();
+  expect(await stageFrame()).toEqual(initialFrame);
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Histórico', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Abrir boletim' }).first()).toBeVisible();

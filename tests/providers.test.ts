@@ -190,6 +190,74 @@ describe('native API contracts', () => {
     expect(result.error).toBe('Resposta incompatível com o contrato da API.');
     expect(result.costUsd).toBeCloseTo(0.000024);
   });
+  it('distinguishes Clef capacity errors from quota exhaustion and preserves diagnostics', async () => {
+    const raw = {
+      success: false,
+      errors: [{ code: 3040, message: 'Capacity temporarily exceeded, please try again.' }],
+    };
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(raw), {
+        status: 429,
+        headers: { 'cf-ray': 'capacity-test', 'retry-after': '5' },
+      }),
+    );
+    const result = await evaluate(
+      'clef',
+      scenario,
+      scenario.rounds[0],
+      new AbortController().signal,
+      fetcher,
+    );
+    expect(result.error).toContain('Capacidade do provedor temporariamente esgotada');
+    expect(result.raw).toEqual(raw);
+    expect(result.http).toEqual({ status: 429, requestId: 'capacity-test', retryAfter: '5' });
+    expect(result.inputTokens).toBeNull();
+    expect(result.costUsd).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    {
+      body: JSON.stringify({
+        error: { message: 'Upstream request timed out', code: 'gateway_timeout' },
+      }),
+      detail: 'Upstream request timed out',
+    },
+    { body: '<html><body>Gateway timeout</body></html>', detail: 'gateway timeout' },
+  ])('preserves Decisions HTTP 504 evidence for $body', async ({ body, detail }) => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(body, {
+        status: 504,
+        headers: { 'x-request-id': 'timeout-test' },
+      }),
+    );
+    const result = await evaluate(
+      'decisions',
+      scenario,
+      scenario.rounds[0],
+      new AbortController().signal,
+      fetcher,
+    );
+    expect(result.error).toContain('HTTP 504. Tempo limite no serviço do provedor');
+    expect(result.error).toContain(detail);
+    expect(result.raw).toEqual(body.startsWith('{') ? JSON.parse(body) : body);
+    expect(result.http).toEqual({ status: 504, requestId: 'timeout-test', retryAfter: null });
+    expect(result.costUsd).toBeNull();
+    expect(result.grade.status).toBe('unavailable');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('bounds oversized gateway error evidence and retains the HTTP status', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response('x'.repeat(20_000), { status: 502 }));
+    const result = await evaluate(
+      'decisions',
+      scenario,
+      scenario.rounds[0],
+      new AbortController().signal,
+      fetcher,
+    );
+    expect(result.raw).toEqual({ text: 'x'.repeat(16_384), truncated: true });
+    expect(result.error).toContain('HTTP 502');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('rejects missing or invalid distributions instead of silently counting a point', () => {
     const r = scenario.rounds[0];
     for (const probabilities of [

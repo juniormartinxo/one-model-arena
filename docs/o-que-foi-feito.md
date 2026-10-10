@@ -47,7 +47,7 @@ Os três modelos de decisão recebem **o mesmo texto e as mesmas alternativas**,
 
 **Onde está:** cenários em `server/scenarios.ts` e `server/advanced-scenarios.ts`; motor em `server/engine.ts`; boletim em `shared/report.ts`.
 
-## 5. Rodada 2: Resiliência (antes chamada rodada brava)
+## 5. Rodada 2: Resiliência
 
 **Por que existe:** na rodada 1, os três ficaram perto de 100%, porque o contexto de cada cenário escreve a regra que resolve a pergunta. A Resiliência testa alterações de apresentação, evidência adicional e tarefas com textos reais.
 

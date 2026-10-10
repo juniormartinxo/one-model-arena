@@ -15,9 +15,9 @@ colors:
   method-surface: '#101716'
   example-surface: '#0d1412'
   example-border: '#395046'
-  jev: '#83ded3'
-  decisions: '#efc38d'
-  clef: '#9db0ff'
+  jev: '#f08fc0'
+  decisions: '#e4e7ec'
+  clef: '#ffa657'
 typography:
   display:
     fontFamily: 'Manrope Variable, sans-serif'

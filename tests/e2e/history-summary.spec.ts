@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import type { RunSummary } from '../../shared/types';
+import type { BravaSummary, RunSummary, SeriesSummary } from '../../shared/types';
 
 test('shows independent awards and every cost side by side, including honest non-winning states', async ({
   page,
@@ -102,6 +102,89 @@ test('shows independent awards and every cost side by side, including honest non
     expect(cells[0].top).toBeGreaterThan(date!.y + date!.height);
     await page.screenshot({
       path: `.impeccable/review/history-summary-${name}.png`,
+      fullPage: true,
+    });
+  }
+});
+
+test('shows the cheapest participant for all three rounds and explains incomplete costs', async ({
+  page,
+}, testInfo) => {
+  const base: BravaSummary = {
+    id: 'resilience-history',
+    kind: 'brava',
+    mode: 'live',
+    phase: 'complete',
+    createdAt: '2026-10-09T13:13:50Z',
+    items: 298,
+    winner: 'clef',
+    cheapest: ['jev'],
+  };
+  const bravas: BravaSummary[] = [
+    base,
+    { ...base, id: 'visual-history', kind: 'visual', items: 80, cheapest: ['decisions'] },
+    { ...base, id: 'visual-partial', kind: 'visual', items: 79, cheapest: [] },
+    { ...base, id: 'visual-tie', kind: 'visual', items: 78, cheapest: ['decisions', 'clef'] },
+    { ...base, id: 'visual-demo', kind: 'visual', items: 77, mode: 'demo', cheapest: [] },
+    {
+      ...base,
+      id: 'visual-cancelled',
+      kind: 'visual',
+      items: 76,
+      phase: 'cancelled',
+      cheapest: [],
+    },
+  ];
+  const series: SeriesSummary[] = [
+    {
+      id: 'marathon-history',
+      mode: 'live',
+      phase: 'complete',
+      createdAt: base.createdAt,
+      totalMeetings: 6,
+      completedMeetings: 6,
+      winner: 'clef',
+      cheapest: ['jev'],
+    },
+  ];
+  await page.route('**/api/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    return route.fulfill({
+      json:
+        path === '/api/bravas'
+          ? bravas
+          : path === '/api/series'
+            ? series
+            : path === '/api/health'
+              ? { keys: {}, models: {}, claude: { available: false } }
+              : [],
+    });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Histórico', exact: true }).click();
+  const row = (title: string) =>
+    page
+      .locator('.history-list article')
+      .filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+  await expect(row('Maratona de reuniões · 6 reuniões')).toContainText('Mais barato: Jev');
+  await expect(row('Resiliência · 298 testes')).toContainText('Mais barato: Jev');
+  await expect(row('Rodada das imagens · 80 fotos')).toContainText('Mais barato: Decisions');
+  await expect(row('Rodada das imagens · 79 fotos')).toContainText(
+    'Mais barato: não comparável (custos incompletos)',
+  );
+  await expect(row('Rodada das imagens · 78 fotos')).toContainText(
+    'Mais barato: Empate (Decisions, Clef)',
+  );
+  await expect(row('Rodada das imagens · 77 fotos')).not.toContainText('Mais barato:');
+  await expect(row('Rodada das imagens · 76 fotos')).not.toContainText('Mais barato:');
+  for (const width of [1440, 1075, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({
+      path: testInfo.outputPath(`history-economy-${width}.png`),
       fullPage: true,
     });
   }

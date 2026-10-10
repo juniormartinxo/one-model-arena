@@ -51,6 +51,7 @@ export type ProviderResult = {
   grade: Grade;
   request: unknown;
   raw?: unknown;
+  http?: { status: number; requestId: string | null; retryAfter: string | null };
 };
 export type RoundFeedback = {
   winner: Provider | 'tie' | 'inconclusive';
@@ -377,4 +378,5 @@ export type BravaSummary = Pick<Brava, 'id' | 'mode' | 'createdAt' | 'phase'> & 
   kind: BravaKind;
   items: number;
   winner: BravaReport['winner'] | null;
+  cheapest: Provider[];
 };

@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import sharp from 'sharp';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Provider, ProviderResult } from '../shared/types';
 import { buildVisualCatalog, translate, visualItems } from '../server/visual/catalog';
+import { imageDataUrl, imagePolicy } from '../server/visual/images';
 import { asRequest } from '../server/brava/catalog';
 import { evaluate, requestFor } from '../server/providers';
 import { gradeAnswer } from '../shared/scoring';
@@ -35,6 +37,14 @@ function engine() {
   const store = new Store(':memory:');
   stores.push(store);
   return new Engine(store);
+}
+async function oversizedPhoto() {
+  const original = await sharp({
+    create: { width: 640, height: 480, channels: 3, background: '#9b533e' },
+  })
+    .jpeg()
+    .toBuffer();
+  return Buffer.concat([original, Buffer.alloc(imagePolicy.maxBytes)]);
 }
 const liveKeys = {
   AUTOPLAY_DELAY_MS: 0,
@@ -100,6 +110,42 @@ describe('rodada das imagens catalog', () => {
         choices: ['1'],
       }),
     ).toThrow('unicorns');
+  });
+});
+
+describe('image transport preparation', () => {
+  it('preserves smaller photos byte for byte', async () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'photo-')), 'small.jpg');
+    writeFileSync(path, jpeg);
+    expect(await imageDataUrl(path)).toBe(photo);
+  });
+
+  it('bounds oversized payloads without changing dimensions or the original file', async () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'photo-')), 'large.jpg');
+    const original = await oversizedPhoto();
+    writeFileSync(path, original);
+    const first = await imageDataUrl(path);
+    const second = await imageDataUrl(path);
+    expect(first).toBe(second);
+    expect(first).toMatch(/^data:image\/webp;base64,/);
+    const prepared = Buffer.from(first.split(',')[1], 'base64');
+    expect(prepared.length).toBeLessThanOrEqual(imagePolicy.maxBytes);
+    expect(await sharp(prepared).metadata()).toMatchObject({ width: 640, height: 480 });
+    expect(readFileSync(path)).toEqual(original);
+  });
+
+  it('refuses a photo that still exceeds the budget after compression', async () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'photo-')), 'noise.png');
+    let seed = 123;
+    const pixels = Buffer.alloc(1024 * 1024 * 3);
+    for (let i = 0; i < pixels.length; i++) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      pixels[i] = seed >>> 24;
+    }
+    await sharp(pixels, { raw: { width: 1024, height: 1024, channels: 3 } })
+      .png()
+      .toFile(path);
+    await expect(imageDataUrl(path)).rejects.toThrow('excede 180 KiB');
   });
 });
 
@@ -227,6 +273,10 @@ describe('rodada das imagens execution', () => {
   });
   it('sends each photo, needs no TypeSafe key and keeps Opus blind to brands and photos', async () => {
     Object.assign(config, { ...liveKeys, DATA_DIR: withPhotos() });
+    const large = visualItems()[0];
+    const largePath = join(config.DATA_DIR, 'datasets', 'imagens', `${large.image!.file}.jpg`);
+    writeFileSync(largePath, await oversizedPhoto());
+    const prepared = await imageDataUrl(largePath);
     vi.spyOn(cli, 'cliStatus').mockResolvedValue({ available: true, authenticated: true });
     const apis = vi
       .spyOn(provider, 'evaluate')
@@ -252,7 +302,10 @@ describe('rodada das imagens execution', () => {
     });
     expect(apis).toHaveBeenCalledTimes(160);
     expect(
-      apis.mock.calls.every(([p, , , , , images]) => p !== 'jev' && images?.[0] === photo),
+      apis.mock.calls.every(
+        ([p, , round, , , images]) =>
+          p !== 'jev' && images?.[0] === (round.id === large.id ? prepared : photo),
+      ),
     ).toBe(true);
     expect(calls).toHaveBeenCalledTimes(6);
     for (const [role, prompt] of calls.mock.calls) {
@@ -264,7 +317,7 @@ describe('rodada das imagens execution', () => {
     const app = await buildApp(e);
     const image = await app.inject({ url: '/api/images/cvbench-21' });
     expect(image.headers['content-type']).toBe('image/jpeg');
-    expect(image.rawPayload).toEqual(jpeg);
+    expect(image.rawPayload).toEqual(readFileSync(largePath));
     expect((await app.inject({ url: '/api/images/..%2F..%2F.env' })).statusCode).toBe(400);
     await app.close();
     e.close();

@@ -4,3 +4,5 @@ data
 package-lock.json
 .impeccable
 test-results
+# Generated standalone recording edition; edit report/ and regenerate instead.
+reports/*.html

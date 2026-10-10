@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { summarizeRun } from '../shared/run-summary';
-import type { Run } from '../shared/types';
+import type { Brava, BravaKind, Run } from '../shared/types';
+import { buildBravaReport } from '../shared/brava-report';
 import { scenarios } from '../server/scenarios';
 import { demoResult } from '../server/demo';
 import { Store } from '../server/store';
@@ -34,7 +35,86 @@ function fixture(): Run {
   return run;
 }
 
+function bravaFixture(kind: BravaKind): Brava {
+  const run = fixture();
+  const participants = kind === 'visual' ? (['decisions', 'clef'] as const) : run.providers!;
+  const battery = kind === 'visual' ? 'contagem' : 'injecao';
+  const items: Brava['items'] = run.scenario.rounds.map((round) => ({
+    ...round,
+    battery,
+    context: '',
+  }));
+  const brava: Brava = {
+    id: run.id,
+    kind,
+    mode: 'live',
+    phase: 'complete',
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt,
+    providers: [...participants],
+    catalogHash: 'fixture',
+    batteries: [
+      {
+        id: battery,
+        title: 'Teste',
+        description: '',
+        unit: 'item',
+        itemIds: items.map((i) => i.id),
+      },
+    ],
+    items,
+    results: Object.fromEntries(
+      run.rounds.map((round) => [
+        round.roundId,
+        Object.fromEntries(participants.map((p) => [p, round.results[p]])),
+      ]),
+    ),
+    currentBattery: 0,
+    comments: {},
+    cliCalls: [],
+    tariff: run.tariff,
+  };
+  brava.report = buildBravaReport(brava, brava.providers);
+  return brava;
+}
+
 describe('saved history result and cost summary', () => {
+  it.each(['brava', 'visual'] as const)(
+    'serves the %s cost award, including ties and incomplete or synthetic costs',
+    async (kind) => {
+      const store = new Store(':memory:');
+      const engine = new Engine(store);
+      const app = await buildApp(engine);
+      try {
+        const brava = bravaFixture(kind);
+        const check = async (expected: Brava['providers']) => {
+          store.saveBrava(brava);
+          const before = store.getBrava(brava.id);
+          const response = await app.inject({ url: '/api/bravas' });
+          expect(response.statusCode).toBe(200);
+          expect(response.json()[0]).toMatchObject({ id: brava.id, kind, cheapest: expected });
+          expect(response.json()[0]).not.toHaveProperty('results');
+          expect(store.getBrava(brava.id)).toEqual(before);
+        };
+        await check([kind === 'visual' ? 'decisions' : 'jev']);
+        for (const byProvider of Object.values(brava.results))
+          for (const result of Object.values(byProvider)) result!.costUsd = 0.0001;
+        await check(brava.providers);
+        brava.results[brava.items[0].id].clef!.costUsd = null;
+        await check([]);
+        brava.results[brava.items[0].id].clef!.costUsd = 0.0001;
+        brava.mode = 'demo';
+        await check([]);
+        brava.mode = 'live';
+        brava.phase = 'cancelled';
+        await check([]);
+      } finally {
+        await app.close();
+        engine.close();
+        store.close();
+      }
+    },
+  );
   it('serves all saved costs and independent awards without changing evidence', async () => {
     const store = new Store(':memory:');
     const engine = new Engine(store);

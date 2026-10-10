@@ -8,12 +8,14 @@ colors:
   line: '#34393e'
   muted: '#a6adb3'
   ink: '#e9eae9'
-  jev: '#83ded3'
-  decisions: '#efc38d'
-  clef: '#9db0ff'
-  jev-mark: '#199e70'
-  decisions-mark: '#c98500'
-  clef-mark: '#3987e5'
+  accent: '#83ded3'
+  warning: '#efc38d'
+  jev: '#f08fc0'
+  decisions: '#e4e7ec'
+  clef: '#ffa657'
+  jev-mark: '#f08fc0'
+  decisions-mark: '#e4e7ec'
+  clef-mark: '#ffa657'
   opus: '#c8b9e9'
   success: '#b1d9b0'
   danger: '#f1aaa3'
@@ -26,19 +28,19 @@ colors:
 typography:
   display:
     fontFamily: 'Manrope Variable, sans-serif'
-    fontSize: '38px'
+    fontSize: '25px'
     fontWeight: 650
     lineHeight: 1.2
     letterSpacing: '-0.035em'
   headline:
     fontFamily: 'Manrope Variable, sans-serif'
-    fontSize: '27px'
+    fontSize: '20px'
     fontWeight: 650
     lineHeight: 1.35
     letterSpacing: '-0.025em'
   title:
     fontFamily: 'Manrope Variable, sans-serif'
-    fontSize: '21px'
+    fontSize: '20px'
     fontWeight: 650
     lineHeight: 1.3
     letterSpacing: '-0.025em'
@@ -50,7 +52,7 @@ typography:
     letterSpacing: '-0.035em'
   answer:
     fontFamily: 'Manrope Variable, sans-serif'
-    fontSize: '32px'
+    fontSize: '20px'
     letterSpacing: '-0.025em'
   body:
     fontFamily: 'DM Sans Variable, sans-serif'
@@ -151,7 +153,7 @@ O comentário do Opus ocupa uma superfície própria, abaixo das decisões. A in
 
 - Carvão opaco, contornos discretos e contraste de texto claro.
 - Duas identidades com a mesma estrutura, hierarquia e espaço.
-- Verde-água para Jev, âmbar para Decisions e lilás para Opus.
+- Rosa para Jev, branco/prata para Decisions, laranja para Clef e lilás para Opus.
 - Números tabulares e tipografia auto-hospedada.
 - Evidência sintética, execução real e replay identificados por texto.
 
@@ -163,11 +165,11 @@ A paleta combina neutros frios com três acentos dessaturados, cada um associado
 
 ### Primary
 
-- **Verde-água Jev** (`jev`): identidade, escore, resposta e barras do Jev; também marca, navegação ativa e foco do teclado.
+- **Rosa Jev** (`jev`): identidade, escore, resposta e barras do Jev. Marca, navegação ativa e foco usam o token separado `accent`.
 
 ### Secondary
 
-- **Âmbar Decisions** (`decisions`): identidade, escore, resposta e barras de Decisions. Também identifica ensaio sintético, revisão humana e conexão pendente, sempre acompanhado de texto.
+- **Branco/prata Decisions** (`decisions`): identidade, escore, resposta e barras de Decisions. Ensaio sintético, revisão humana e conexão pendente usam `warning` em âmbar, sempre com texto. **Laranja Clef** (`clef`) identifica o terceiro participante.
 - **Verde de aderência** (`success`): resposta aderente ao gabarito, rodada concluída, execução real e conexão detectada.
 - **Coral de divergência** (`danger`): divergência, erro e indisponibilidade; o texto distingue esses estados.
 
@@ -196,14 +198,13 @@ As rampas tonais no sidecar servem à prévia do painel de design. São derivaç
 
 **Display Font:** Manrope Variable, com fallback sans-serif. **Body Font:** DM Sans Variable, com fallback sans-serif. Ambas são importadas de `@fontsource-variable` em `src/main.tsx` e servidas no próprio build; não há solicitação de fonte a CDN externa. O código técnico usa a pilha monoespaçada do frontmatter.
 
-A Manrope concentra títulos, nomes, respostas e escores. A DM Sans mantém perguntas auxiliares, probabilidades, comentários e controles legíveis. Títulos usam composição balanceada; as medidas do frontmatter não constituem uma escala matemática inventada.
+A Manrope concentra títulos, nomes, respostas e escores. A DM Sans mantém perguntas auxiliares, probabilidades, comentários e controles legíveis. Títulos e textos explicativos aproveitam toda a largura útil de seu contêiner, sem limites adicionais em caracteres ou pixels.
 
-- **Display:** título da arena e títulos de página; no celular passa a 29px.
-- **Headline:** pergunta comum; passa a 30px em telas de pelo menos 1600px e no modo gravação, ou 23px até 680px.
-- **Title:** nome do concorrente; passa a 17px até 680px.
+- **Display:** todos os títulos `h1` usam 25px.
+- **Headline / Title:** todos os títulos `h2` a `h6` usam 20px, incluindo perguntas, nomes dos concorrentes e títulos de boletins.
 - **Score:** escore acumulado; passa a 39px até 1020px e 38px até 680px.
-- **Answer:** decisão exibida em destaque; passa a 24px até 680px.
-- **Body:** fatos e texto de método, com entrelinha de 1,6; a prosa limita parágrafos a 75ch e os fatos a 100ch. Comentários do Opus usam 14px normalmente, 16px em telas largas, 17px na gravação e 13px no celular.
+- **Answer:** decisão exibida em `h3`, com 20px.
+- **Body:** fatos, contextos, textos de método e comentários do Opus usam 15px. Os parágrafos aproveitam toda a largura útil do painel, com entrelinha de 1,6 por padrão. Essa escala é a mesma no desktop, no celular, no modo gravação e no replay.
 - **Label / Button:** metadados e ações compactas. Probabilidades, rodadas, escores e valores de métricas usam números tabulares.
 
 **The Numeric Stability Rule.** Escores, percentuais, contagem de rodadas e métricas mantêm números tabulares para reduzir deslocamentos durante a comparação.
@@ -212,13 +213,13 @@ A Manrope concentra títulos, nomes, respostas e escores. A DM Sans mantém perg
 
 O contêiner principal é centralizado, com largura máxima de 1320px e padding de 38px 42px 56px. A partir de 1600px, sua largura máxima é 1440px. O cabeçalho tem 86px de altura; bordas horizontais organizam navegação, sessão e listas.
 
-Na arena, a pergunta precede a grade de participantes. A grade usa uma coluna `minmax(0, 1fr)` por participante (três nas reuniões novas, duas nos replays antigos), com intervalo de 22px, para conservar a equivalência entre os lados. O selo “VS” só aparece com dois participantes. O Clef usa `#9db0ff`. Barras de gráfico usam a trinca validada para daltonismo `#199e70` (Jev), `#c98500` (Decisions) e `#3987e5` (Clef); nomes e números continuam nos tons pastel. O comentário do Opus usa a largura conjunta e aparece após as respostas. Rodadas e ações ficam abaixo do comentário.
+Na arena, a pergunta precede a grade de participantes. A grade usa uma coluna `minmax(0, 1fr)` por participante (três nas reuniões novas, duas nos replays antigos), com intervalo de 22px, para conservar a equivalência entre os lados. O selo “VS” só aparece com dois participantes. O Clef usa `#ffa657`. Barras, nomes e números seguem a referência visual do vídeo: rosa `#f08fc0` (Jev), branco/prata `#e4e7ec` (Decisions) e laranja `#ffa657` (Clef). Rótulos e posições identificam cada série além da cor; não há alegação de validação específica para daltonismo desta nova paleta. O comentário do Opus usa a largura conjunta e aparece após as respostas. Rodadas e ações ficam abaixo do comentário.
 
 Até 1020px, as margens internas da página caem para 24px; os painéis usam 18px nas laterais, as ações iniciais passam a uma coluna e as métricas dos concorrentes a duas. Até 860px, a grade empilha os participantes numa coluna. Até 680px, a página usa laterais de 18px e o intervalo da grade cai para 12px; replays antigos continuam com duas colunas lado a lado. Até 600px, o placar final também empilha. Nome e placar se reorganizam dentro de cada painel; métricas passam a uma coluna. A sessão, navegação, veredito e controles quebram linha. A linha do tempo e os controles de replay ocupam linhas próprias, centralizadas.
 
-O modo gravação amplia o contêiner a 1500px, usa 24px no topo e remove cabeçalho, rodapé, notas de medição e detalhes expansíveis de contexto e gabarito. Mantém a origem da sessão, o aviso do ensaio, os concorrentes, o comentário e os controles. A pergunta ganha padding vertical de 18px; respostas usam mínimo de 230px e padding vertical de 18px; painel do Opus e controles usam separação de 16px. Esses valores compactam espaços vazios enquanto fatos e comentário ganham tamanho. Conteúdo variável continua no fluxo da página; a interface não estabelece uma altura fixa de slide.
+O modo gravação amplia o contêiner a 1500px, usa 24px no topo e remove cabeçalho, rodapé, notas de medição e detalhes expansíveis de contexto e gabarito. Mantém a origem da sessão, o aviso do ensaio, os concorrentes, o comentário e os controles. A pergunta ganha padding vertical de 18px; respostas usam mínimo de 230px e padding vertical de 18px; painel do Opus e controles usam separação de 16px. Esses valores compactam espaços vazios, mantendo a mesma escala tipográfica entre os modos. Conteúdo variável continua no fluxo da página; a interface não estabelece uma altura fixa de slide.
 
-As páginas de método e conexões usam uma coluna de leitura de até 900px. Histórico e conexões usam listas com divisórias, sem repetir a composição de competição fora da arena.
+As páginas de método e conexões aproveitam a largura do contêiner principal. Histórico e conexões usam listas com divisórias, sem repetir a composição de competição fora da arena.
 
 ## Elevation & Depth
 
@@ -293,3 +294,5 @@ A linha do tempo usa botões de 32px, com intervalo de 7px. O selecionado combin
 - **Don't** apresentar ensaio como evidência de qualidade dos modelos ou replay como nova execução.
 - **Don't** substituir a leitura equivalente dos concorrentes por um destaque unilateral de marca.
 - **Don't** ocultar rótulos de origem para ganhar espaço na gravação.
+
+A referência visual enviada para o vídeo em 09/10/2026 define as cores dos participantes. O HTML do relatório foi ajustado diretamente para preservar a edição manual, os ícones `.ico-step` e o giro `coin-spin`. Para impressão, os tons são rosa `#9d2463`, cinza-prata `#4b5563` e laranja `#a14b00`, com contraste em papel claro.

@@ -1,8 +1,8 @@
 export const repository = 'https://github.com/juniormartinxo/one-model-arena';
 export const models = {
-  jev: { name: 'Jev', vendor: 'TypeSafe', color: '#83ded3', mark: 'J' },
-  decisions: { name: 'Decisions', vendor: 'OpenAI', color: '#efc38d', mark: 'D' },
-  clef: { name: 'Clef', vendor: 'Cloudflare', color: '#9db0ff', mark: 'C' },
+  jev: { name: 'Jev', vendor: 'TypeSafe', color: '#f08fc0', mark: 'J' },
+  decisions: { name: 'Decisions', vendor: 'OpenAI', color: '#e4e7ec', mark: 'D' },
+  clef: { name: 'Clef', vendor: 'Cloudflare', color: '#ffa657', mark: 'C' },
 } as const;
 export const tests = [
   {

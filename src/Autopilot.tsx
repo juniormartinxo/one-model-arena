@@ -1,16 +1,48 @@
 import { useEffect, useState } from 'react';
 import { Check, LoaderCircle, Square, Timer } from 'lucide-react';
-import type { Run, Scenario, Series } from '../shared/types';
+import type { BravaView, Run, Scenario, Series } from '../shared/types';
 
-// Seconds left until an ISO instant, refreshed a few times per second.
+function secondsUntil(until?: string) {
+  const remaining = until ? Date.parse(until) - Date.now() : NaN;
+  return Number.isFinite(remaining) ? Math.max(0, Math.ceil(remaining / 1000)) : null;
+}
+
+// Follow the server's deadline without rerendering the battery grid on every clock tick.
 export function useCountdown(until?: string) {
-  const [now, setNow] = useState(() => Date.now());
+  const [clock, setClock] = useState(() => ({ until, seconds: secondsUntil(until) }));
   useEffect(() => {
-    if (!until) return;
-    const timer = setInterval(() => setNow(Date.now()), 250);
+    const update = () => {
+      const seconds = secondsUntil(until);
+      setClock((previous) =>
+        previous.until === until && previous.seconds === seconds ? previous : { until, seconds },
+      );
+      return seconds;
+    };
+    if (!update()) return;
+    const timer = setInterval(() => {
+      if (!update()) clearInterval(timer);
+    }, 100);
     return () => clearInterval(timer);
   }, [until]);
-  return until ? Math.max(0, Math.ceil((Date.parse(until) - now) / 1000)) : null;
+  // A new deadline must not reuse the previous pause's clock on its first render.
+  return clock.until === until ? clock.seconds : secondsUntil(until);
+}
+
+export function CountdownOverlay({ until, label }: { until?: string; label: string }) {
+  const seconds = useCountdown(until);
+  if (seconds === null || seconds === 0) return null;
+  return (
+    <div className="countdown-overlay" role="timer" aria-label={`${label}: ${seconds} segundos`}>
+      <span key={`${until}-${seconds}`} className="countdown-number" aria-hidden="true">
+        {seconds}
+      </span>
+    </div>
+  );
+}
+
+export function batteryCountdownLabel(brava: BravaView) {
+  if (brava.phase === 'preparing') return 'Começa';
+  return brava.currentBattery === brava.batteries.length - 1 ? 'Boletim' : 'Próxima bateria';
 }
 
 const activity: Partial<Record<Run['phase'], string>> = {

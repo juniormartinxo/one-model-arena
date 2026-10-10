@@ -1,0 +1,109 @@
+#brier-ece .lesson-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 36px;
+}
+#brier-ece .metric-lesson > h2:not(:first-child) {
+  margin-top: 36px;
+}
+#brier-ece .metric-lesson p {
+  font-size: 15px;
+}
+#brier-ece .calculation-steps {
+  padding-left: 24px;
+  margin: 18px 0;
+}
+#brier-ece .calculation-steps li {
+  padding-left: 6px;
+  margin: 10px 0;
+}
+#brier-ece .calculation-steps li::marker {
+  color: var(--accent);
+  font-weight: 650;
+}
+#brier-ece .formula-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 18px 0;
+  margin: 22px 0 14px;
+  border-block: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+#brier-ece .formula-strip strong {
+  color: var(--accent);
+  font-size: 18px;
+}
+#brier-ece .formula-strip span {
+  color: var(--muted);
+}
+#brier-ece .lesson-table {
+  margin: 20px 0;
+}
+#brier-ece .lesson-table caption {
+  text-align: left;
+  padding: 0 0 12px;
+  color: var(--muted);
+}
+#brier-ece .lesson-table td,
+#brier-ece .lesson-table th {
+  font-variant-numeric: tabular-nums;
+}
+#brier-ece .lesson-table tfoot th,
+#brier-ece .lesson-table tfoot td {
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+#brier-ece .lesson-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+}
+#brier-ece .lesson-select select {
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid #626970;
+  border-radius: 7px;
+  max-width: 100%;
+  min-width: 0;
+}
+#brier-ece .metric-lesson code {
+  overflow-wrap: anywhere;
+}
+#brier-ece .ece-demo {
+  margin-block: 30px;
+}
+#brier-ece .metric-lesson .calibration-figure svg {
+  max-height: 265px;
+}
+
+@media (max-width: 1100px) {
+  #brier-ece .lesson-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+@media (max-width: 600px) {
+  #brier-ece .lesson-select {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  #brier-ece .lesson-select select {
+    width: 100%;
+  }
+  #brier-ece .brier-calculation {
+    flex-wrap: wrap;
+  }
+}
+@media print {
+  #brier-ece [data-metric-group][hidden] {
+    display: block !important;
+  }
+}

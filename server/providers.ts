@@ -96,6 +96,38 @@ function unwrap(provider: Provider, raw: unknown) {
 function cloudflareError(errors: { message: string }[]) {
   return errors[0]?.message.slice(0, 300);
 }
+function httpError(provider: Provider, status: number, raw: unknown) {
+  const cf = provider === 'clef' ? cloudflare.safeParse(raw).data?.errors[0] : undefined;
+  const generic = z.object({ error: z.object({ message: z.string() }) }).safeParse(raw);
+  const detail =
+    cf?.message.slice(0, 300) ??
+    (generic.success ? generic.data.error.message.slice(0, 300) : undefined);
+  let message = 'A API recusou a chamada.';
+  if (status === 401 || (provider === 'clef' && status === 403))
+    message = 'Confira as credenciais no .env.';
+  else if (status === 413) message = 'A requisição excedeu o limite de tamanho ou contexto da API.';
+  else if (status === 429) {
+    message = 'Limite de chamadas ou de uso da API atingido.';
+    if (cf?.code === 3040 || /capacity temporarily exceeded/i.test(detail ?? ''))
+      message = 'Capacidade do provedor temporariamente esgotada.';
+    else if (cf?.code === 3036 || /daily free allocation/i.test(detail ?? ''))
+      message = 'Cota gratuita diária do provedor esgotada.';
+  } else if (status === 504) message = 'Tempo limite no serviço do provedor (gateway timeout).';
+  else if (status >= 500) message = 'Falha no serviço do provedor.';
+  return `HTTP ${status}. ${message}${detail ? ` ${detail}` : ''} Sem retentativa automática.`;
+}
+
+async function readErrorBody(response: Response): Promise<unknown> {
+  const text = await response.text().catch(() => '');
+  // Gateways can return HTML instead of the provider's JSON error contract.
+  // Keep a bounded body for diagnosis without turning HTTP 504 into a JSON parse error.
+  if (text.length > 16_384) return { text: text.slice(0, 16_384), truncated: true };
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text || undefined;
+  }
+}
 function endpoint(provider: Provider) {
   if (provider === 'jev') return 'https://api.typesafe.ai/v1/systemone';
   if (provider === 'decisions') return 'https://api.openai.com/v1/decisions';
@@ -217,6 +249,7 @@ export async function evaluate(
   const request = images.length ? (withoutImages(sent) as typeof sent) : sent;
   const started = performance.now();
   let raw: unknown;
+  let http: ProviderResult['http'];
   try {
     const res = await fetcher(endpoint(provider), {
       method: 'POST',
@@ -224,17 +257,14 @@ export async function evaluate(
       body: JSON.stringify(sent),
       signal: AbortSignal.any([signal, AbortSignal.timeout(config.PROVIDER_TIMEOUT_MS)]),
     });
+    http = {
+      status: res.status,
+      requestId: res.headers.get('x-request-id') ?? res.headers.get('cf-ray'),
+      retryAfter: res.headers.get('retry-after'),
+    };
     if (!res.ok) {
-      // Cloudflare explains quota and permission failures in the body, e.g. the daily free allocation.
-      const detail =
-        provider === 'clef'
-          ? cloudflareError(
-              cloudflare.safeParse(await res.json().catch(() => null)).data?.errors ?? [],
-            )
-          : undefined;
-      throw new Error(
-        `HTTP ${res.status}. ${res.status === 401 || (provider === 'clef' && res.status === 403) ? 'Confira as credenciais no .env.' : res.status === 429 ? 'Limite de chamadas atingido.' : 'A API recusou a chamada.'}${detail ? ` ${detail}` : ''} Sem retentativa automática.`,
-      );
+      raw = await readErrorBody(res);
+      throw new Error(httpError(provider, res.status, raw));
     }
     const text = await res.text();
     if (text.length > 1_000_000) throw new Error('Resposta excede o limite de tamanho.');
@@ -248,6 +278,7 @@ export async function evaluate(
       grade: gradeAnswer(round.question, result.answer),
       request,
       raw,
+      http,
     };
   } catch (error) {
     const known = raw
@@ -273,6 +304,7 @@ export async function evaluate(
       grade: gradeAnswer(round.question),
       request,
       raw,
+      http,
     };
   }
 }

@@ -163,6 +163,17 @@ export class BravaRunner {
         brava.currentBattery = index;
         brava.phase = 'running';
         this.persist(brava, true);
+        // Prepare once per battery so both APIs receive identical bytes. Refuse
+        // oversized inputs before its provider calls; retain only this battery.
+        const images = new Map<string, string>();
+        if (live && visual) {
+          for (const id of battery.itemIds) {
+            signal.throwIfAborted();
+            const item = brava.items.find((i) => i.id === id)!;
+            images.set(id, await imageDataUrl(photos.get(item.image!.file)!));
+          }
+        }
+        signal.throwIfAborted();
         const tasks = battery.itemIds.flatMap((id) => brava.providers.map((p) => ({ id, p })));
         // A small pool per provider keeps every API under a modest, equal request rate.
         await Promise.all(
@@ -172,7 +183,6 @@ export class BravaRunner {
               for (let t = mine.shift(); t; t = mine.shift()) {
                 const item = brava.items.find((i) => i.id === t.id)!;
                 const { scenario, round } = asRequest(item);
-                // Each photo is read when its question is sent, not kept in memory for the round.
                 const result = live
                   ? await evaluate(
                       t.p,
@@ -180,7 +190,7 @@ export class BravaRunner {
                       round,
                       signal,
                       fetch,
-                      item.image ? [imageDataUrl(photos.get(item.image.file)!)] : [],
+                      item.image ? [images.get(item.id)!] : [],
                     )
                   : demoAnswer(t.p, item);
                 if (pace) await new Promise((r) => setTimeout(r, pace));

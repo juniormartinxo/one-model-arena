@@ -44,6 +44,19 @@ export async function buildApp(engine: Engine) {
     reply.code(400).send({ error: message });
   });
   app.get('/api/health', () => engine.health());
+  // The recording edition belongs to the local studio, outside the public-site build.
+  app.get('/relatorio-conclusao.html', (_req, reply) => {
+    const report = resolve('reports/relatorio-conclusao.html');
+    if (!existsSync(report))
+      return reply
+        .code(404)
+        .type('text/plain; charset=utf-8')
+        .send('Relatório ainda não gerado. Execute npm run report:export no estúdio.');
+    return reply
+      .type('text/html; charset=utf-8')
+      .header('Cache-Control', 'no-cache')
+      .send(readFileSync(report));
+  });
   app.get('/api/scenarios', () => scenarios);
   app.get('/api/runs', () => engine.store.list());
   app.delete('/api/runs', () => ({ removed: engine.store.clearHistory() }));

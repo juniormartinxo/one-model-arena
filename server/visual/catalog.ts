@@ -6,13 +6,14 @@ import {
   cvbenchInfo,
   imagesDir,
   samplePath,
-  typeOfExtension,
   type CvSample,
   type CvSampleItem,
   type CvTask,
 } from './sample';
+import { imagePolicy } from './images';
 
 export { visualProviders } from '../../shared/types';
+export { imageDataUrl } from './images';
 
 type VisualBatteryId = Extract<
   BravaBattery['id'],
@@ -280,10 +281,6 @@ export function imageFiles(dataDir: string) {
   if (!existsSync(dir)) return new Map<string, string>();
   return new Map(readdirSync(dir).map((f) => [f.replace(/\.\w+$/, ''), join(dir, f)]));
 }
-export function imageDataUrl(path: string) {
-  const type = typeOfExtension[path.split('.').pop()!];
-  return `data:${type};base64,${readFileSync(path).toString('base64')}`;
-}
 
 export function buildVisualCatalog(dataDir: string) {
   const items = visualItems();
@@ -296,6 +293,6 @@ export function buildVisualCatalog(dataDir: string) {
     };
   });
   const missing = items.filter((i) => !files.has(i.image!.file)).length;
-  const hash = createHash('sha256').update(JSON.stringify(items)).digest('hex');
+  const hash = createHash('sha256').update(JSON.stringify({ items, imagePolicy })).digest('hex');
   return { items, batteries, missing, hash };
 }

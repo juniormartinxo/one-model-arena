@@ -31,7 +31,7 @@ import {
   revealParticipants,
   roundNames,
 } from '../shared/presentation';
-import { useCountdown } from './Autopilot';
+import { batteryCountdownLabel, useCountdown } from './Autopilot';
 import { BarRows, CountUp, Section, seconds, usd } from './SeriesReport';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -205,9 +205,7 @@ export function BravaLive({
                 <LoaderCircle size={14} className="spin" />
               )}
               {countdown !== null
-                ? brava.currentBattery === 0 && !Object.keys(brava.results).length
-                  ? `Começa em ${countdown} s`
-                  : `Próxima bateria em ${countdown} s`
+                ? `${batteryCountdownLabel(brava)} em ${countdown} s`
                 : (phaseText[brava.phase] ?? '')}
             </span>
           )}

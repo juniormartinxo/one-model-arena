@@ -52,8 +52,8 @@ import { api } from './api';
 import { Competitor, names, money } from './Competitor';
 import { FinalVerdict, VerdictDialog } from './FinalResult';
 import { HistorySummary } from './HistorySummary';
-import { SeriesProgress } from './Autopilot';
-import { enterFullscreen, exitFullscreen, useFitToScreen } from './recording';
+import { batteryCountdownLabel, CountdownOverlay, SeriesProgress } from './Autopilot';
+import { enterFullscreen, exitFullscreen } from './recording';
 import { SeriesReportDialog, SeriesReportView } from './SeriesReport';
 import { BravaLive, BravaReportDialog, BravaReportView } from './Brava';
 import { revealParticipants, roundNames } from '../shared/presentation';
@@ -73,6 +73,12 @@ import {
 } from './Spaces';
 const terminal = (run: Pick<Run, 'phase'>) =>
   ['complete', 'failed', 'cancelled'].includes(run.phase);
+const cheapestName = (cheapest: SeriesSummary['cheapest'] = []) =>
+  cheapest.length === 1
+    ? names[cheapest[0]]
+    : cheapest.length > 1
+      ? `Empate (${cheapest.map((p) => names[p]).join(', ')})`
+      : 'não comparável (custos incompletos)';
 const phaseNames: Record<Run['phase'], string> = {
   preparing: 'Opus prepara a reunião',
   ready: 'Pronto para a próxima rodada',
@@ -134,8 +140,6 @@ export function App() {
   const seriesRunning = series?.phase === 'running';
   const bravaRunning = !!brava && !['complete', 'cancelled', 'failed'].includes(brava.phase);
   const historyRequest = useRef(0);
-  const stageRef = useRef<HTMLElement>(null);
-  const zoom = useFitToScreen(stageRef, recording);
   const record = useCallback((on: boolean) => {
     setRecording(on);
     if (on) enterFullscreen();
@@ -272,23 +276,6 @@ export function App() {
     }
     if (series && series.phase !== 'running') void refreshHistory().catch(() => {});
   }, [series?.id, series?.phase, refreshHistory]);
-  // In automatic meetings the page follows the action: question, answers, then commentary.
-  useEffect(() => {
-    if (!run?.autoplay || replay || !seriesRunning) return;
-    const target =
-      run.phase === 'evaluating'
-        ? '.question-section'
-        : run.phase === 'commenting'
-          ? '.competition-grid'
-          : run.phase === 'ready' && run.rounds.length
-            ? '.opus-panel'
-            : null;
-    if (target)
-      document.querySelector(target)?.scrollIntoView({
-        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: target === '.question-section' ? 'start' : 'center',
-      });
-  }, [run?.id, run?.phase, run?.rounds.length, replay, seriesRunning]);
   useEffect(() => {
     if (!run || terminal(run) || replay || seriesRunning) return;
     const source = new EventSource(`/api/runs/${run.id}/events`);
@@ -508,6 +495,15 @@ export function App() {
   const space = isSpace(view) ? view : null;
   // The loaded session shows only in its own space; any other space shows its own setup.
   const here = !!space && space === sessionSpace;
+  const countdown = !here
+    ? null
+    : seriesRunning && series?.nextStartAt
+      ? { until: series.nextStartAt, label: 'Próxima reunião' }
+      : !replay && run?.autoplay && run.phase === 'ready' && run.nextAdvanceAt
+        ? { until: run.nextAdvanceAt, label: run.rounds.length ? 'Próxima rodada' : 'Começa' }
+        : bravaRunning && brava?.nextAt
+          ? { until: brava.nextAt, label: batteryCountdownLabel(brava) }
+          : null;
   const shown = here ? run : null;
   const at = shown ? cursor : 0;
   const scenario = shown?.scenario ?? scenarios.find((s) => s.id === scenarioId);
@@ -570,6 +566,9 @@ export function App() {
           {h.phase === 'complete' && h.mode === 'live'
             ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
             : ''}
+          {h.phase === 'complete' && h.mode === 'live'
+            ? ` · Mais barato: ${cheapestName(h.cheapest)}`
+            : ''}
         </p>
       </div>
       <div className="history-actions">
@@ -599,7 +598,9 @@ export function App() {
           {h.phase === 'complete' && h.mode === 'live'
             ? ` · Vencedor: ${winnerName(h.winner ?? 'inconclusive')}`
             : ''}
-          {h.cheapest.length === 1 ? ` · Mais barato: ${names[h.cheapest[0]]}` : ''}
+          {h.phase === 'complete' && h.mode === 'live'
+            ? ` · Mais barato: ${cheapestName(h.cheapest)}`
+            : ''}
         </p>
       </div>
       <div className="history-actions">
@@ -700,7 +701,7 @@ export function App() {
       demoReady: scenarios.length > 0,
       onLive: () => startSeries('live'),
       onDemo: () => startSeries('demo'),
-      readyText: 'Execução real usa Jev, Decisions, Clef e seu Claude CLI.',
+      readyText: 'Execução real usa Jev, Decisions, Clef e Claude Code usando a CLI.',
     },
     brava: {
       headline: 'Resiliência: quase 300 testes por modelo',
@@ -713,7 +714,7 @@ export function App() {
       demoReady: true,
       onLive: () => startBrava('live'),
       onDemo: () => startBrava('demo'),
-      readyText: 'Execução real usa Jev, Decisions, Clef e seu Claude CLI.',
+      readyText: 'Execução real usa Jev, Decisions, Clef e Claude Code usando a CLI.',
     },
     imagens: {
       headline: 'Rodada das imagens: Decisions × Clef em 80 fotos reais',
@@ -726,7 +727,7 @@ export function App() {
       demoReady: true,
       onLive: () => startBrava('live', 'visual'),
       onDemo: () => startBrava('demo', 'visual'),
-      readyText: 'Execução real usa Decisions, Clef e seu Claude CLI.',
+      readyText: 'Execução real usa Decisions, Clef e Claude Code usando a CLI.',
     },
   };
   const sessionBar = (
@@ -937,7 +938,7 @@ export function App() {
             </div>
             {setupHint(
               !!health?.ready,
-              'Execução real usa Jev, Decisions, Clef e seu Claude CLI. Avance uma rodada de cada vez.',
+              'Execução real usa Jev, Decisions, Clef e Claude Code usando a CLI. Avance uma rodada de cada vez.',
             )}
           </section>
           {stage}
@@ -1190,6 +1191,7 @@ export function App() {
   );
   return (
     <div className={`app ${recording ? 'recording' : ''}`}>
+      {countdown && !verdictOpen && <CountdownOverlay {...countdown} />}
       {run?.phase === 'complete' && run.verdict && (
         <VerdictDialog
           run={run}
@@ -1267,13 +1269,17 @@ export function App() {
               {item.short && <span className="nav-short">{item.short}</span>}
             </button>
           ))}
+          <a className="nav-link" href="/relatorio-conclusao.html">
+            <Trophy size={16} />
+            <span>Conclusão</span>
+          </a>
         </nav>
         <span className="local-label">
           <span className="status-dot" />
           Estúdio local
         </span>
       </header>
-      <main ref={stageRef} style={recording && zoom < 1 ? { zoom } : undefined}>
+      <main>
         {error && (
           <div className="notice error" role="alert">
             <TriangleAlert size={18} />

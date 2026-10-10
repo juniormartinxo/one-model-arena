@@ -125,6 +125,7 @@ export class Store {
           phase: b.phase,
           items: b.items.length,
           winner: b.report?.winner ?? null,
+          cheapest: b.mode === 'live' && b.phase === 'complete' ? (b.report?.cheapest ?? []) : [],
         };
       });
   }

@@ -11,19 +11,26 @@
   --line: #34393e;
   --muted: #a6adb3;
   --ink: #e9eae9;
-  --jev: #83ded3;
-  --decisions: #efc38d;
-  --clef: #9db0ff;
-  /* Chart marks: one validated categorical trio for bars and fills (dataviz validator, dark). */
-  --jev-mark: #199e70;
-  --decisions-mark: #c98500;
-  --clef-mark: #3987e5;
+  --accent: #83ded3;
+  --warning: #efc38d;
+  --jev: #f08fc0;
+  --decisions: #e4e7ec;
+  --clef: #ffa657;
+  /* Provider colors follow the video artwork; labels also identify each series. */
+  --jev-mark: var(--jev);
+  --decisions-mark: var(--decisions);
+  --clef-mark: var(--clef);
   --opus: #c8b9e9;
   --success: #b1d9b0;
   --danger: #f1aaa3;
   --font-heading: 'Manrope Variable', sans-serif;
+  --font-size-page-title: 25px;
+  --font-size-heading: 20px;
+  --font-size-body: 15px;
   --radius: 14px;
   color-scheme: dark;
+  /* Keep the frame stable when a longer round or the final report needs scrolling. */
+  scrollbar-gutter: stable;
 }
 * {
   box-sizing: border-box;
@@ -67,7 +74,7 @@ button:focus-visible,
 a:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--jev);
+  outline: 2px solid var(--accent);
 }
 a {
   color: inherit;
@@ -85,26 +92,40 @@ button {
 h1,
 h2,
 h3,
+h4,
+h5,
+h6,
 p {
   margin: 0;
 }
 h1,
 h2,
-h3 {
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
-  text-wrap: balance;
+  text-wrap: wrap;
+  overflow-wrap: anywhere;
 }
 h1 {
-  font-size: 38px;
+  font-size: var(--font-size-page-title);
   line-height: 1.2;
   letter-spacing: -0.035em;
   font-weight: 650;
 }
-h2 {
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-heading);
   font-weight: 650;
 }
 p {
+  font-size: var(--font-size-body);
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 small {
   line-height: 1.5;
@@ -153,7 +174,7 @@ pre {
   object-fit: contain;
 }
 .brand-dot {
-  color: var(--jev);
+  color: var(--accent);
 }
 nav {
   display: flex;
@@ -184,7 +205,7 @@ nav {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--jev);
+  background: var(--accent);
 }
 .local-label {
   font-size: 12px;
@@ -202,7 +223,7 @@ nav {
   background: currentColor;
 }
 .local-label .status-dot {
-  color: var(--jev);
+  color: var(--accent);
 }
 main {
   max-width: 1320px;
@@ -232,7 +253,7 @@ main {
 }
 .arena-heading p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   margin-top: 8px;
 }
 .versus {
@@ -311,7 +332,7 @@ main {
   color: var(--success);
 }
 .session-mode.demo {
-  color: var(--decisions);
+  color: var(--warning);
 }
 .session-mode.standby {
   color: var(--muted);
@@ -335,7 +356,7 @@ main {
 }
 .demo-disclosure {
   font-size: 12px;
-  color: var(--decisions);
+  color: var(--warning);
   padding-top: 12px;
 }
 .setup {
@@ -381,7 +402,7 @@ main {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--jev);
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 3px;
   font-size: inherit;
@@ -400,7 +421,7 @@ main {
 .question-meta > span:first-child {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--jev);
+  color: var(--accent);
 }
 .question-type {
   margin-left: auto;
@@ -411,15 +432,12 @@ main {
   font-size: 10px;
 }
 .question-section h2 {
-  font-size: 27px;
   letter-spacing: -0.025em;
   line-height: 1.35;
-  max-width: 950px;
 }
 .facts {
-  font-size: 15px;
+  font-size: var(--font-size-body);
   color: #b9c0c6;
-  max-width: 100ch;
   margin-top: 14px;
 }
 .moderator-transition {
@@ -436,8 +454,7 @@ main {
 .context-detail {
   margin-top: 14px;
   color: var(--muted);
-  font-size: 12px;
-  max-width: 90ch;
+  font-size: var(--font-size-body);
 }
 summary {
   cursor: pointer;
@@ -492,7 +509,6 @@ details[open] > summary {
   font: 650 23px var(--font-heading);
 }
 .competitor-heading h2 {
-  font-size: 21px;
   line-height: 1.3;
   letter-spacing: -0.025em;
 }
@@ -553,7 +569,6 @@ details[open] > summary {
   color: var(--muted);
 }
 .answer-empty h3 {
-  font-size: 16px;
   color: var(--ink);
   font-weight: 500;
 }
@@ -580,10 +595,9 @@ details[open] > summary {
   color: var(--danger);
 }
 .result-tag.uncertain {
-  color: var(--decisions);
+  color: var(--warning);
 }
 .answer-value {
-  font-size: 32px;
   letter-spacing: -0.025em;
   color: var(--team);
   margin: 13px 0 19px;
@@ -667,7 +681,6 @@ details[open] > summary {
   place-items: center;
 }
 .opus-heading h2 {
-  font-size: 14px;
   line-height: 1.4;
 }
 .opus-heading > div > span {
@@ -696,9 +709,11 @@ details[open] > summary {
 }
 .opus-copy {
   margin: 14px 0 16px;
-  font-size: 14px;
+  font-size: var(--font-size-body);
   color: #d4ccdf;
-  max-width: 105ch;
+}
+.opus-copy > p {
+  font-size: var(--font-size-body);
 }
 .opus-copy small {
   display: block;
@@ -810,13 +825,11 @@ details[open] > summary {
   color: var(--result-accent);
 }
 .final-title h2 {
-  font-size: clamp(27px, 3vw, 36px);
   letter-spacing: -0.02em;
 }
 .final-verdict p {
   color: #c8ccd0;
-  font-size: 14px;
-  max-width: 85ch;
+  font-size: var(--font-size-body);
 }
 .final-verdict .final-subtitle {
   margin-top: 12px;
@@ -895,11 +908,10 @@ details[open] > summary {
   gap: 10px;
   align-items: center;
   color: var(--opus);
-  font-size: 16px;
   margin-bottom: 12px;
 }
 .final-analysis > p {
-  font-size: 16px;
+  font-size: var(--font-size-body);
   line-height: 1.7;
   color: #d4d8da;
   white-space: pre-wrap;
@@ -963,15 +975,13 @@ details[open] > summary {
 }
 .verdict-hero h2 {
   color: var(--result-accent);
-  font-size: clamp(34px, 5vw, 60px);
   line-height: 1.1;
   letter-spacing: -0.035em;
-  text-wrap: balance;
 }
 .verdict-hero > p {
   margin-top: 14px;
   color: var(--ink);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   line-height: 1.5;
 }
 .verdict-hero > .verdict-scenario {
@@ -1112,7 +1122,7 @@ details[open] > summary {
     justify-content: center;
   }
   .final-analysis > p {
-    font-size: 16px;
+    font-size: var(--font-size-body);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1151,7 +1161,7 @@ details[open] > summary {
   align-items: center;
   gap: 12px;
   background: #2b251c;
-  color: var(--decisions);
+  color: var(--warning);
   padding: 14px 18px;
   border-radius: 8px;
   font-size: 13px;
@@ -1185,7 +1195,7 @@ details[open] > summary {
 }
 .page-heading p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   margin-top: 10px;
 }
 .history-list article {
@@ -1279,7 +1289,6 @@ details[open] > summary {
   color: var(--danger);
 }
 .history-list h2 {
-  font-size: 20px;
   margin: 8px 0;
 }
 .history-list p {
@@ -1291,7 +1300,7 @@ details[open] > summary {
   color: var(--success);
 }
 .history-mode.demo {
-  color: var(--decisions);
+  color: var(--warning);
 }
 .empty-page {
   display: flex;
@@ -1305,32 +1314,24 @@ details[open] > summary {
 }
 .empty-page h2 {
   color: var(--ink);
-  font-size: 23px;
 }
 .empty-page p {
   font-size: 14px;
 }
 .prose {
-  max-width: 900px;
   margin: auto;
 }
-.prose h1 {
-  max-width: 18ch;
-}
 .prose h2 {
-  font-size: 22px;
   margin: 32px 0 13px;
   letter-spacing: -0.02em;
 }
 .prose p {
-  font-size: 15px;
+  font-size: var(--font-size-body);
   color: #b9c0c6;
-  max-width: 75ch;
   margin: 14px 0;
 }
 .prose .lead {
-  font-size: 18px;
-  max-width: 60ch;
+  font-size: var(--font-size-body);
 }
 .prose table {
   border-collapse: collapse;
@@ -1371,7 +1372,6 @@ details[open] > summary {
   padding: 22px 0;
 }
 .connection-list h2 {
-  font-size: 18px;
   margin: 0;
 }
 .connection-list p {
@@ -1394,7 +1394,7 @@ details[open] > summary {
   color: var(--success);
 }
 .connection-missing {
-  color: var(--decisions);
+  color: var(--warning);
 }
 .site-footer {
   border-top: 1px solid var(--line);
@@ -1435,7 +1435,44 @@ details[open] > summary {
 .recording .reference-detail {
   display: none;
 }
-/* Recording: full screen, with the whole stage inside the screen. */
+/* Recording keeps the same scale throughout; longer content scrolls without shrinking. */
+.recording {
+  overflow-anchor: none;
+}
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.countdown-number {
+  color: var(--ink);
+  font: 650 clamp(4rem, 10vw, 6rem) / 1 var(--font-heading);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 20px var(--bg);
+  animation: countdown-pulse 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes countdown-pulse {
+  from {
+    opacity: 1;
+    transform: scale(0.7);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .countdown-number {
+    animation: none;
+  }
+}
 .brava-main {
   display: grid;
   gap: 16px;
@@ -1454,9 +1491,6 @@ details[open] > summary {
 .recording .arena-heading {
   margin-bottom: 12px;
 }
-.recording .arena-heading h1 {
-  font-size: 30px;
-}
 .recording .series-progress {
   margin-bottom: 10px;
   padding: 10px 14px;
@@ -1473,15 +1507,12 @@ details[open] > summary {
 .recording .question-meta {
   margin-bottom: 8px;
 }
-.recording .question-section h2 {
-  font-size: 28px;
-}
 .recording .facts,
 .recording .moderator-transition {
   margin-top: 8px;
 }
 .recording .facts {
-  font-size: 16px;
+  font-size: var(--font-size-body);
 }
 .recording .competitor-heading {
   padding: 14px 22px;
@@ -1502,7 +1533,7 @@ details[open] > summary {
 }
 .recording .opus-copy {
   margin: 8px 0 10px;
-  font-size: 17px;
+  font-size: var(--font-size-body);
 }
 .recording .run-controls {
   margin-top: 12px;
@@ -1514,17 +1545,14 @@ details[open] > summary {
   main {
     max-width: 1440px;
   }
-  .question-section h2 {
-    font-size: 30px;
-  }
   .facts {
-    font-size: 16px;
+    font-size: var(--font-size-body);
   }
   .answer-area {
     min-height: 285px;
   }
   .opus-copy {
-    font-size: 16px;
+    font-size: var(--font-size-body);
   }
 }
 @media (max-width: 1020px) {
@@ -1612,12 +1640,8 @@ details[open] > summary {
     margin-bottom: 24px;
     gap: 12px;
   }
-  h1 {
-    font-size: 29px;
-  }
   .arena-heading p {
-    font-size: 12px;
-    max-width: 28ch;
+    font-size: var(--font-size-body);
   }
   .recording-toggle {
     padding: 8px;
@@ -1660,13 +1684,9 @@ details[open] > summary {
     font-size: 11px;
     padding: 10px;
   }
-  .question-section h2,
-  .recording .question-section h2 {
-    font-size: 23px;
-  }
   .facts,
   .recording .facts {
-    font-size: 14px;
+    font-size: var(--font-size-body);
   }
   .question-meta {
     font-size: 11px;
@@ -1695,9 +1715,6 @@ details[open] > summary {
   .competitor-identity {
     gap: 7px;
   }
-  .competitor-heading h2 {
-    font-size: 17px;
-  }
   .competitor-identity > div > span {
     font-size: 9px;
   }
@@ -1722,14 +1739,10 @@ details[open] > summary {
   .answer-empty {
     min-height: 240px;
   }
-  .answer-empty h3 {
-    font-size: 14px;
-  }
   .answer-empty p {
     font-size: 11px;
   }
   .answer-value {
-    font-size: 24px;
     overflow-wrap: anywhere;
     margin-top: 17px;
   }
@@ -1778,7 +1791,7 @@ details[open] > summary {
   }
   .opus-copy,
   .recording .opus-copy {
-    font-size: 13px;
+    font-size: var(--font-size-body);
   }
   .opus-footnote {
     font-size: 9px;
@@ -1807,9 +1820,6 @@ details[open] > summary {
   .end-actions > button {
     flex: 1;
   }
-  .final-title h2 {
-    font-size: 22px;
-  }
   .site-footer {
     padding: 22px 18px;
     flex-wrap: wrap;
@@ -1822,29 +1832,20 @@ details[open] > summary {
     align-items: flex-start;
     flex-wrap: wrap;
   }
-  .prose .page-heading h1 {
-    font-size: 28px;
-  }
   .history-list article {
     align-items: flex-start;
     flex-direction: column;
     gap: 15px;
   }
-  .prose h1 {
-    max-width: 100%;
-  }
   .prose p {
-    font-size: 14px;
+    font-size: var(--font-size-body);
   }
   .prose .lead {
-    font-size: 16px;
+    font-size: var(--font-size-body);
   }
   .prose th,
   .prose td {
     padding: 12px 9px;
-  }
-  .connection-list h2 {
-    font-size: 16px;
   }
   .recording main {
     padding: 16px 18px 12px;
@@ -1898,18 +1899,16 @@ details[open] > summary {
   font: 650 11px var(--font-heading);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--jev);
+  color: var(--accent);
 }
 .marathon-setup h2 {
   margin-top: 8px;
-  font-size: 24px;
   letter-spacing: -0.02em;
 }
 .marathon-setup p {
   margin-top: 8px;
-  max-width: 62ch;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   line-height: 1.55;
 }
 
@@ -2130,18 +2129,15 @@ details[open] > summary {
   grid-column: 2;
 }
 .report-hero h2 {
-  max-width: 54ch;
   margin: 8px 0 0;
-  font-size: clamp(26px, 2vw, 36px);
   line-height: 1.2;
   letter-spacing: -0.035em;
-  text-wrap: balance;
   animation: verdict-reveal 800ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
 }
 .report-reason {
   margin-top: 12px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   line-height: 1.5;
 }
 .report-podium {
@@ -2177,7 +2173,6 @@ details[open] > summary {
   color: var(--team);
 }
 .podium-card h3 {
-  font-size: 22px;
   letter-spacing: -0.02em;
 }
 .podium-card header span {
@@ -2249,7 +2244,6 @@ details[open] > summary {
   margin-top: 24px;
 }
 .report-section > header h3 {
-  font-size: 20px;
   letter-spacing: -0.02em;
 }
 .report-section > header p {
@@ -2279,7 +2273,6 @@ details[open] > summary {
 }
 .recommendation h4 {
   color: var(--muted);
-  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2306,7 +2299,6 @@ details[open] > summary {
 }
 .battery h4 {
   margin-bottom: 8px;
-  font-size: 14px;
 }
 .battery h4 span {
   color: var(--muted);
@@ -2355,6 +2347,7 @@ details[open] > summary {
   position: absolute;
   z-index: 3;
   left: 92px;
+  max-width: calc(100% - 92px);
   bottom: calc(100% + 6px);
   padding: 6px 9px;
   border: 1px solid var(--line);
@@ -2362,7 +2355,7 @@ details[open] > summary {
   background: var(--surface-high);
   color: var(--ink);
   font-size: 12px;
-  white-space: nowrap;
+  white-space: normal;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.12s;
@@ -2478,7 +2471,7 @@ details[open] > summary {
   color: var(--danger);
 }
 .divergence-list .status-uncertain em {
-  color: var(--decisions);
+  color: var(--warning);
 }
 .report-section .text-button {
   margin-top: 12px;
@@ -2496,14 +2489,18 @@ details[open] > summary {
   flex-shrink: 0;
   color: var(--opus);
 }
+.report-analysis > div {
+  flex: 1;
+  min-width: 0;
+}
 .report-analysis p {
-  font-size: 15px;
+  font-size: var(--font-size-body);
   line-height: 1.6;
 }
 .report-analysis ul {
   margin: 12px 0 0;
   padding-left: 18px;
-  font-size: 13px;
+  font-size: var(--font-size-body);
   line-height: 1.55;
 }
 .meeting-links {
@@ -2527,12 +2524,11 @@ details[open] > summary {
   margin-top: 2px;
 }
 .series-report.is-demo .report-hero h2 {
-  color: var(--decisions);
+  color: var(--warning);
 }
 .history-group {
   margin: 28px 0 4px;
   color: var(--muted);
-  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2569,6 +2565,7 @@ details[open] > summary {
   }
   .bar-row::after {
     left: 0;
+    max-width: 100%;
     white-space: normal;
   }
 }
@@ -2663,14 +2660,12 @@ details[open] > summary {
 }
 .brava-head h2 {
   margin-top: 6px;
-  font-size: clamp(26px, 3vw, 38px);
   letter-spacing: -0.03em;
 }
 .brava-head p {
-  max-width: 78ch;
   margin-top: 6px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   line-height: 1.55;
 }
 .brava-head-side {
@@ -2822,7 +2817,6 @@ details[open] > summary {
 }
 .brava-highlight h3 {
   margin-top: 8px;
-  font-size: 18px;
   line-height: 1.35;
 }
 .brava-facts {
@@ -2830,7 +2824,7 @@ details[open] > summary {
   margin-top: 8px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   line-height: 1.5;
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
@@ -2884,9 +2878,9 @@ details[open] > summary {
 .brava-comment {
   margin-top: 0;
 }
-.divergence-facts {
+.divergence-list .divergence-facts {
   color: var(--muted);
-  font-size: 13px !important;
+  font-size: var(--font-size-body);
 }
 .calibration {
   margin: 0;
@@ -3047,7 +3041,7 @@ details[open] > summary {
 }
 .live-notice {
   background: rgb(131 222 211 / 8%);
-  color: var(--jev);
+  color: var(--accent);
 }
 .live-notice .text-button {
   margin-left: auto;
@@ -3055,7 +3049,7 @@ details[open] > summary {
 .lobby-label {
   margin: 34px 0 14px;
   color: var(--muted);
-  font: 650 12px var(--font-heading);
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -3101,13 +3095,13 @@ details[open] > summary {
 }
 .space-card h3 {
   margin: 0;
-  font: 650 24px var(--font-heading);
+  font-weight: 650;
   letter-spacing: -0.025em;
 }
 .space-card p {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   line-height: 1.55;
 }
 .space-facts {
@@ -3131,7 +3125,7 @@ details[open] > summary {
   gap: 8px;
 }
 .space-live {
-  color: var(--jev);
+  color: var(--accent);
 }
 .space-enter {
   display: inline-flex;
@@ -3170,7 +3164,7 @@ details[open] > summary {
 .space-kicker {
   display: inline-flex;
   margin-bottom: 10px;
-  color: var(--jev);
+  color: var(--accent);
   font: 650 11px var(--font-heading);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3233,7 +3227,7 @@ details[open] > summary {
 }
 .space-records-head h2 {
   color: var(--muted);
-  font: 650 12px var(--font-heading);
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -3317,9 +3311,6 @@ details[open] > summary {
   gap: 12px;
   min-height: 0;
 }
-.recording .brava-live.is-running .brava-head h2 {
-  font-size: 32px;
-}
 .recording .brava-live.is-running .brava-board {
   flex: 1;
   min-height: 0;
@@ -3361,9 +3352,6 @@ details[open] > summary {
   .is-visual .brava-board {
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   }
-  .recording .brava-live:not(.is-running) .brava-head h2 {
-    font-size: 30px;
-  }
   .recording .brava-live:not(.is-running) .brava-comment {
     margin-top: 0;
     overflow-y: auto;
@@ -3388,12 +3376,8 @@ details[open] > summary {
   .brava-report.is-summary .report-emblem {
     display: none;
   }
-  .brava-report.is-summary .report-hero h2 {
-    font-size: 28px;
-    text-wrap: pretty;
-  }
   .brava-report.is-summary .report-reason {
-    font-size: 14px;
+    font-size: var(--font-size-body);
   }
   .brava-report.is-summary .report-podium {
     margin-top: 0;
@@ -3416,9 +3400,6 @@ details[open] > summary {
   .brava-report.is-summary .podium-caption {
     grid-column: 2;
     font-size: 12px;
-  }
-  .brava-report.is-summary .podium-card h3 {
-    font-size: 20px;
   }
   .brava-report.is-summary .podium-score strong {
     font-size: 40px;
@@ -3535,8 +3516,5 @@ details[open] > summary {
   }
   .report-emblem {
     margin-bottom: 16px;
-  }
-  .report-hero h2 {
-    font-size: 26px;
   }
 }
