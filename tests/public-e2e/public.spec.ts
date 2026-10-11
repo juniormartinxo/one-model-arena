@@ -10,6 +10,9 @@ test('public experience stays read-only, navigable, responsive and honest before
     errors: string[] = [];
   page.on('request', (r) => requests.push(r.url()));
   page.on('pageerror', (e) => errors.push(e.message));
+  await page.route('**/data/edition.json', (route) =>
+    route.fulfill({ json: { schemaVersion: 1, status: 'pending', edition: null } }),
+  );
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto('/');
   await expect(
@@ -137,6 +140,46 @@ test('published results are rendered from the public artifact, including margins
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
+test('the conclusion summarises the published edition and links to the full report', async ({
+  page,
+  request,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  const conclusion = page.locator('#conclusao');
+  await expect(
+    conclusion.getByRole('heading', { name: /O melhor modelo\s*depende da decisão/ }),
+  ).toBeVisible();
+  await expect(conclusion.locator('.conclusion-profiles article')).toHaveCount(3);
+  await expect(conclusion.locator('.situations li')).toHaveCount(8);
+  await expect(page.locator('.result-score').first()).toBeVisible();
+  await expect(
+    conclusion.getByRole('link', { name: 'Abrir o relatório completo' }),
+  ).toHaveAttribute('href', '/relatorio/');
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `horizontal overflow at ${width}`,
+    ).toBe(true);
+  }
+  await expect(page.locator('#sobre').getByRole('img', { name: /Junior Martins/ })).toBeVisible();
+  await expect(page.locator('footer .footer-author')).toHaveAttribute(
+    'href',
+    'https://juniormartins.dev',
+  );
+  const report = await request.get('/relatorio/');
+  expect(report.status()).toBe(200);
+  const reportHtml = await report.text();
+  expect(reportHtml).toContain('id="report-data"');
+  expect(reportHtml).toContain('class="sidebar-author"');
+  await page.goto('/relatorio/');
+  await expect(page.locator('#report-data')).toBeAttached();
+  await expect(page).toHaveTitle(/One Model Arena/);
+  expect(errors).toEqual([]);
+});
+
 test('an invalid artifact fails closed instead of showing invented results', async ({ page }) => {
   await page.route('**/data/edition.json', (route) =>
     route.fulfill({ json: { mode: 'live', private: 'not-public' } }),
@@ -155,5 +198,10 @@ test('the built artifact contains no studio entry, execution API, or server func
     ),
   ).toBeNull();
   expect(readdirSync('dist-public')).not.toContain('server');
+  const css = readdirSync('dist-public/assets')
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => readFileSync(join('dist-public/assets', f), 'utf8'))
+    .join('\n');
+  expect(css, 'fonts must be files, the CSP blocks data: fonts').not.toContain('data:font/');
   expect(JSON.parse(readFileSync('vercel.json', 'utf8')).outputDirectory).toBe('dist-public');
 });

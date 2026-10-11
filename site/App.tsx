@@ -11,11 +11,14 @@ import {
 } from 'lucide-react';
 import { publicationSchema, type Publication } from '../shared/publication';
 import { ArenaSculpture } from './components/ArenaSculpture';
+import { Conclusion } from './components/Conclusion';
 import { Method } from './components/Method';
 import { Results } from './components/Results';
-import { datasets, models, repository, tests } from './content/catalog';
+import { author, datasets, models, repository, tests } from './content/catalog';
+import { reportPath } from './content/conclusion';
 
 const navigation = [
+  { href: '#conclusao', label: 'A conclusão' },
   { href: '#resultados', label: 'Os testes' },
   { href: '#metodo', label: 'O método' },
   { href: '#datasets', label: 'Os datasets' },
@@ -91,8 +94,9 @@ function Sources() {
         ))}
       </div>
       <p className="dataset-footnote">
-        Textos e fotografias dos datasets permanecem nas fontes de origem. A Arena publica
-        referências, metodologia e resultados. O tamanho da amostra utilizada acompanha cada edição.
+        Fotografias e comentários do HateBR permanecem nas fontes de origem. O relatório da
+        conclusão reproduz os pares do ASSIN 2 e as avaliações do B2W usados nas perguntas, com as
+        respostas dos modelos e a atribuição de cada fonte.
       </p>
     </section>
   );
@@ -140,6 +144,12 @@ function Evidence({ publication }: { publication: Publication | null }) {
         <div>
           <span>Edição pública</span>
           <strong>{edition ? edition.title : 'Em preparação'}</strong>
+        </div>
+        <div>
+          <span>Relatório da conclusão</span>
+          <a href={reportPath}>
+            Respostas, exemplos e contas <ArrowUpRight size={15} />
+          </a>
         </div>
         {edition && (
           <>
@@ -324,21 +334,21 @@ export function PublicApp() {
             </p>
             <p className="hero-description">
               Uma arena para comparar decisões de IA em português. Testes visíveis, critérios
-              explícitos e espaço para olhar além do vencedor.
+              explícitos e espaço para olhar além do vencedor. A primeira edição está concluída.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href="#resultados">
-                Explorar os testes <ArrowDown size={17} />
+              <a className="button button-primary" href="#conclusao">
+                Ver a conclusão <ArrowDown size={17} />
               </a>
-              <a className="hero-method-link" href="#metodo">
-                Como chegamos lá <ArrowUpRight size={17} />
+              <a className="hero-method-link" href={reportPath}>
+                Abrir o relatório completo <ArrowUpRight size={17} />
               </a>
             </div>
           </div>
           <ArenaSculpture />
           <div className="hero-bottom">
             <span>Três modelos. A mesma régua.</span>
-            <a href="#resultados" aria-label="Continuar para os testes">
+            <a href="#conclusao" aria-label="Continuar para a conclusão">
               <ArrowDown size={17} />
             </a>
           </div>
@@ -357,6 +367,7 @@ export function PublicApp() {
             </div>
           ))}
         </div>
+        <Conclusion />
         <Results publication={publication} error={error} />
         <Method />
         <Sources />
@@ -373,30 +384,49 @@ export function PublicApp() {
                 loading="lazy"
               />
             </div>
-            <h2 id="about-title">
-              A melhor resposta
-              <br />
-              começa com uma
-              <br />
-              <span>boa pergunta.</span>
-            </h2>
+            <figure className="author-portrait">
+              <img
+                src={author.portrait}
+                width="720"
+                height="900"
+                alt={`Retrato ilustrado de ${author.name}`}
+                loading="lazy"
+              />
+              <figcaption>
+                <strong>{author.name}</strong>
+                <span>Criador do One Model Arena</span>
+              </figcaption>
+            </figure>
             <div className="about-copy">
+              <h2 id="about-title">
+                A melhor resposta
+                <br />
+                começa com uma
+                <br />
+                <span>boa pergunta.</span>
+              </h2>
               <p>
                 One Model Arena é um experimento de comparação de modelos de IA. Este site reúne a
                 parte pública: o que foi testado, como foi avaliado e o que é possível concluir.
               </p>
               <p>
-                O objetivo é abrir a comparação para quem quer entender as escolhas por trás dos
-                números.
+                {author.name} criou a arena e conduz as rodadas, a curadoria dos testes e a leitura
+                dos resultados. O objetivo é abrir a comparação para quem quer entender as escolhas
+                por trás dos números.
               </p>
-              <a
-                className="button button-outline"
-                href={repository}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Conheça o projeto <ArrowUpRight size={17} />
-              </a>
+              <div className="about-actions">
+                <a
+                  className="button button-outline"
+                  href={repository}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Conheça o projeto <ArrowUpRight size={17} />
+                </a>
+                <a className="hero-method-link" href={author.site} target="_blank" rel="noreferrer">
+                  Mais sobre {author.name} <ArrowUpRight size={17} />
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -406,6 +436,13 @@ export function PublicApp() {
           One Model Arena<span>.</span>
         </a>
         <p>Evidências à vista. Sempre.</p>
+        <a className="footer-author" href={author.site} target="_blank" rel="noreferrer">
+          <img src={author.avatar} width="44" height="44" alt="" loading="lazy" />
+          <span>
+            <small>Criado por</small>
+            {author.name}
+          </span>
+        </a>
         <a href="#inicio">
           Voltar ao topo <ArrowRight size={16} />
         </a>

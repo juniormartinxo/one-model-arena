@@ -1,4 +1,11 @@
 export const repository = 'https://github.com/juniormartinxo/one-model-arena';
+export const author = {
+  name: 'Junior Martins',
+  site: 'https://juniormartins.dev',
+  github: 'https://github.com/juniormartinxo',
+  portrait: '/autor/junior-martins-retrato.webp',
+  avatar: '/autor/junior-martins-avatar.webp',
+};
 export const models = {
   jev: { name: 'Jev', vendor: 'TypeSafe', color: '#f08fc0', mark: 'J' },
   decisions: { name: 'Decisions', vendor: 'OpenAI', color: '#e4e7ec', mark: 'D' },

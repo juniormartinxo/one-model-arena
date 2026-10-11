@@ -39,7 +39,7 @@ Não há controle de repetição idêntica neste protocolo; as variantes de robu
 
 ## Depois das execuções
 
-1. Abra os três boletins e exporte os JSONs completos. Preencha a ficha e os resultados em `roteiro-video.md` com os IDs, datas, modelos e hashes.
+1. Abra os três boletins e exporte os JSONs completos. Registre os IDs, datas, modelos e hashes na ficha da edição.
 2. Confira itens executados, pontuados, anulados e indisponíveis. Revise exemplos contra perguntas e respostas salvas; preserve os resultados originais mesmo se corrigir uma explicação.
 3. Não interprete a diferença entre acerto da maratona e nota média da Resiliência como evolução direta. Não atribua pedidos de ajuda ao modelo quando a revisão foi determinada pelo limiar da arena.
 4. Compare o texto do Opus com os boletins recalculados. Uma correção posterior deve ser documentada; o comentário salvo não é regenerado automaticamente.

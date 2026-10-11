@@ -157,7 +157,7 @@ O comentário do Opus ocupa uma superfície própria, abaixo das decisões. A in
 - Números tabulares e tipografia auto-hospedada.
 - Evidência sintética, execução real e replay identificados por texto.
 
-Extração do código em `src/style.css`, `src/App.tsx`, `src/Competitor.tsx` e `src/main.tsx`, conferida nas capturas `.impeccable/review/desktop.png`, `mobile.png` e `recording.png`. Os tokens do frontmatter descrevem o sistema implementado; medidas responsivas e estados complementares aparecem abaixo. A composição específica da arena continua registrada em `.impeccable/surface-notes.md`.
+Extração do código em `src/style.css`, `src/App.tsx`, `src/Competitor.tsx` e `src/main.tsx`. Os tokens do frontmatter descrevem o sistema implementado; medidas responsivas e estados complementares aparecem abaixo.
 
 ## Colors
 

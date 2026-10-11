@@ -323,7 +323,7 @@ const meetingNotes: Record<string, [string, string, string]> = {
 const batteryNotes: Record<string, [string, string]> = {
   robustez: [
     '36 grupos · 144 respostas',
-    'Decisions e Clef passaram em 35/36 grupos; Jev, em 32/36. Um grupo exige acertar todas as variantes. As mudanças de resposta do Decisions em ruído e digitação corrigiram um erro; as do Jev afastaram a decisão do gabarito.',
+    'Decisions e Clef passaram em 35/36 grupos; Jev, em 32/36. Um grupo exige acertar todas as variantes. Quando o Decisions mudou de resposta, foi para a resposta certa: errou a versão limpa e acertou as com ruído e digitação. Quando o Jev mudou, foi para longe dela: acertou a versão limpa e hesitou nas bagunçadas.',
   ],
   portugues: [
     '60 textos · 20 de cada dataset',

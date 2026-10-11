@@ -137,7 +137,7 @@ A expressão combina uma introdução ambiciosa com leitura calma. Menta orienta
 - Grandes intervalos entre seções e listas separadas por linhas finas.
 - Interações locais com foco visível e alternativa de movimento reduzido.
 
-Escopo: apenas a superfície pública em `site/`. Extraído de `style.css`, `App.tsx`, `components/`, `content/catalog.ts` e `main.tsx`. O `../DESIGN.md` continua descrevendo o estúdio local; este documento não o substitui. A composição da página permanece em `../.impeccable/public-surface.md`.
+Escopo: apenas a superfície pública em `site/`. Extraído de `style.css`, `App.tsx`, `components/`, `content/catalog.ts` e `main.tsx`. O `../DESIGN.md` continua descrevendo o estúdio local; este documento não o substitui.
 
 ## Colors
 

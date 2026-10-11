@@ -9,3 +9,10 @@ playwright-report/
 .impeccable/mocks/
 dist-public/
 .vercel/
+# Rascunhos e material local que não vai para o repositório público
+.impeccable/
+site/.impeccable/
+docs/roteiro-video.md
+reports/thumbnails*/
+reports/apoio-visual*/
+.shot.mjs

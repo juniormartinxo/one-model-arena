@@ -1,6 +1,6 @@
 # O que foi feito, e como ler os resultados
 
-Este documento explica a arena de ponta a ponta: o que ela compara, como cada rodada funciona, como os pontos são calculados, o que cada métrica significa, o que os resultados reais mostraram e quais são os limites. Para o roteiro do vídeo, veja `docs/roteiro-video.md`.
+Este documento explica a arena de ponta a ponta: o que ela compara, como cada rodada funciona, como os pontos são calculados, o que cada métrica significa, o que os resultados reais mostraram e quais são os limites.
 
 **Escopo histórico:** os resultados da seção 9 pertencem às execuções de 08–09/10/2026, identificadas por seus IDs. Foram preservados como registro de desenvolvimento e não representam a próxima edição. O novo roteiro tem resultados pendentes; a preparação está em [Protocolo da nova bateria](protocolo-nova-bateria.md).
 

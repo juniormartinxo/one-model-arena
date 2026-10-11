@@ -70,6 +70,10 @@ Importe o repositório como projeto, com a raiz do repositório como **Root Dire
 | Output directory | `dist-public`                  |
 | Node.js          | 24.x, compatível com `engines` |
 
+O site de produção fica em https://arena.juniormartins.dev. O DNS do subdomínio fica na Cloudflare, como CNAME para a Vercel. A Vercel recomenda o proxy desativado (Somente DNS).
+
+O build também publica `reports/relatorio-conclusao.html`, sem alterações, em `/relatorio/`. A seção **A conclusão** do site resume esse relatório (`site/content/conclusion.ts`); `tests/public-conclusion.test.ts` exige que `site/content/edition.json` use as mesmas execuções e o mesmo hash de regras do relatório. Ao trocar a edição, atualize os três juntos. O relatório traz respostas individuais e os textos do ASSIN 2 e do B2W usados nas perguntas; os comentários do HateBR e as fotos não entram. Por ter script inline e fontes embutidas, `/relatorio/` tem uma CSP própria em `vercel.json`.
+
 Não configure chaves dos modelos, Claude CLI ou banco na Vercel. O site é estático; não precisa dessas dependências em execução. O build gera apenas HTML, CSS, JavaScript, fontes, marca e `data/edition.json`. Os cabeçalhos de segurança estão em `vercel.json`; não há rewrites para o backend local.
 
 O `.vercelignore` exclui o material local no envio pelo CLI. Na integração Git, o repositório pode estar disponível durante o build, mas só `dist-public/` é servido. Por isso, a proteção principal é o build separado e a seleção explícita de conteúdo, não o arquivo de exclusões.

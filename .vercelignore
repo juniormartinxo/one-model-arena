@@ -10,3 +10,6 @@ dist-public/
 .impeccable/
 docs/
 scripts/
+report/
+reports/*
+!reports/relatorio-conclusao.html

@@ -12,17 +12,17 @@ O vencedor sai do gabarito; o Claude Opus 5.5, pelo CLI, apresenta, comenta e ex
 
 O menu **Conclusão** abre `http://127.0.0.1:4317/relatorio-conclusao.html`: onze capítulos com os resultados selecionados de **09/10/2026**, explicações por cenário, comentários registrados do Opus, custos, tokens, tempo, Brier, ECE, perfis dos modelos e recomendações por situação. Use as setas ←/→ e **Apresentar** durante a gravação. **Baixar HTML** salva uma cópia que funciona offline; o arquivo pronto também está em [reports/relatorio-conclusao.html](reports/relatorio-conclusao.html).
 
-Essa apresentação fica fixada em três gravações e não muda com novos testes. `npm run report:export` a regenera a partir do SQLite local, sem chamar modelos. Veja [como usar e conferir a conclusão](docs/relatorio-conclusao.md). A apresentação pertence ao estúdio e não é incluída em `dist-public/`; a edição pública segue o processo separado abaixo.
+Essa apresentação fica fixada em três gravações e não muda com novos testes. `npm run report:export` a regenera a partir do SQLite local, sem chamar modelos. Veja [como usar e conferir a conclusão](docs/relatorio-conclusao.md). O site público publica essa mesma apresentação em [arena.juniormartins.dev/relatorio](https://arena.juniormartins.dev/relatorio/).
 
 ## Site público
 
-`npm run dev:public` abre a versão pública em **http://127.0.0.1:4319**. O build independente `npm run build:public` gera `dist-public/`, configurado para a Vercel em `vercel.json`. A página apresenta os testes, a metodologia, os datasets e uma edição de resultados selecionada; não oferece execução de rodadas ou acesso ao backend.
+O site está no ar em **https://arena.juniormartins.dev**. `npm run dev:public` abre a versão pública em **http://127.0.0.1:4319**. O build independente `npm run build:public` gera `dist-public/`, configurado para a Vercel em `vercel.json`. A página apresenta os testes, a metodologia, os datasets e uma edição de resultados selecionada; não oferece execução de rodadas ou acesso ao backend.
 
-A primeira edição começa **em preparação**, sem reutilizar resultados antigos. Após as novas execuções, siga [Publicação de resultados](docs/publicacao.md) para preparar o JSON público, conferir e publicar. Nenhuma credencial dos modelos é necessária no site público.
+A primeira edição, de 09/10/2026, está publicada com as mesmas três execuções do relatório da conclusão. Para preparar uma nova edição, siga [Publicação de resultados](docs/publicacao.md). Nenhuma credencial dos modelos é necessária no site público.
 
 ## Nova edição de testes
 
-O [roteiro](docs/roteiro-video.md) está preparado com resultados pendentes. Siga o [protocolo da nova bateria](docs/protocolo-nova-bateria.md) para preservar o histórico, registrar a versão das regras e executar as três provas. Os números em `docs/o-que-foi-feito.md` são históricos, de 08–09/10/2026; não são resultados desta nova edição.
+Siga o [protocolo da nova bateria](docs/protocolo-nova-bateria.md) para preservar o histórico, registrar a versão das regras e executar as três provas. Os números em `docs/o-que-foi-feito.md` são históricos, de 08–09/10/2026.
 
 ## Reproduzir o teste
 

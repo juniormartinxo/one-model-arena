@@ -1,5 +1,1022 @@
 {
   "schemaVersion": 1,
-  "status": "pending",
-  "edition": null
+  "status": "published",
+  "edition": {
+    "id": "primeira-edicao",
+    "title": "Qual modelo escolher?",
+    "preparedAt": "2026-10-11T17:28:00.033Z",
+    "codeRevision": "0ecefbf65ed4bdd428eb19184580c1f6b1cb0468-dirty",
+    "rulesHash": "774c6f4062a70118ba77104ad620ac0eeb802ce2d309a6dd159820f37b97d8bc",
+    "results": [
+      {
+        "kind": "maratona",
+        "sourceId": "82392021-dec6-41d0-8255-b9277a298445",
+        "executedAt": "2026-10-09T13:02:06.625Z",
+        "catalogHashes": [
+          "4cd92a464d22f7bebdf008f92c598f49210efefb24757c70174721db32a7795e",
+          "0ff853382d56add047ea8709ffb1792c9a51b020f25d86424da75746df0cda8f",
+          "36ed205d061db11bce36753229df41a9d29f21a29ca1d225236ed70888460128",
+          "71cdda4b4c4912b286ba9bfbdca5077fe036328fdbbf59842edbaab80f072b68",
+          "944a0ad4f769994c76584ce353ce6e7f1595dae6001c47b582e44ce9a8f4817b",
+          "d433ccb353582d88f0deea871481770227d74ca3c92ef687c8de0ea31b8bb51e"
+        ],
+        "winner": "clef",
+        "reason": "points",
+        "standings": [
+          {
+            "provider": "jev",
+            "models": [
+              "jev-1.13.0"
+            ],
+            "score": 0.9722222222222222,
+            "correct": 35,
+            "incorrect": 0,
+            "uncertain": 1,
+            "unavailable": 0,
+            "total": 36,
+            "brier": 0.009066666666666667,
+            "ece": null,
+            "medianMs": 300.49489550001454,
+            "costUsd": 0.0008721299999999997,
+            "unknownCosts": 0,
+            "costPerMillion": 24.225833333333323
+          },
+          {
+            "provider": "decisions",
+            "models": [
+              "gpt-6-luna"
+            ],
+            "score": 0.9722222222222222,
+            "correct": 35,
+            "incorrect": 1,
+            "uncertain": 0,
+            "unavailable": 0,
+            "total": 36,
+            "brier": 0.05026666666666666,
+            "ece": null,
+            "medianMs": 294.6787669999758,
+            "costUsd": 0.0013366000000000003,
+            "unknownCosts": 0,
+            "costPerMillion": 37.12777777777778
+          },
+          {
+            "provider": "clef",
+            "models": [
+              "clef"
+            ],
+            "score": 1,
+            "correct": 36,
+            "incorrect": 0,
+            "uncertain": 0,
+            "unavailable": 0,
+            "total": 36,
+            "brier": 0.001409861666666666,
+            "ece": null,
+            "medianMs": 525.8543724999763,
+            "costUsd": 0.0034300800000000003,
+            "unknownCosts": 0,
+            "costPerMillion": 95.28000000000002
+          }
+        ],
+        "batteries": [
+          {
+            "id": "basicos",
+            "title": "Básicos",
+            "unit": "item",
+            "units": 18,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 0.9444444444444444
+              },
+              {
+                "provider": "decisions",
+                "score": 0.9444444444444444
+              },
+              {
+                "provider": "clef",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "id": "avancados",
+            "title": "Avançados",
+            "unit": "item",
+            "units": 12,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 1
+              },
+              {
+                "provider": "decisions",
+                "score": 1
+              },
+              {
+                "provider": "clef",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "id": "estresse",
+            "title": "Estresse",
+            "unit": "item",
+            "units": 6,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 1
+              },
+              {
+                "provider": "decisions",
+                "score": 1
+              },
+              {
+                "provider": "clef",
+                "score": 1
+              }
+            ]
+          }
+        ],
+        "margins": [],
+        "annulled": [],
+        "sampleReferences": [],
+        "excludedBatteries": []
+      },
+      {
+        "kind": "brava",
+        "sourceId": "c8a27c72-7e70-4fc9-add4-cacf8a7d2b7a",
+        "executedAt": "2026-10-09T13:13:50.606Z",
+        "catalogHashes": [
+          "0f27e1fb81cd50fe1ff28263e584846f829dc14073e89a45068c22463cbb256b"
+        ],
+        "winner": "clef",
+        "reason": "calibration",
+        "standings": [
+          {
+            "provider": "jev",
+            "models": [
+              "jev-1.13.0"
+            ],
+            "score": 0.8711111111111112,
+            "correct": 276,
+            "incorrect": 0,
+            "uncertain": 22,
+            "unavailable": 0,
+            "total": 298,
+            "brier": 0.030962416107382536,
+            "ece": 0.04302013422818855,
+            "medianMs": 264.77123349998146,
+            "costUsd": 0.006939534000000003,
+            "unknownCosts": 0,
+            "costPerMillion": 23.287026845637595
+          },
+          {
+            "provider": "decisions",
+            "models": [
+              "gpt-6-luna"
+            ],
+            "score": 0.981111111111111,
+            "correct": 293,
+            "incorrect": 2,
+            "uncertain": 3,
+            "unavailable": 0,
+            "total": 298,
+            "brier": 0.018130201342281882,
+            "ece": 0.004563758389261976,
+            "medianMs": 245.84794299991336,
+            "costUsd": 0.011051900000000002,
+            "unknownCosts": 0,
+            "costPerMillion": 37.08691275167786
+          },
+          {
+            "provider": "clef",
+            "models": [
+              "clef"
+            ],
+            "score": 0.9744444444444443,
+            "correct": 292,
+            "incorrect": 1,
+            "uncertain": 5,
+            "unavailable": 0,
+            "total": 298,
+            "brier": 0.011595799261744963,
+            "ece": 0.02365335570469819,
+            "medianMs": 419.924245000002,
+            "costUsd": 0.028132079999999983,
+            "unknownCosts": 0,
+            "costPerMillion": 94.40295302013418
+          }
+        ],
+        "batteries": [
+          {
+            "id": "robustez",
+            "title": "Robustez",
+            "unit": "grupo",
+            "units": 36,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 0.8888888888888888
+              },
+              {
+                "provider": "decisions",
+                "score": 0.9722222222222222
+              },
+              {
+                "provider": "clef",
+                "score": 0.9722222222222222
+              }
+            ]
+          },
+          {
+            "id": "portugues",
+            "title": "Português real",
+            "unit": "item",
+            "units": 60,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 0.8
+              },
+              {
+                "provider": "decisions",
+                "score": 0.9333333333333333
+              },
+              {
+                "provider": "clef",
+                "score": 0.9
+              }
+            ]
+          },
+          {
+            "id": "abstencao",
+            "title": "Saber dizer “não”",
+            "unit": "item",
+            "units": 30,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 1
+              },
+              {
+                "provider": "decisions",
+                "score": 1
+              },
+              {
+                "provider": "clef",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "id": "negacao",
+            "title": "Negação",
+            "unit": "grupo",
+            "units": 12,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 0.9166666666666666
+              },
+              {
+                "provider": "decisions",
+                "score": 1
+              },
+              {
+                "provider": "clef",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "id": "injecao",
+            "title": "Injeção e pressão",
+            "unit": "item",
+            "units": 16,
+            "scores": [
+              {
+                "provider": "jev",
+                "score": 0.75
+              },
+              {
+                "provider": "decisions",
+                "score": 1
+              },
+              {
+                "provider": "clef",
+                "score": 1
+              }
+            ]
+          }
+        ],
+        "margins": [
+          {
+            "vs": "jev",
+            "low": 0.05111111111111111,
+            "high": 0.1661111111111111,
+            "within": false
+          },
+          {
+            "vs": "decisions",
+            "low": -0.03,
+            "high": 0.015555555555555555,
+            "within": true
+          }
+        ],
+        "annulled": [],
+        "sampleReferences": [
+          {
+            "dataset": "ASSIN 2",
+            "id": "125"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1605"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "213"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "533"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1737"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1376"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1600"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1819"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "975"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1464"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "2016"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "270"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "127"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1636"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "324"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "1218"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "2252"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "528"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "912"
+          },
+          {
+            "dataset": "ASSIN 2",
+            "id": "2173"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "2970"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "173"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "2198"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "2459"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "2583"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "189"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "3091"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "271"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "1081"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "1869"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "5685"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "4376"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "6449"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "4327"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "4350"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "5936"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "4099"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "4078"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "6616"
+          },
+          {
+            "dataset": "HateBR",
+            "id": "3790"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "87101"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "121648"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "101147"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "5336"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "100860"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "86299"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "16317"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "130412"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "25064"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "112095"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "60958"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "92105"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "78088"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "44132"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "61368"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "50393"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "93616"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "11371"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "48757"
+          },
+          {
+            "dataset": "B2W-Reviews01",
+            "id": "94254"
+          }
+        ],
+        "excludedBatteries": []
+      },
+      {
+        "kind": "imagens",
+        "sourceId": "99f248e6-456d-4291-aed2-4692c5f25ad2",
+        "executedAt": "2026-10-09T14:12:11.986Z",
+        "catalogHashes": [
+          "7ecae08242bc831454336ae993f96352e0068db46438ac17b14a113d194bdb1b"
+        ],
+        "winner": "clef",
+        "reason": "points",
+        "standings": [
+          {
+            "provider": "decisions",
+            "models": [
+              "gpt-6-luna"
+            ],
+            "score": 0.8125,
+            "correct": 65,
+            "incorrect": 15,
+            "uncertain": 0,
+            "unavailable": 0,
+            "total": 80,
+            "brier": 0.22579249999999998,
+            "ece": 0.06124999999999999,
+            "medianMs": 328.4472854999767,
+            "costUsd": 0.006640800000000005,
+            "unknownCosts": 0,
+            "costPerMillion": 83.01000000000006
+          },
+          {
+            "provider": "clef",
+            "models": [
+              "clef"
+            ],
+            "score": 0.8624999999999999,
+            "correct": 69,
+            "incorrect": 11,
+            "uncertain": 0,
+            "unavailable": 0,
+            "total": 80,
+            "brier": 0.18926892449999996,
+            "ece": 0.060808749999999974,
+            "medianMs": 785.3505074999703,
+            "costUsd": 0.014727120000000002,
+            "unknownCosts": 0,
+            "costPerMillion": 184.08900000000003
+          }
+        ],
+        "batteries": [
+          {
+            "id": "contagem",
+            "title": "Contagem",
+            "unit": "item",
+            "units": 20,
+            "scores": [
+              {
+                "provider": "decisions",
+                "score": 0.7
+              },
+              {
+                "provider": "clef",
+                "score": 0.7
+              }
+            ]
+          },
+          {
+            "id": "relacao",
+            "title": "Posição relativa",
+            "unit": "item",
+            "units": 20,
+            "scores": [
+              {
+                "provider": "decisions",
+                "score": 0.9
+              },
+              {
+                "provider": "clef",
+                "score": 0.9
+              }
+            ]
+          },
+          {
+            "id": "profundidade",
+            "title": "Profundidade",
+            "unit": "item",
+            "units": 20,
+            "scores": [
+              {
+                "provider": "decisions",
+                "score": 0.95
+              },
+              {
+                "provider": "clef",
+                "score": 0.95
+              }
+            ]
+          },
+          {
+            "id": "distancia",
+            "title": "Distância real",
+            "unit": "item",
+            "units": 20,
+            "scores": [
+              {
+                "provider": "decisions",
+                "score": 0.7
+              },
+              {
+                "provider": "clef",
+                "score": 0.9
+              }
+            ]
+          }
+        ],
+        "margins": [
+          {
+            "vs": "decisions",
+            "low": -0.025000000000000005,
+            "high": 0.125,
+            "within": true
+          }
+        ],
+        "annulled": [],
+        "sampleReferences": [
+          {
+            "dataset": "CV-Bench",
+            "id": "21"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "33"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "72"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "101"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "151"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "165"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "175"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "245"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "314"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "338"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "635"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "650"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "733"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "750"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "842"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "903"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "939"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "951"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "996"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1019"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "366"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "380"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "421"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "441"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "460"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "492"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "569"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "623"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1079"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1085"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1129"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1131"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1185"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1242"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1247"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1256"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1308"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1326"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1434"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1436"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1458"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1484"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1488"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1580"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1582"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1590"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1664"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1667"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1680"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1712"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1714"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1740"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1757"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1783"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1792"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1861"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1863"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1873"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1923"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "1938"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2058"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2097"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2123"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2175"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2184"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2209"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2218"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2221"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2245"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2246"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2336"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2371"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2386"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2404"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2460"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2465"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2477"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2546"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2572"
+          },
+          {
+            "dataset": "CV-Bench",
+            "id": "2637"
+          }
+        ],
+        "excludedBatteries": []
+      }
+    ]
+  }
 }
