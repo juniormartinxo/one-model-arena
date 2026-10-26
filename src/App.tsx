@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import {
   ArrowRight,
   AudioLines,
@@ -1726,6 +1727,7 @@ export function App() {
         <span>Jev × Decisions × Clef · avaliação em português</span>
         <span>Feito para mostrar as evidências.</span>
       </footer>
+      <Analytics />
     </div>
   );
 }
