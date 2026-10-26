@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import {
   ArrowDown,
   ArrowRight,
@@ -447,6 +448,7 @@ export function PublicApp() {
           Voltar ao topo <ArrowRight size={16} />
         </a>
       </footer>
+      <Analytics />
     </>
   );
 }
